@@ -1,173 +1,218 @@
-import React, { useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient';
-import Table from './Table';
-import FilterBox from './FilterBox';
-import EditPopup from './EditPopup';
+import React, { useState, useEffect } from "react";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import Table from "./Table";
+import GenericForm from "./GenericForm";
+import DatabaseService from "../services/DatabaseService";
 
-export default function UsersTab() {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('');
-  const [selectedRows, setSelectedRows] = useState([]); // Ensure this is an array
-  const [editUser, setEditUser] = useState(null);
-
-  // Fetch users from the database
+function UsersTab({ users: initialUsers }) {
+  const [users, setUsers] = useState(initialUsers || []);
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [loading, setLoading] = useState(!initialUsers);
+  const [error, setError] = useState(null);
+  const [editItem, setEditItem] = useState(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [roleFilter, setRoleFilter] = useState('all');
   useEffect(() => {
-    const fetchUsers = async () => {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching users:', error);
-      } else {
-        setUsers(data);
-      }
+    if (!initialUsers) {
+      fetchUsers();
+    }
+  }, [initialUsers]);
+  useEffect(() => {
+    if (initialUsers) {
+      setUsers(initialUsers);
+    }
+  }, [initialUsers]);
+  const fetchUsers = async () => {
+    try {
+      // 使用DatabaseService单例获取用户数据
+      const dbService = DatabaseService.getInstance();
+      const data = await dbService.fetchData('users', 'created_at', false);
+      setUsers(data);
+    } catch (error) {
+      setError(error.message);
+    } finally {
       setLoading(false);
-    };
-
-    fetchUsers();
-  }, []);
-
-  // Handle filtering
-  const filteredUsers = users.filter((user) =>
-    user.email.toLowerCase().includes(filter.toLowerCase()) ||
-    user.full_name?.toLowerCase().includes(filter.toLowerCase()) ||
-    user.phone_number?.toLowerCase().includes(filter.toLowerCase())
-  );
-
-  // Handle sorting
-  const handleSort = (key, direction) => {
-    const sortedUsers = [...filteredUsers].sort((a, b) => {
-      const valueA = a[key] || ''; // Treat empty values as empty strings
-      const valueB = b[key] || '';
-  
-      if (valueA < valueB) return direction === 'asc' ? -1 : 1;
-      if (valueA > valueB) return direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-    setUsers(sortedUsers);
+    }
   };
-
-  // Handle delete selected users
+  // 使用DatabaseService单例实现保存功能
+  const handleSave = async (itemData) => {
+    try {
+      const dbService = DatabaseService.getInstance();
+      
+      if (isCreating) {
+        // 创建新用户
+        const newUser = await dbService.createItem('users', itemData, 'User');
+        
+        // 更新本地状态
+        setUsers([newUser, ...users]);
+        setIsCreating(false);
+      } else {
+        // 更新现有用户
+        await dbService.updateItem('users', itemData, 'User');
+        
+        // 更新本地状态
+        setUsers(users.map((item) => 
+          item.id === itemData.id ? { ...item, ...itemData } : item
+        ));
+        setEditItem(null);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error(`Error: ${error.message}`);
+    }
+  };
+  // 使用DatabaseService单例实现删除功能
   const handleDeleteSelected = async () => {
-    console.log('Selected Rows:', selectedRows); // Debugging
-  
-    if (!Array.isArray(selectedRows)) {
-      console.error('selectedRows is not an array:', selectedRows);
-      return;
-    }
-  
-    if (selectedRows.length === 0) {
-      alert('No users selected for deletion.');
-      return;
-    }
-  
-    // Ensure selectedRows contains valid UUIDs
-    const validUUIDs = selectedRows.filter((id) =>
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id)
-    );
-  
-    if (validUUIDs.length === 0) {
-      alert('No valid users selected for deletion.');
-      return;
-    }
-  
-    const { error } = await supabase
-      .from('users')
-      .delete()
-      .in('id', validUUIDs); // Use validUUIDs instead of selectedRows
-  
-    if (error) {
+    try {
+      const dbService = DatabaseService.getInstance();
+      
+      // 删除选中的用户
+      await dbService.deleteItems('users', selectedRows, 'User');
+      
+      // 更新本地状态
+      setUsers(users.filter((item) => !selectedRows.includes(item.id)));
+      setSelectedRows([]);
+    } catch (error) {
       console.error('Error deleting users:', error);
-      alert('Failed to delete users. Please try again.');
-    } else {
-      // Remove deleted users from the local state
-      setUsers(users.filter((user) => !validUUIDs.includes(user.id)));
-      setSelectedRows([]); // Clear the selection
-      alert('Selected users deleted successfully.');
+      // 错误处理已在DatabaseService中通过toast显示
     }
   };
-
-  // Handle save edited user
-  const handleSaveEdit = async (editedUser) => {
-    const { error } = await supabase
-      .from('users')
-      .update(editedUser)
-      .eq('id', editedUser.id);
-
-    if (error) {
-      console.error('Error updating user:', error);
-    } else {
-      setUsers(users.map((user) => (user.id === editedUser.id ? editedUser : user)));
-      setEditUser(null);
-    }
-  };
+  // 根据角色筛选用户
+  const filteredUsers = roleFilter === 'all' 
+    ? users 
+    : users.filter(user => user.role === roleFilter);
 
   if (loading) {
     return <p>Loading users...</p>;
   }
-
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
   return (
     <div>
       <h2 className="text-xl font-semibold text-gray-800 mb-4">Manage Users</h2>
 
-      {/* Filter Box */}
-      <FilterBox
-        filter={filter}
-        setFilter={setFilter}
-        placeholder="Filter by email, name, or phone"
-      />
+      {/* Create New User Button */}
+      <button
+        onClick={() => {
+          setIsCreating(true);
+          setEditItem({
+            email: "",
+            full_name: "",
+            phone_number: "",
+            post_code: "",
+            birthday: "",
+            gender: "",
+            role: "customer",
+          });
+        }}
+        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 my-4"
+      >
+        Create New User
+      </button>
 
       {/* Delete Selected Button */}
-      {selectedRows.length > 0 && (
-        <button
-          onClick={handleDeleteSelected}
-          className="mb-4 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition duration-200"
+      <button
+        onClick={handleDeleteSelected}
+        className={`${selectedRows.length === 0 ? 'bg-gray-400 hover:bg-gray-500' : 'bg-red-500 hover:bg-red-600'} text-white px-4 py-2 rounded-lg my-4 ml-2`}
+        disabled={selectedRows.length === 0}
+      >
+        Delete Selected
+      </button>
+
+      {/* 角色筛选 */}
+      <div className="my-4">
+        <label className="mr-2 font-medium">Filter by Role:</label>
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         >
-          Delete Selected
-        </button>
-      )}
+          <option value="all">All Users</option>
+          <option value="customer">Customer</option>
+          <option value="staff">Staff</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
 
       {/* Users Table */}
       <Table
         columns={[
-          { key: 'email', label: 'Email' },
-          { key: 'full_name', label: 'Full Name' },
-          { key: 'phone_number', label: 'Phone Number' },
-          { key: 'post_code', label: 'Post Code' },
-          { key: 'birthday', label: 'Birthday' },
-          { key: 'gender', label: 'Gender' },
-          { key: 'role', label: 'Role' },
-          { key: 'created_at', label: 'Created At' },
-          { key: 'last_sign_in', label: 'Last Sign In' },
+          { key: "email", label: "Email" },
+          { key: "full_name", label: "Full Name" },
+          { key: "phone_number", label: "Phone Number" },
+          { key: "post_code", label: "Post Code" },
+          { key: "birthday", label: "Birthday" },
+          { key: "gender", label: "Gender" },
+          { key: "role", label: "Role" },
+          { key: "created_at", label: "Created At" },
+          { key: "last_sign_in", label: "Last Sign In" },
         ]}
         data={filteredUsers}
         selectedRows={selectedRows}
-        setSelectedRows={setSelectedRows} // Pass setSelectedRows as a prop
-        onSort={handleSort}
-        onEdit={setEditUser}
+        setSelectedRows={setSelectedRows}
+        onEdit={(user) => {
+          setIsCreating(false);
+          setEditItem(user);
+        }}
       />
 
-      {/* Edit User Popup */}
-      {editUser && (
-        <EditPopup
-          data={editUser}
-          onSave={handleSaveEdit}
-          onCancel={() => setEditUser(null)}
-          // Inside EditPopup.js
+      {/* Edit/Create Popup */}
+      {(editItem || isCreating) && (
+        <GenericForm
+          data={editItem}
+          onSave={handleSave}
+          onCancel={() => {
+            setEditItem(null);
+            setIsCreating(false);
+          }}
+          title={isCreating ? "Create New User" : "Edit User"}
           fields={[
-            { key: 'email', label: 'Email' },
-            { key: 'full_name', label: 'Full Name' },
-            { key: 'phone_number', label: 'Phone Number' },
-            { key: 'post_code', label: 'Post Code' }, // Add post_code field
-            { key: 'birthday', label: 'Birthday' },
-            { key: 'gender', label: 'Gender' },
-            { key: 'role', label: 'Role' },
+            { key: "email", label: "Email", type: "text", required: true },
+            { key: "full_name", label: "Full Name", type: "text", required: true },
+            { key: "phone_number", label: "Phone Number", type: "text" },
+            { key: "post_code", label: "Post Code", type: "text", required: true },
+            { key: "birthday", label: "Birthday", type: "date" },
+            { 
+              key: "gender", 
+              label: "Gender", 
+              type: "select",
+              options: [
+                { value: "male", label: "Male" },
+                { value: "female", label: "Female" },
+                { value: "other", label: "Other" }
+              ]
+            },
+            { 
+              key: "role", 
+              label: "Role", 
+              type: "select",
+              required: true,
+              options: [
+                { value: "customer", label: "Customer" },
+                { value: "staff", label: "Staff" },
+                { value: "admin", label: "Admin" }
+              ]
+            },
           ]}
         />
       )}
+
+      {/* Toast Container */}
+      <ToastContainer
+        position="bottom-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   );
 }
+
+export default UsersTab;

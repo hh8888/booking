@@ -9,26 +9,51 @@ export default function Auth() {
   const [postCode, setPostCode] = useState('');
   const [birthday, setBirthday] = useState('');
   const [gender, setGender] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false); // Default to "Sign In"
-  const [isLoading, setIsLoading] = useState(true); // Loading state
-  const [isSignedIn, setIsSignedIn] = useState(false); // Track sign-in state
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [error, setError] = useState('');
 
-  // Simulate initial loading delay
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) setIsSignedIn(true);
       setIsLoading(false);
-    }, 2000); // 2-second loading delay
-    return () => clearTimeout(timer);
+    };
+    checkSession();
   }, []);
 
-  const handleSignUp = async () => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+  const validateForm = () => {
+    if (!email || !password) {
+      setError('Please enter your email and password');
+      return false;
+    }
+    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return false;
+    }
+    if (isSignUp && !postCode) {
+      setError('Please enter your post code');
+      return false;
+    }
+    setError('');
+    return true;
+  };
 
-    if (error) {
-      alert(error.message);
-    } else {
-      // Create a user record in the public.users table
-      const { data: userData, error: userError } = await supabase
+  const handleSignUp = async () => {
+    if (!validateForm()) return;
+    
+    setIsLoading(true);
+    try {
+      const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+      
+      if (signUpError) throw signUpError;
+
+      const { error: userError } = await supabase
         .from('users')
         .insert([
           {
@@ -37,47 +62,47 @@ export default function Auth() {
             post_code: postCode,
             birthday: birthday || null,
             gender: gender || null,
-            role: 'customer', // Default role
+            role: 'customer',
           },
         ]);
 
-      if (userError) {
-        alert(userError.message);
-      } else {
-        alert('Check your email for the confirmation link!');
-      }
+      if (userError) throw userError;
+      
+      setError('Registration successful! Please check your email for the confirmation link.');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleSignIn = async () => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    if (!validateForm()) return;
 
-    if (error) {
-      alert(error.message);
-    } else {
-      // Update last_sign_in in public.users table
+    setIsLoading(true);
+    try {
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) throw signInError;
+
       const { error: updateError } = await supabase
         .from('users')
         .update({ last_sign_in: new Date().toISOString() })
         .eq('id', data.user.id);
 
-      if (updateError) {
-        console.error('Error updating last_sign_in:', updateError);
-      } else {
-        setIsSignedIn(true); // Redirect to admin dashboard
-      }
+      if (updateError) throw updateError;
+
+      setIsSignedIn(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const validateEmail = (email) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
-  };
-
-  // If signed in, show the AdminDashboard
   if (isSignedIn) {
     return <AdminDashboard />;
   }
@@ -92,6 +117,11 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      {error && (
+        <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
       <AuthForm
         isSignUp={isSignUp}
         setIsSignUp={setIsSignUp}
@@ -105,8 +135,9 @@ export default function Auth() {
         setBirthday={setBirthday}
         gender={gender}
         setGender={setGender}
-        onSignIn={handleSignIn} // Pass handleSignIn as a prop
-        onSignUp={handleSignUp} // Pass handleSignUp as a prop
+        onSignIn={handleSignIn}
+        onSignUp={handleSignUp}
+        isLoading={isLoading}
       />
     </div>
   );

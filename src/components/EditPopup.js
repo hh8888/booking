@@ -26,7 +26,7 @@ export default function EditPopup({ data, onSave, onCancel, fields }) {
               >
                 <option value="customer">Customer</option>
                 <option value="admin">Admin</option>
-                <option value="staff">Staff</option> {/* Updated from "Provider" to "Staff" */}
+                <option value="staff">Staff</option>
               </select>
             ) : field.key === 'birthday' ? (
               <input
