@@ -6,7 +6,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function createSettingsTable() {
   try {
-    // 直接尝试创建一条记录，如果表不存在，会返回特定错误
+    // Try to create a record directly, if the table doesn't exist, it will return a specific error
     const { data: testData, error: testError } = await supabase
       .from('settings')
       .insert([
@@ -20,11 +20,11 @@ async function createSettingsTable() {
 
     if (testError) {
       if (testError.code === '42P01') {
-        console.log('Settings表不存在，需要创建表结构');
+        console.log('Settings table does not exist, need to create table structure');
         
-        // 由于无法直接执行SQL创建表，我们需要联系Supabase管理员
-        // 或者使用Supabase Dashboard创建表
-        console.error('请在Supabase Dashboard中创建settings表，表结构如下：');
+        // Since we cannot execute SQL to create tables directly, we need to contact Supabase admin
+        // or use Supabase Dashboard to create the table
+        console.error('Please create settings table in Supabase Dashboard with the following structure:');
         console.error(`
           CREATE TABLE IF NOT EXISTS settings (
             id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -42,13 +42,13 @@ async function createSettingsTable() {
           COMMENT ON TABLE settings IS 'Table for storing application configuration and settings';
         `);
       } else {
-        console.error('尝试创建settings记录时出错:', testError);
+        console.error('Error creating settings record:', testError);
       }
     } else {
-      console.log('Settings表已存在，并成功插入了一条记录:', testData);
+      console.log('Settings table exists and successfully inserted a record:', testData);
     }
   } catch (err) {
-    console.error('执行操作时出错:', err);
+    console.error('Error executing operation:', err);
   }
 }
 

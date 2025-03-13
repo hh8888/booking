@@ -6,8 +6,9 @@ import GenericForm from './GenericForm';
 import ServiceForm from './ServiceForm';
 import DatabaseService from '../services/DatabaseService';
 import ServiceStaffService from '../services/ServiceStaffService';
+import withErrorHandling from './withErrorHandling';
 
-function ServicesTab({ users }) {
+function ServicesTab({ users, handleError }) {
   const [services, setServices] = useState([]);
   const [staffUsers, setStaffUsers] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
@@ -27,13 +28,13 @@ function ServicesTab({ users }) {
 
   const fetchServices = async (staffData) => {
     try {
-      // 使用ServiceStaffService获取服务及其分配的员工
+      // Use ServiceStaffService to get services and their assigned staff
       const serviceStaffService = ServiceStaffService.getInstance();
       const servicesWithStaff = await serviceStaffService.getAllServicesWithStaff();
       
       // Process service data and handle duration format
       const servicesWithStaffName = servicesWithStaff.map((service) => {
-        // 获取所有分配的员工名称
+        // Get all assigned staff names
         const staffNames = service.staff_ids && service.staff_ids.length > 0 
           ? service.staff_ids.map(staffId => {
               const staff = staffData.find(user => user.id === staffId);
@@ -78,7 +79,7 @@ function ServicesTab({ users }) {
         return {
           ...service,
           duration: duration, // Use the processed duration value
-          staff_name: staffNames.length > 0 ? staffNames.join(', ') : 'Unassigned', // 使用逗号分隔的员工名称列表
+          staff_name: staffNames.length > 0 ? staffNames.join(', ') : '', // Show empty string when no staff assigned
         };
       });
 
@@ -98,7 +99,7 @@ function ServicesTab({ users }) {
         setStaffUsers(staffData);
         return staffData;
       } else {
-        // 使用DatabaseService单例获取员工数据
+        // Use DatabaseService singleton to get staff data
         const dbService = DatabaseService.getInstance();
         const data = await dbService.fetchSpecificColumns('users', 'id, full_name', { role: 'staff' });
         
@@ -111,73 +112,74 @@ function ServicesTab({ users }) {
     }
   };
 
-  // 使用DatabaseService和ServiceStaffService实现保存功能
+  // Use DatabaseService and ServiceStaffService to implement save functionality
   const handleSave = async (itemData) => {
     try {
       const dbService = DatabaseService.getInstance();
-      const serviceStaffService = ServiceStaffService.getInstance();
       
-      // 从表单数据中提取staff_ids
-      const { staff_ids, ...serviceData } = itemData;
+      // Ensure staff_ids is a valid array
+      const staff_ids = itemData.staff_ids || [];
+      // Extract staff_ids from form data and prepare service data
+      const { staff_ids: _, ...serviceData } = itemData;
       
       if (isCreating) {
-        // 创建新服务
+        // Create new service
         const newService = await dbService.createItem('services', serviceData, 'Service');
         
-        // 为新服务分配员工
-        if (staff_ids && staff_ids.length > 0) {
-          await serviceStaffService.assignStaffToService(newService.id, staff_ids);
+        // Assign staff to new service
+        if (staff_ids.length > 0) {
+          await ServiceStaffService.getInstance().assignStaffToService(newService.id, staff_ids);
         }
         
-        // 更新本地状态
-        setServices([newService, ...services]);
+        // Update local state
+        const serviceWithStaff = { ...newService, staff_ids };
+        setServices([serviceWithStaff, ...services]);
         setIsCreating(false);
       } else {
-        // 更新现有服务
-        await dbService.updateItem('services', serviceData, 'Service');
+        // Update existing service
+        const serviceDataWithId = {
+          id: itemData.id,
+          ...serviceData
+        };
+        await dbService.updateItem('services', serviceDataWithId, 'Service');
         
-        // 更新服务的员工分配
-        if (serviceData.id) {
-          await serviceStaffService.assignStaffToService(serviceData.id, staff_ids || []);
-        }
+        // Update service staff assignments
+        await ServiceStaffService.getInstance().assignStaffToService(itemData.id, staff_ids);
         
-        // 更新本地状态
+        // Update local state
         setServices(services.map((item) => 
-          item.id === serviceData.id ? { ...item, ...serviceData } : item
+          item.id === itemData.id ? { ...item, ...serviceData, staff_ids } : item
         ));
         setEditItem(null);
       }
     } catch (error) {
-      console.error('Error:', error);
-      toast.error(`Error: ${error.message}`);
+      handleError('saving', () => Promise.reject(error));
     }
   };
 
-  // 使用DatabaseService单例实现删除功能
   const handleDeleteSelected = async () => {
     try {
       const dbService = DatabaseService.getInstance();
       
-      // 删除选中的服务
+      // Delete selected services
       await dbService.deleteItems('services', selectedRows, 'Service');
       
-      // 更新本地状态
+      // Update local state
       setServices(services.filter((item) => !selectedRows.includes(item.id)));
       setSelectedRows([]);
     } catch (error) {
-      console.error('Error deleting services:', error);
-      // 错误处理已在DatabaseService中通过toast显示
+      handleError('deleting', () => Promise.reject(error));
     }
   };
 
-  // 根据员工筛选服务
+  // Filter services by staff
   const filteredServices = staffFilter === 'all' 
     ? services 
     : services.filter(service => {
         if (staffFilter === 'unassigned') {
           return !service.staff_ids || service.staff_ids.length === 0;
         }
-        // 确保staff_ids是数组并且包含选定的员工ID
+        // Ensure staff_ids is an array and contains selected staff ID
         return service.staff_ids && Array.isArray(service.staff_ids) && service.staff_ids.includes(staffFilter);
       });
 
@@ -205,7 +207,7 @@ function ServicesTab({ users }) {
         Delete Selected
       </button>
 
-      {/* 员工筛选 */}
+      {/* Staff filter */}
       <div className="my-4">
         <label className="mr-2 font-medium">Filter by Staff:</label>
         <select
@@ -263,20 +265,20 @@ function ServicesTab({ users }) {
                     const minutes = Math.floor(dataToSave.duration % 60);
                     dataToSave.duration = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
                   }
-                  
+                  console.log('Data to save:', dataToSave);
                   await handleSave(dataToSave);
                   
                   setEditItem(null);
                   setIsCreating(false);
                   
-                  // 重新获取服务数据以更新表格
+                  // Refetch service data to update table
                   const staffData = await fetchStaffUsers();
                   if (staffData) {
                     await fetchServices(staffData);
                   }
                 } catch (error) {
                   console.error('Error saving service:', error);
-                  // 错误已在handleSave中通过toast显示
+                  // Error already shown in handleSave via toast
                 }
               }}
             />
@@ -300,4 +302,4 @@ function ServicesTab({ users }) {
   );
 }
 
-export default ServicesTab;
+export default withErrorHandling(ServicesTab, 'Service');

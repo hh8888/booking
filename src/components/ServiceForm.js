@@ -1,32 +1,59 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { toast } from 'react-toastify';
+import DatabaseService from '../services/DatabaseService';
 
 const ServiceForm = ({ initialData, staffUsers, onClose, onSubmit }) => {
-  const [formData, setFormData] = useState(
-    initialData || {
-      name: '',
-      description: '',
-      price: '',
-      duration: '',
-      staff_ids: [], // Array for multiple staff selection
-    }
-  );
+  const [formData, setFormData] = useState({
+    id: '',
+    name: '',
+    description: '',
+    price: '',
+    duration: '',
+    staff_ids: [],
+  });
+
+  const fetchDefaultSettings = useCallback(async () => {
+  try {
+    const dbService = DatabaseService.getInstance();
+    const [duration, price] = await Promise.all([
+      dbService.getSettingsByKey('service', 'defaultServiceDuration'),
+      dbService.getSettingsByKey('service', 'defaultServicePrice')
+    ]);
+
+    setFormData(prev => ({
+      ...prev,
+      duration: duration ? parseInt(duration) : 60,
+      price: price ? parseFloat(price) : 100
+    }));
+  } catch (error) {
+    console.error('Failed to fetch settings:', error);
+    toast.error('Failed to load default settings');
+  }
+}, []);
+
+// Only apply default values when creating new
+useEffect(() => {
+  if (!initialData) {
+    fetchDefaultSettings();
+  }
+}, [fetchDefaultSettings, initialData]);
   
-  // 初始化staff_ids，如果是编辑模式且有staff_id或staff_ids
+  // Initialize staff_ids, if in edit mode and has staff_id or staff_ids
   useEffect(() => {
     if (initialData) {
-      if (initialData.staff_ids && initialData.staff_ids.length > 0) {
-        // 如果已有staff_ids数组，直接使用
-        setFormData(prev => ({
-          ...prev,
-          staff_ids: initialData.staff_ids
-        }));
-      } else if (initialData.staff_id) {
-        // 向后兼容：如果只有单个staff_id，转换为数组格式
-        setFormData(prev => ({
-          ...prev,
-          staff_ids: [initialData.staff_id]
-        }));
-      }
+      setFormData(prev => ({
+        ...prev,
+        id: initialData.id,
+        name: initialData.name || '',
+        description: initialData.description || '',
+        price: initialData.price || '',
+        duration: initialData.duration || '',
+        staff_ids: initialData.staff_ids && initialData.staff_ids.length > 0
+          ? initialData.staff_ids
+          : initialData.staff_id
+            ? [initialData.staff_id]
+            : []
+      }));
     }
   }, [initialData]);
 
@@ -38,12 +65,12 @@ const ServiceForm = ({ initialData, staffUsers, onClose, onSubmit }) => {
     });
   };
   
-  // 处理员工多选
+  // Handle staff multi-selection
   const handleStaffChange = (staffId) => {
     setFormData(prev => {
       const currentStaffIds = [...(prev.staff_ids || [])];
       
-      // 如果已选中，则移除；否则添加
+      // If already selected, remove it; otherwise add it
       if (currentStaffIds.includes(staffId)) {
         return {
           ...prev,
@@ -60,13 +87,16 @@ const ServiceForm = ({ initialData, staffUsers, onClose, onSubmit }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // 准备提交的数据，保留原始staff_id以兼容旧代码
+    // Ensure staff_ids is a valid array
+    const staff_ids = formData.staff_ids || [];
+    // Prepare submit data, maintain backward compatibility
     const submitData = {
       ...formData,
-      staff_id: formData.staff_ids && formData.staff_ids.length > 0 ? formData.staff_ids[0] : null
+      staff_ids: staff_ids,
+      staff_id: staff_ids.length > 0 ? staff_ids[0] : null
     };
-    onSubmit(submitData); // Pass the form data to the parent component
-    onClose(); // Close the form
+    onSubmit(submitData);
+    onClose();
   };
 
   return (

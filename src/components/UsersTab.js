@@ -3,9 +3,10 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Table from "./Table";
 import GenericForm from "./GenericForm";
-import DatabaseService from "../services/DatabaseService";
+import UserService from "../services/UserService";
+import withErrorHandling from './withErrorHandling';
 
-function UsersTab({ users: initialUsers }) {
+function UsersTab({ users: initialUsers, handleError }) {
   const [users, setUsers] = useState(initialUsers || []);
   const [selectedRows, setSelectedRows] = useState([]);
   const [loading, setLoading] = useState(!initialUsers);
@@ -13,45 +14,73 @@ function UsersTab({ users: initialUsers }) {
   const [editItem, setEditItem] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   const [roleFilter, setRoleFilter] = useState('all');
+  const [requiredFields, setRequiredFields] = useState(['email', 'full_name', 'post_code']);
+
   useEffect(() => {
     if (!initialUsers) {
       fetchUsers();
     }
+    // Get required fields settings
+    fetchRequiredFields();
   }, [initialUsers]);
+
   useEffect(() => {
     if (initialUsers) {
       setUsers(initialUsers);
     }
   }, [initialUsers]);
+
+  const fetchRequiredFields = async () => {
+    try {
+      const userService = UserService.getInstance();
+      const requiredUserFields = await userService.fetchRequiredFields();
+      setRequiredFields(requiredUserFields);
+    } catch (error) {
+      console.error('Error fetching required fields:', error);
+    }
+  };
+
   const fetchUsers = async () => {
     try {
-      // 使用DatabaseService单例获取用户数据
-      const dbService = DatabaseService.getInstance();
-      const data = await dbService.fetchData('users', 'created_at', false);
+      const userService = UserService.getInstance();
+      const data = await userService.fetchUsers();
       setUsers(data);
     } catch (error) {
-      setError(error.message);
+      const errorMessage = await handleError('fetching', () => Promise.reject(error));
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
-  // 使用DatabaseService单例实现保存功能
+
   const handleSave = async (itemData) => {
     try {
-      const dbService = DatabaseService.getInstance();
+      const userService = UserService.getInstance();
+      
+      // Handle empty date fields, convert empty strings to null
+      if (itemData.birthday === '') {
+        itemData.birthday = null;
+      }
       
       if (isCreating) {
-        // 创建新用户
-        const newUser = await dbService.createItem('users', itemData, 'User');
+        // If creating new user, need to create user in auth table as well
+        if (!itemData.password) {
+          toast.error('Password is required for new users');
+          return;
+        }
+
+        // Create new user
+        const newUser = await userService.createUser(itemData);
         
-        // 更新本地状态
+        // Update local state
         setUsers([newUser, ...users]);
         setIsCreating(false);
+        setEditItem(null);
       } else {
-        // 更新现有用户
-        await dbService.updateItem('users', itemData, 'User');
+        // Update existing user
+        await userService.updateUser(itemData);
         
-        // 更新本地状态
+        // Update local state
         setUsers(users.map((item) => 
           item.id === itemData.id ? { ...item, ...itemData } : item
         ));
@@ -62,23 +91,22 @@ function UsersTab({ users: initialUsers }) {
       toast.error(`Error: ${error.message}`);
     }
   };
-  // 使用DatabaseService单例实现删除功能
+
   const handleDeleteSelected = async () => {
     try {
-      const dbService = DatabaseService.getInstance();
+      const userService = UserService.getInstance();
       
-      // 删除选中的用户
-      await dbService.deleteItems('users', selectedRows, 'User');
+      // Delete selected users
+      await userService.deleteUsers(selectedRows);
       
-      // 更新本地状态
+      // Update local state
       setUsers(users.filter((item) => !selectedRows.includes(item.id)));
       setSelectedRows([]);
     } catch (error) {
-      console.error('Error deleting users:', error);
-      // 错误处理已在DatabaseService中通过toast显示
+      handleError('deleting', () => Promise.reject(error));
     }
   };
-  // 根据角色筛选用户
+  // Filter users by role
   const filteredUsers = roleFilter === 'all' 
     ? users 
     : users.filter(user => user.role === roleFilter);
@@ -99,6 +127,7 @@ function UsersTab({ users: initialUsers }) {
           setIsCreating(true);
           setEditItem({
             email: "",
+            password: "",
             full_name: "",
             phone_number: "",
             post_code: "",
@@ -121,7 +150,7 @@ function UsersTab({ users: initialUsers }) {
         Delete Selected
       </button>
 
-      {/* 角色筛选 */}
+      {/* Role filter */}
       <div className="my-4">
         <label className="mr-2 font-medium">Filter by Role:</label>
         <select
@@ -169,15 +198,17 @@ function UsersTab({ users: initialUsers }) {
           }}
           title={isCreating ? "Create New User" : "Edit User"}
           fields={[
-            { key: "email", label: "Email", type: "text", required: true },
-            { key: "full_name", label: "Full Name", type: "text", required: true },
-            { key: "phone_number", label: "Phone Number", type: "text" },
-            { key: "post_code", label: "Post Code", type: "text", required: true },
-            { key: "birthday", label: "Birthday", type: "date" },
+            { key: "email", label: "Email", type: "text", required: requiredFields.includes('email') },
+            ...(isCreating ? [{ key: "password", label: "Password", type: "password", required: true }] : []),
+            { key: "full_name", label: "Full Name", type: "text", required: requiredFields.includes('full_name') },
+            { key: "phone_number", label: "Phone Number", type: "text", required: requiredFields.includes('phone_number') },
+            { key: "post_code", label: "Post Code", type: "text", required: requiredFields.includes('post_code') },
+            { key: "birthday", label: "Birthday", type: "date", required: requiredFields.includes('birthday') },
             { 
               key: "gender", 
               label: "Gender", 
               type: "select",
+              required: requiredFields.includes('gender'),
               options: [
                 { value: "male", label: "Male" },
                 { value: "female", label: "Female" },
@@ -215,4 +246,4 @@ function UsersTab({ users: initialUsers }) {
   );
 }
 
-export default UsersTab;
+export default withErrorHandling(UsersTab, 'User');

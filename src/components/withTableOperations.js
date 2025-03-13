@@ -14,7 +14,7 @@ const withTableOperations = (WrappedComponent, resourceName, supabaseTable) => {
         const dbService = DatabaseService.getInstance();
         
         if (isCreating) {
-          // 使用DatabaseService创建新项目
+          // Use DatabaseService to create new item
           const newItem = await dbService.createItem(supabaseTable.name, itemData, resourceName);
 
           // Check if setItems function exists before calling it
@@ -23,7 +23,7 @@ const withTableOperations = (WrappedComponent, resourceName, supabaseTable) => {
           }
           setIsCreating(false);
         } else {
-          // 使用DatabaseService更新项目
+          // Use DatabaseService to update item
           await dbService.updateItem(supabaseTable.name, itemData, resourceName);
 
           // Check if setItems function exists before calling it
@@ -45,7 +45,7 @@ const withTableOperations = (WrappedComponent, resourceName, supabaseTable) => {
       try {
         const dbService = DatabaseService.getInstance();
         
-        // 使用DatabaseService删除选中项目
+        // Use DatabaseService to delete selected items
         await dbService.deleteItems(supabaseTable.name, selectedRows, resourceName);
 
         // Check if setItems function exists before calling it

@@ -3,9 +3,13 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Table from './Table';
 import GenericForm from './GenericForm';
+import TimeSlotPicker from './TimeSlotPicker';
+import BookingService from '../services/BookingService';
 import DatabaseService from '../services/DatabaseService';
+import DateTimeFormatter from '../utils/DateTimeFormatter';
+import withErrorHandling from './withErrorHandling';
 
-function BookingsTab({ users }) {
+function BookingsTab({ users, handleError }) {
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -15,9 +19,19 @@ function BookingsTab({ users }) {
   const [editItem, setEditItem] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [timeFilter, setTimeFilter] = useState('today+');
+  const [bookingTimeInterval, setBookingTimeInterval] = useState(30);
+  const [showRecurringOptions, setShowRecurringOptions] = useState(false);
+  const [recurringOptions] = useState([
+    { value: 'daily', label: 'Repeat Daily' },
+    { value: 'weekly', label: 'Repeat Weekly' }
+  ]);
 
   useEffect(() => {
     const initData = async () => {
+      // Get booking time interval setting
+      await fetchBookingTimeInterval();
+      
       const [customerData, serviceData] = await Promise.all([
         fetchCustomers(),
         fetchServices()
@@ -25,52 +39,35 @@ function BookingsTab({ users }) {
       fetchBookings(serviceData, customerData);
     };
     initData();
-  }, []);
+  }, [timeFilter]); // Add timeFilter as dependency
+
+  // Get booking time interval setting
+  const fetchBookingTimeInterval = async () => {
+    try {
+      const bookingService = BookingService.getInstance();
+      const interval = await bookingService.getBookingTimeInterval();
+      setBookingTimeInterval(interval);
+    } catch (error) {
+      handleError('fetching', () => Promise.reject(error));
+      // Keep default value of 30 minutes
+    }
+  };
+
+  // Use DateTimeFormatter to format date and time
+  const formatDateTime = (dateTimeString) => {
+    const formatter = DateTimeFormatter.getInstance();
+    return formatter.formatDateTime(dateTimeString);
+  };
 
   const fetchBookings = async (serviceData, customerData) => {
     try {
-      // 使用DatabaseService单例获取预约数据
-      const dbService = DatabaseService.getInstance();
-      const data = await dbService.fetchData('bookings', 'start_time', false);
-
-      // 使用传入的服务和客户数据，而不是依赖state
-      const servicesForMapping = serviceData || services;
-      const customersForMapping = customerData || customers;
-
-      // 处理预约数据，添加服务名称、客户名称和持续时间
-      const bookingsWithDetails = data.map((booking) => {
-        const service = servicesForMapping.find((s) => s.id === booking.service_id);
-        const customer = customersForMapping.find((c) => c.id === booking.customer_id);
-        
-        // 计算预约持续时间（分钟）
-        let durationInMinutes = 60; // 默认60分钟
-        
-        if (service && service.duration) {
-          // 如果服务有持续时间，使用服务的持续时间
-          durationInMinutes = parseDuration(service.duration);
-        } else if (booking.start_time && booking.end_time) {
-          // 如果预约有开始和结束时间，计算实际持续时间
-          const startTime = new Date(booking.start_time);
-          const endTime = new Date(booking.end_time);
-          durationInMinutes = Math.round((endTime - startTime) / 60000); // 转换为分钟
-        }
-        
-        return {
-          ...booking,
-          service_name: service?.name || 'Unknown Service',
-          customer_name: customer?.full_name || 'Unknown Customer',
-          // 格式化日期时间显示
-          booking_time_formatted: new Date(booking.start_time).toLocaleString(),
-          // 添加持续时间字段
-          duration: durationInMinutes,
-          // 添加格式化的start_time，用于datetime-local输入框
-          start_time: booking.start_time ? new Date(booking.start_time).toISOString().slice(0, 16) : ''
-        };
-      });
-
-      setBookings(bookingsWithDetails);
+      const bookingService = BookingService.getInstance();
+      const bookingsWithDetails = await bookingService.fetchBookings(serviceData || services, customerData || customers);
+      const filteredBookings = bookingService.filterBookingsByTime(bookingsWithDetails, timeFilter);
+      setBookings(filteredBookings);
     } catch (error) {
-      setError(error.message);
+      const errorMessage = await handleError('fetching', () => Promise.reject(error));
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -107,44 +104,44 @@ function BookingsTab({ users }) {
     }
   };
 
-  // 解析各种格式的duration为分钟数
+  // Parse various duration formats to minutes
   const parseDuration = (duration) => {
-    let durationInMinutes = 60; // 默认60分钟
+    let durationInMinutes = 60; // Default 60 minutes
     
-    // 确保duration是有效的数字
+    // Ensure duration is a valid number
     if (typeof duration === 'number' && !isNaN(duration)) {
       durationInMinutes = duration;
     } else if (typeof duration === 'string') {
-      // 处理PostgreSQL interval格式
+      // Handle PostgreSQL interval format
       if (duration.includes(':')) {
-        // 如果duration是时间格式(HH:MM:SS)，转换为分钟
+        // If duration is in time format (HH:MM:SS), convert to minutes
         const timeParts = duration.split(':');
         if (timeParts.length === 3) {
-          // 转换小时:分钟:秒为分钟
+          // Convert hours:minutes:seconds to minutes
           durationInMinutes = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]) + parseInt(timeParts[2]) / 60;
         } else if (timeParts.length === 2) {
-          // 转换分钟:秒为分钟
+          // Convert minutes:seconds to minutes
           durationInMinutes = parseInt(timeParts[0]) + parseInt(timeParts[1]) / 60;
         }
       } else if (duration.includes('hour') || duration.includes('minute') || duration.includes('second')) {
-        // 处理详细的interval格式
+        // Handle verbose interval format
         let minutes = 0;
         
-        // 提取小时
-        const hourMatch = duration.match(/(\d+)\s+hour/i);
+        // Extract hours
+        const hourMatch = duration.match(/(d+)\s+hour/i);
         if (hourMatch) minutes += parseInt(hourMatch[1]) * 60;
         
-        // 提取分钟
-        const minuteMatch = duration.match(/(\d+)\s+minute/i);
+        // Extract minutes
+        const minuteMatch = duration.match(/(d+)\s+minute/i);
         if (minuteMatch) minutes += parseInt(minuteMatch[1]);
         
-        // 提取秒(转换为分钟的小数)
-        const secondMatch = duration.match(/(\d+)\s+second/i);
+        // Extract seconds (convert to fraction of minute)
+        const secondMatch = duration.match(/(d+)\s+second/i);
         if (secondMatch) minutes += parseInt(secondMatch[1]) / 60;
         
         durationInMinutes = minutes;
       } else {
-        // 尝试直接解析数字
+        // Try to parse number directly
         const parsedDuration = parseFloat(duration);
         if (!isNaN(parsedDuration)) {
           durationInMinutes = parsedDuration;
@@ -155,17 +152,42 @@ function BookingsTab({ users }) {
     return durationInMinutes;
   };
 
-  // 使用DatabaseService单例实现保存功能
+  // Use DatabaseService singleton to save
   const handleSave = async (itemData) => {
     try {
       const dbService = DatabaseService.getInstance();
       
-      // 移除额外的显示字段
-      const { service_name, customer_name, booking_time_formatted, duration, ...dataToSave } = itemData;
+      // Remove extra display fields and ensure customer_id is included
+      const { service_name, customer_name, booking_time_formatted, created_at_formatted, duration, show_recurring, ...dataToSave } = itemData;
+
+      // Ensure ID is preserved in edit mode
+      if (!isCreating && editItem) {
+        dataToSave.id = editItem.id;
+      }
       
-      // 验证必填字段
+      // Only include recurring_parent_id if it exists and is valid
+      if (!dataToSave.recurring_parent_id) {
+        delete dataToSave.recurring_parent_id;
+      }
+      
+      // If no recurring type is selected, ensure recurring fields are not included
+      if (!dataToSave.recurring_type || dataToSave.recurring_type === 'none') {
+        dataToSave.recurring_type = 'none';
+        dataToSave.recurring_count = 0;
+      }
+
+      // Validate required fields and ensure customer_id exists
       if (!dataToSave.customer_id) {
-        toast.error('Please select a customer');
+        console.error('Invalid customer_id:', dataToSave.customer_id);
+        toast.error('Please select a valid customer');
+        return;
+      }
+
+      // Validate if customer ID exists in users table
+      const customerExists = await dbService.fetchSpecificColumns('users', 'id', { id: dataToSave.customer_id, role: 'customer' });
+      if (!customerExists || customerExists.length === 0) {
+        console.error('Customer not found in users table:', dataToSave.customer_id);
+        toast.error('Please select a valid customer');
         return;
       }
       
@@ -174,53 +196,108 @@ function BookingsTab({ users }) {
         return;
       }
       
-      // 计算end_time，根据服务的duration
+      // Calculate end_time, based on service duration
       const selectedService = services.find(service => service.id === dataToSave.service_id);
       
       try {
-        // 验证开始时间是否有效
+        // Validate start time
         const startTime = new Date(dataToSave.start_time);
         if (isNaN(startTime.getTime())) {
           throw new Error('Invalid start time');
         }
         
-        // 使用统一的parseDuration函数解析duration
+        // Use unified parseDuration function to parse duration
         let durationInMinutes = parseDuration(selectedService?.duration);
         
-        // 计算结束时间
-        const endTime = new Date(startTime.getTime() + durationInMinutes * 60000); // 60000毫秒 = 1分钟
+        // Calculate end time
+        const endTime = new Date(startTime.getTime() + durationInMinutes * 60000); // 60000 milliseconds = 1 minute
         
-        // 验证结束时间是否有效
+        // Validate end time
         if (isNaN(endTime.getTime())) {
           throw new Error('Invalid end time calculation');
         }
         
-        // 添加end_time到保存数据中
+        // Format times with +11 timezone offset
+        //dataToSave.start_time = startTime.toLocaleString('en-US', { timeZone: 'Australia/Sydney' });
+        //dataToSave.end_time = endTime.toLocaleString('en-US', { timeZone: 'Australia/Sydney' });
+        console.log('saving start time:', dataToSave.start_time);
+        
+        // Add end_time to save data
         dataToSave.end_time = endTime.toISOString();
+        // dataToSave.updated_at = new Date(Date.now()).toISOString();
+
+        // Handle recurring bookings
+        if (isCreating && itemData.recurring_type && itemData.recurring_count > 0) {
+          // Create multiple bookings
+          const bookingsToCreate = [];
+          
+          // Add the first booking (original booking)
+          bookingsToCreate.push({...dataToSave});
+          
+          // Create additional bookings based on recurring type
+          for (let i = 1; i <= parseInt(itemData.recurring_count); i++) {
+            const newBooking = {...dataToSave};
+            const newStartTime = new Date(startTime);
+            const newEndTime = new Date(endTime);
+            
+            if (itemData.recurring_type === 'daily') {
+              // Repeat daily
+              newStartTime.setDate(newStartTime.getDate() + i);
+              newEndTime.setDate(newEndTime.getDate() + i);
+            } else if (itemData.recurring_type === 'weekly') {
+              // Repeat weekly
+              newStartTime.setDate(newStartTime.getDate() + (i * 7));
+              newEndTime.setDate(newEndTime.getDate() + (i * 7));
+            }
+            
+            newBooking.start_time = newStartTime.toISOString();
+            newBooking.end_time = newEndTime.toISOString();
+            newBooking.recurring_parent_id = null; // Can set a parent booking ID to link recurring bookings
+            
+            bookingsToCreate.push(newBooking);
+          }
+          
+          // Batch create bookings
+          for (const booking of bookingsToCreate) {
+            await dbService.createItem('bookings', booking, 'Booking');
+          }
+          
+          toast.success(`Successfully created ${bookingsToCreate.length} bookings`);
+          
+          // Update local state
+          const staffData = await fetchServices();
+          const customerData = await fetchCustomers();
+          await fetchBookings(staffData, customerData);
+          setIsCreating(false);
+        } else if (isCreating) {
+          // Create a single new booking
+          await dbService.createItem('bookings', dataToSave, 'Booking');
+          
+          // Update local state
+          const staffData = await fetchServices();
+          const customerData = await fetchCustomers();
+          await fetchBookings(staffData, customerData);
+          setIsCreating(false);
+          setEditItem(null);
+        } else {
+          // Update existing booking
+          if (!dataToSave.id) {
+            throw new Error('Missing booking ID for update');
+          }
+          console.log('updating booking:', dataToSave);
+          await dbService.updateItem('bookings', dataToSave, 'Booking');
+          
+          // Update local state
+          const staffData = await fetchServices();
+          const customerData = await fetchCustomers();
+          await fetchBookings(staffData, customerData);
+          setIsCreating(false);
+          setEditItem(null);
+        }
       } catch (error) {
         console.error('Error calculating booking time:', error);
         toast.error(`Error calculating booking time: ${error.message}`);
         return;
-      }
-      
-      if (isCreating) {
-        // 创建新预约
-        await dbService.createItem('bookings', dataToSave, 'Booking');
-        
-        // 更新本地状态
-        const staffData = await fetchServices();
-        const customerData = await fetchCustomers();
-        await fetchBookings(staffData, customerData); // 传递最新的服务和客户数据
-        setIsCreating(false);
-      } else {
-        // 更新现有预约
-        await dbService.updateItem('bookings', dataToSave, 'Booking');
-        
-        // 更新本地状态
-        const staffData = await fetchServices();
-        const customerData = await fetchCustomers();
-        await fetchBookings(staffData, customerData); // 传递最新的服务和客户数据
-        setEditItem(null);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -228,36 +305,87 @@ function BookingsTab({ users }) {
     }
   };
 
-  // 使用DatabaseService单例实现删除功能
+  // Use DatabaseService singleton to delete
   const handleDeleteSelected = async () => {
     try {
       const dbService = DatabaseService.getInstance();
       
-      // 删除选中的预约
+      // Delete selected bookings
       await dbService.deleteItems('bookings', selectedRows, 'Booking');
       
-      // 更新本地状态
+      // Update local state
       setBookings(bookings.filter((item) => !selectedRows.includes(item.id)));
       setSelectedRows([]);
     } catch (error) {
       console.error('Error deleting bookings:', error);
-      // 错误处理已在DatabaseService中通过toast显示
+      // Error handling is already displayed via toast in DatabaseService
     }
   };
 
-  // 根据状态筛选预约
+  // Filter bookings by status
   const filteredBookings = statusFilter === 'all' 
     ? bookings 
     : bookings.filter(booking => booking.status === statusFilter);
 
+  // Calculate booking statistics
+  const getBookingStats = () => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const todayBookings = bookings.filter(booking => {
+      const bookingDate = new Date(booking.start_time);
+      bookingDate.setHours(0, 0, 0, 0);
+      return bookingDate.getTime() === now.getTime();
+    });
+
+    const futureBookings = bookings.filter(booking => {
+      const bookingDate = new Date(booking.start_time);
+      bookingDate.setHours(0, 0, 0, 0);
+      return bookingDate > now;
+    });
+
+    const pastBookings = bookings.filter(booking => {
+      const bookingDate = new Date(booking.start_time);
+      bookingDate.setHours(0, 0, 0, 0);
+      return bookingDate < now;
+    });
+
+    return {
+      today: todayBookings.length,
+      future: futureBookings.length,
+      past: pastBookings.length
+    };
+  };
+
+  // Handle card click event
+  const handleCardClick = (filterType) => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    switch(filterType) {
+      case 'today':
+        setTimeFilter('today+');
+        break;
+      case 'future':
+        setTimeFilter('today+');
+        break;
+      case 'past':
+        setTimeFilter('past');
+        break;
+      default:
+        setTimeFilter('all');
+    }
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
+
+  const stats = getBookingStats();
 
   return (
     <div>
       <h2 className="text-xl font-semibold text-gray-800 mb-4">Manage Bookings</h2>
-      
-      {/* 创建新预约按钮 */}
+
       <button
         onClick={() => {
           setIsCreating(true);
@@ -266,7 +394,9 @@ function BookingsTab({ users }) {
             service_id: services.length > 0 ? services[0].id : null,
             start_time: new Date().toISOString().slice(0, 16),
             status: "pending",
-            notes: ""
+            notes: "",
+            recurring_type: null,
+            recurring_count: 1
           });
         }}
         className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 my-4"
@@ -274,7 +404,7 @@ function BookingsTab({ users }) {
         Create New Booking
       </button>
 
-      {/* 删除选中按钮 */}
+      {/* Delete Selected button */}
       <button
         onClick={handleDeleteSelected}
         className={`${selectedRows.length === 0 ? 'bg-gray-400 hover:bg-gray-500' : 'bg-red-500 hover:bg-red-600'} text-white px-4 py-2 rounded-lg my-4 ml-2`}
@@ -283,23 +413,39 @@ function BookingsTab({ users }) {
         Delete Selected
       </button>
 
-      {/* 状态筛选 */}
-      <div className="my-4">
-        <label className="mr-2 font-medium">Filter by Status:</label>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="all">All Bookings</option>
-          <option value="pending">Pending</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+      {/* Status filter and time filter */}
+      <div className="my-4 flex items-center space-x-4">
+        <div>
+          <label className="mr-2 font-medium">Status:</label>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+
+        {/* Time filter */}
+        <div>
+          <label className="mr-2 font-medium">Time Filter:</label>
+          <select
+            value={timeFilter}
+            onChange={(e) => setTimeFilter(e.target.value)}
+            className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="all">All Bookings</option>
+            <option value="today+">Today & Future</option>
+            <option value="past">Past Bookings</option>
+          </select>
+        </div>
       </div>
 
-      {/* 预约表格 */}
+      {/* Bookings Table */}
       <Table
         columns={[
           { key: "customer_name", label: "Customer" },
@@ -307,15 +453,27 @@ function BookingsTab({ users }) {
           { key: "booking_time_formatted", label: "Booking Time" },
           { key: "duration", label: "Duration (mins)" },
           { key: "status", label: "Status" },
+          { key: "recurring_type", label: "Recurring Type", 
+            formatter: (value) => {
+              if (value === null || value === undefined || value === '') return 'One-time';
+              switch(value) {
+                case 'daily': return 'Daily';
+                case 'weekly': return 'Weekly';
+                case 'monthly': return 'Monthly';
+                default: return '';
+              }
+            }
+          },
+          { key: "recurring_count", label: "Repeat Count" },
           { key: "notes", label: "Notes" },
-          { key: "created_at", label: "Created At" },
+          { key: "created_at_formatted", label: "Created At" },
         ]}
         data={filteredBookings}
         selectedRows={selectedRows}
         setSelectedRows={setSelectedRows}
         onEdit={(booking) => {
           setIsCreating(false);
-          // 确保start_time格式化为datetime-local输入所需的格式 (YYYY-MM-DDThh:mm)
+          // Ensure start_time is formatted for datetime-local input (YYYY-MM-DDThh:mm)
           const formattedBooking = {
             ...booking,
             start_time: booking.start_time ? new Date(booking.start_time).toISOString().slice(0, 16) : ''
@@ -324,7 +482,7 @@ function BookingsTab({ users }) {
         }}
       />
 
-      {/* 编辑/创建弹窗 */}
+      {/* Edit/Create popup */}
       {(editItem || isCreating) && (
         <GenericForm
           data={editItem}
@@ -358,12 +516,6 @@ function BookingsTab({ users }) {
               placeholder: "Select Service"
             },
             { 
-              key: "start_time", 
-              label: "Booking Time", 
-              type: "datetime",
-              required: true 
-            },
-            { 
               key: "status", 
               label: "Status", 
               type: "select",
@@ -379,6 +531,64 @@ function BookingsTab({ users }) {
               key: "notes", 
               label: "Notes", 
               type: "textarea" 
+            },
+            { 
+              key: "start_time", 
+              label: "Booking Time", 
+              type: "custom",
+              required: true,
+              renderField: () => (
+                <TimeSlotPicker
+                  value={editItem?.start_time || ''}
+                  onChange={(e) => {
+                    const updatedItem = { ...editItem, start_time: e.target.value };
+                    setEditItem(updatedItem);
+                  }}
+                  interval={bookingTimeInterval}
+                  required={true}
+                />
+              )
+            },
+            { 
+              key: "show_recurring", 
+              text: "Recurring booking", 
+              type: "checkbox",
+              onChange: (e) => {
+                if (!e.target.checked) {
+                  const updatedItem = { 
+                    ...editItem, 
+                    recurring_type: null, 
+                    recurring_count: 1,
+                    show_recurring: false
+                  };
+                  setEditItem(updatedItem);
+                } else {
+                  setEditItem({ ...editItem, show_recurring: true });
+                }
+              }
+            },
+            { 
+              key: "recurring_type", 
+              label: "Recurring Type", 
+              type: "select",
+              options: recurringOptions,
+              placeholder: "Select recurring type",
+              dependsOn: {
+                field: "show_recurring",
+                value: true
+              }
+            },
+            { 
+              key: "recurring_count", 
+              label: "Number of Occurrences", 
+              type: "number",
+              min: 2,
+              max: 52,
+              defaultValue: 2,
+              dependsOn: {
+                field: "show_recurring",
+                value: true
+              }
             },
           ]}
         />
@@ -400,4 +610,4 @@ function BookingsTab({ users }) {
   );
 }
 
-export default BookingsTab;
+export default withErrorHandling(BookingsTab, 'Booking');

@@ -2,23 +2,23 @@ import { supabase } from '../supabaseClient';
 import { toast } from 'react-toastify';
 
 /**
- * DatabaseService - 单例模式的数据库服务类
- * 封装所有与Supabase数据库的CRUD操作
+ * DatabaseService - Singleton database service class
+ * Encapsulates all CRUD operations with Supabase database
  */
 class DatabaseService {
-  // 私有静态实例变量
+  // Private static instance variable
   static instance = null;
 
-  // 私有构造函数，防止外部直接创建实例
+  // Private constructor to prevent direct instantiation
   constructor() {
     if (DatabaseService.instance) {
-      throw new Error('DatabaseService已经存在，请使用getInstance()方法获取实例');
+      throw new Error('DatabaseService instance already exists, please use getInstance() method');
     }
   }
 
   /**
-   * 获取DatabaseService的单例实例
-   * @returns {DatabaseService} 单例实例
+   * Get the singleton instance of DatabaseService
+   * @returns {DatabaseService} Singleton instance
    */
   static getInstance() {
     if (!DatabaseService.instance) {
@@ -28,23 +28,55 @@ class DatabaseService {
   }
 
   /**
-   * 通用获取数据方法
-   * @param {string} table - 表名
-   * @param {string} orderBy - 排序字段
-   * @param {boolean} ascending - 是否升序
-   * @param {Object} filters - 过滤条件 {column: value}
-   * @returns {Promise<Array>} 数据数组
+   * Generic data fetch method
+   * @param {string} table - Table name
+   * @param {string} orderBy - Order by field
+   * @param {boolean} ascending - Sort in ascending order
+   * @param {Object} filters - Filter conditions {column: value}
+   * @returns {Promise<Array>} Data array
    */
   async fetchData(table, orderBy = 'created_at', ascending = false, filters = {}) {
     try {
       let query = supabase.from(table).select('*');
       
-      // 添加过滤条件
+      // Add filter conditions
       Object.entries(filters).forEach(([column, value]) => {
-        query = query.eq(column, value);
+        if (typeof value === 'object' && value !== null) {
+          // Handle complex filter conditions
+          Object.entries(value).forEach(([operator, operatorValue]) => {
+            switch(operator) {
+              case 'gt':
+                query = query.gt(column, operatorValue);
+                break;
+              case 'gte':
+                query = query.gte(column, operatorValue);
+                break;
+              case 'lt':
+                query = query.lt(column, operatorValue);
+                break;
+              case 'lte':
+                query = query.lte(column, operatorValue);
+                break;
+              case 'neq':
+                query = query.neq(column, operatorValue);
+                break;
+              case 'in':
+                query = query.in(column, operatorValue);
+                break;
+              case 'contains':
+                query = query.ilike(column, `%${operatorValue}%`);
+                break;
+              default:
+                console.warn(`Unsupported operator: ${operator}`);
+            }
+          });
+        } else {
+          // Simple equality condition
+          query = query.eq(column, value);
+        }
       });
       
-      // 添加排序
+      // Add sorting
       if (orderBy) {
         query = query.order(orderBy, { ascending });
       }
@@ -60,11 +92,11 @@ class DatabaseService {
   }
 
   /**
-   * 通用创建数据方法
-   * @param {string} table - 表名
-   * @param {Object} data - 要创建的数据
-   * @param {string} resourceName - 资源名称（用于提示消息）
-   * @returns {Promise<Object>} 创建的数据
+   * Generic data creation method
+   * @param {string} table - Table name
+   * @param {Object} data - Data to create
+   * @param {string} resourceName - Resource name (for notifications)
+   * @returns {Promise<Object>} Created data
    */
   async createItem(table, data, resourceName = 'Item') {
     try {
@@ -85,10 +117,10 @@ class DatabaseService {
   }
 
   /**
-   * 通用更新数据方法
-   * @param {string} table - 表名
-   * @param {Object} data - 要更新的数据
-   * @param {string} resourceName - 资源名称（用于提示消息）
+   * Generic data update method
+   * @param {string} table - Table name
+   * @param {Object} data - Data to update
+   * @param {string} resourceName - Resource name (for notifications)
    * @returns {Promise<void>}
    */
   async updateItem(table, data, resourceName = 'Item') {
@@ -109,10 +141,10 @@ class DatabaseService {
   }
 
   /**
-   * 通用删除数据方法
-   * @param {string} table - 表名
-   * @param {Array<string>} ids - 要删除的ID数组
-   * @param {string} resourceName - 资源名称（用于提示消息）
+   * Generic data deletion method
+   * @param {string} table - Table name
+   * @param {Array<string>} ids - Array of IDs to delete
+   * @param {string} resourceName - Resource name (for notifications)
    * @returns {Promise<void>}
    */
   async deleteItems(table, ids, resourceName = 'Item') {
@@ -138,17 +170,17 @@ class DatabaseService {
   }
 
   /**
-   * 获取特定表的特定字段
-   * @param {string} table - 表名
-   * @param {string} columns - 要选择的列
-   * @param {Object} filters - 过滤条件 {column: value}
-   * @returns {Promise<Array>} 数据数组
+   * Get specific columns from a table
+   * @param {string} table - Table name
+   * @param {string} columns - Columns to select
+   * @param {Object} filters - Filter conditions {column: value}
+   * @returns {Promise<Array>} Data array
    */
   async fetchSpecificColumns(table, columns, filters = {}) {
     try {
       let query = supabase.from(table).select(columns);
       
-      // 添加过滤条件
+      // Add filter conditions
       Object.entries(filters).forEach(([column, value]) => {
         query = query.eq(column, value);
       });
@@ -160,6 +192,88 @@ class DatabaseService {
     } catch (error) {
       console.error(`Error fetching ${table}:`, error.message);
       return [];
+    }
+  }
+
+  /**
+   * Get system settings by category and key
+   * @param {string} category - Setting category
+   * @param {string} key - Setting key
+   * @returns {Promise<Object>} Setting value
+   */
+  async getSettingsByKey(category, key) {
+    try {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('category', category)
+        .eq('key', key)
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      // If no record found, return null
+      if (!data) {
+        console.log(`No setting found for category: ${category}, key: ${key}`);
+        return null;
+      }
+      
+      return data.value;
+    } catch (error) {
+      console.error('Error fetching settings:', error.message);
+      toast.error('Unable to get system settings');
+      return null;
+    }
+  }
+
+  /**
+   * Update or insert system settings
+   * @param {string} category - Setting category
+   * @param {string} key - Setting key
+   * @param {string|boolean|number} value - Setting value
+   * @returns {Promise<void>}
+   */
+  async updateSettings(category, key, value) {
+    try {
+      const { error } = await supabase
+        .from('settings')
+        .upsert([
+          {
+            category,
+            key,
+            value: value.toString(),
+            updated_at: new Date().toISOString()
+          }
+        ], { 
+          onConflict: 'category,key' // Explicitly specify unique constraint columns
+        });
+
+      if (error) throw error;
+      
+      toast.success('Settings updated successfully');
+    } catch (error) {
+      console.error('Error updating settings:', error.message);
+      toast.error(`Failed to update settings: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the number of records in a specified table
+   * @param {string} table - Table name
+   * @returns {Promise<number>} Record count
+   */
+  async getCount(table) {
+    try {
+      const { data, error, count } = await supabase
+        .from(table)
+        .select('*', { count: 'exact', head: true });
+
+      if (error) throw error;
+      return count;
+    } catch (error) {
+      console.error(`Error getting count for ${table}:`, error.message);
+      return 0;
     }
   }
 }

@@ -59,32 +59,42 @@ const Table = ({
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedData = sortedData.slice(startIndex, startIndex + pageSize);
 
+  // Calculate record range
+  const totalRecords = sortedData.length;
+  const startRecord = totalRecords === 0 ? 0 : startIndex + 1;
+  const endRecord = Math.min(startIndex + pageSize, totalRecords);
+
   return (
-    <div>
+    <div className="w-full overflow-x-auto">
       <PaginationControls
         pageSize={pageSize}
         setPageSize={setPageSize}
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
         totalPages={totalPages}
+        startRecord={startRecord}
+        endRecord={endRecord}
+        totalRecords={totalRecords}
       />
-      <table className="min-w-full bg-white border border-gray-200">
-        <TableHeader
-          columns={columns}
-          sortConfig={sortConfig}
-          onSort={handleSort}
-          selectedRows={selectedRows}
-          data={data}
-          onSelectAll={handleSelectAll}
-        />
-        <TableBody
-          data={paginatedData}
-          columns={columns}
-          selectedRows={selectedRows}
-          onSelectRow={handleSelectRow}
-          onEdit={onEdit}
-        />
-      </table>
+      <div className="overflow-x-auto md:overflow-visible">
+        <table className="min-w-full bg-white border border-gray-200 table-auto text-sm md:text-base">
+          <TableHeader
+            columns={columns}
+            sortConfig={sortConfig}
+            onSort={handleSort}
+            selectedRows={selectedRows}
+            data={data}
+            onSelectAll={handleSelectAll}
+          />
+          <TableBody
+            data={paginatedData}
+            columns={columns}
+            selectedRows={selectedRows}
+            onSelectRow={handleSelectRow}
+            onEdit={onEdit}
+          />
+        </table>
+      </div>
     </div>
   );
 };

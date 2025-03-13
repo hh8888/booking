@@ -6,7 +6,13 @@ const GenericForm = ({ data, fields, onSave, onCancel, title }) => {
   // Initialize form data when component mounts or data changes
   useEffect(() => {
     if (data) {
-      setFormData({ ...data });
+      // 处理null值，特别是日期字段
+      const processedData = {};
+      for (const key in data) {
+        // 如果值为null或undefined，设置为空字符串
+        processedData[key] = data[key] === null || data[key] === undefined ? '' : data[key];
+      }
+      setFormData(processedData);
     } else {
       // Initialize with empty values based on fields
       const initialData = {};
@@ -31,6 +37,19 @@ const GenericForm = ({ data, fields, onSave, onCancel, title }) => {
   };
 
   const renderField = (field) => {
+    // Support custom field rendering
+    if (field.type === 'custom' && typeof field.renderField === 'function') {
+      return field.renderField();
+    }
+
+    // 检查字段是否应该被隐藏
+    if (field.dependsOn) {
+      const dependentField = fields.find(f => f.key === field.dependsOn.field);
+      if (dependentField && formData[dependentField.key] !== field.dependsOn.value) {
+        return null;
+      }
+    }
+    
     // Handle different field types
     switch (field.type) {
       case 'select':
@@ -108,6 +127,31 @@ const GenericForm = ({ data, fields, onSave, onCancel, title }) => {
             step={field.step}
           />
         );
+      case 'checkbox':
+        return (
+          <div className="flex items-center h-6">
+            <input
+              type="checkbox"
+              name={field.key}
+              checked={formData[field.key] || false}
+              onChange={(e) => {
+                setFormData({
+                  ...formData,
+                  [field.key]: e.target.checked
+                });
+                if (typeof field.onChange === 'function') {
+                  field.onChange(e);
+                }
+              }}
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              id={field.key}
+            />
+            <label htmlFor={field.key} className="ml-2 block text-sm font-medium text-gray-700">
+              {field.text}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+          </div>
+        );
       default: // Default to text input
         return (
           <input
@@ -129,15 +173,25 @@ const GenericForm = ({ data, fields, onSave, onCancel, title }) => {
         <h2 className="text-xl font-semibold mb-4">{title || 'Edit Item'}</h2>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          {fields.map((field) => (
-            <div key={field.key}>
-              <label className="block text-sm font-medium text-gray-700">
-                {field.label}
-                {field.required && <span className="text-red-500 ml-1">*</span>}
-              </label>
-              {renderField(field)}
-            </div>
-          ))}
+          {fields.map((field) => {
+            // 检查字段是否应该被隐藏
+            if (field.dependsOn) {
+              const dependentField = fields.find(f => f.key === field.dependsOn.field);
+              if (dependentField && formData[dependentField.key] !== field.dependsOn.value) {
+                return null;
+              }
+            }
+            
+            return (
+              <div key={field.key}>
+                <label className="block text-sm font-medium text-gray-700">
+                  {field.label}
+                  {field.required && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                {renderField(field)}
+              </div>
+            );
+          })}
           
           <div className="flex justify-end space-x-2 pt-4">
             <button

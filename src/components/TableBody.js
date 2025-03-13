@@ -6,7 +6,7 @@ const TableBody = ({ data, columns, selectedRows, onSelectRow, onEdit }) => {
     return (
       <tbody>
         <tr>
-          <td colSpan={columns.length + 2} className="px-4 py-2 text-center">
+          <td colSpan={columns.length + 2} className="px-2 md:px-4 py-2 text-center text-sm md:text-base">
             No data available
           </td>
         </tr>

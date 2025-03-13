@@ -131,7 +131,7 @@ class ServiceStaffService {
       const dbService = DatabaseService.getInstance();
       const services = await dbService.fetchData('services');
       
-      // 获取所有服务-员工分配
+      // Get all service-staff assignments
       const { data: serviceStaffData, error } = await supabase
         .from('service_staff')
         .select('service_id, staff_id');
