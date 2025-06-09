@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
-import AuthForm from './components/AuthForm';
+import { useNavigate } from 'react-router-dom';
+import AuthForm from './components/auth/AuthForm';
 import AdminDashboard from './AdminDashboard';
 
 export default function Auth() {
   const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [postCode, setPostCode] = useState('');
   const [birthday, setBirthday] = useState('');
@@ -12,20 +14,53 @@ export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) setIsSignedIn(true);
+      if (session) {
+        await checkUserRoleAndRedirect(session.user);
+      }
       setIsLoading(false);
     };
     checkSession();
   }, []);
 
+  const checkUserRoleAndRedirect = async (user) => {
+    try {
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+
+      setUserRole(userData.role);
+      setIsSignedIn(true);
+
+      // Redirect based on role
+      if (userData.role === 'customer') {
+        navigate('/booking');
+      } else {
+        // Admin or other roles stay on current page (will show AdminDashboard)
+      }
+    } catch (err) {
+      console.error('Error checking user role:', err);
+      setError('Error loading user information');
+    }
+  };
+
   const validateForm = () => {
     if (!email || !password) {
       setError('Please enter your email and password');
+      return false;
+    }
+    if (!name) {
+      setError('Please enter your name');
       return false;
     }
     if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
@@ -36,10 +71,21 @@ export default function Auth() {
       setError('Password must be at least 6 characters');
       return false;
     }
-    if (isSignUp && !postCode) {
-      setError('Please enter your post code');
+
+    setError('');
+    return true;
+  };
+
+  const validateSignInForm = () => {
+    if (!email || !password) {
+      setError('Please enter your email and password');
       return false;
     }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return false;
+    }
+
     setError('');
     return true;
   };
@@ -59,6 +105,7 @@ export default function Auth() {
           {
             id: data.user.id,
             email: email,
+            full_name: name,
             post_code: postCode,
             birthday: birthday || null,
             gender: gender || null,
@@ -77,7 +124,7 @@ export default function Auth() {
   };
 
   const handleSignIn = async () => {
-    if (!validateForm()) return;
+    if (!validateSignInForm()) return;
 
     setIsLoading(true);
     try {
@@ -88,6 +135,12 @@ export default function Auth() {
 
       if (signInError) throw signInError;
 
+      // Check if user is confirmed
+      if (!data.user.confirmed_at) {
+        setError('Please check your email to validate your account before signing in.');
+        return;
+      }
+
       const { error: updateError } = await supabase
         .from('users')
         .update({ last_sign_in: new Date().toISOString() })
@@ -95,7 +148,8 @@ export default function Auth() {
 
       if (updateError) throw updateError;
 
-      setIsSignedIn(true);
+      // Check role and redirect
+      await checkUserRoleAndRedirect(data.user);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -103,10 +157,13 @@ export default function Auth() {
     }
   };
 
-  if (isSignedIn) {
+  // Only show AdminDashboard for admin users
+  if (isSignedIn && userRole === 'admin') {
     return <AdminDashboard />;
   }
 
+  // For customers, they will be redirected to /booking
+  // This component will only show the auth form for non-authenticated users
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -127,6 +184,7 @@ export default function Auth() {
         setIsSignUp={setIsSignUp}
         email={email}
         setEmail={setEmail}
+        setName={setName}
         password={password}
         setPassword={setPassword}
         postCode={postCode}

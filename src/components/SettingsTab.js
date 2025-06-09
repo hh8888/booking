@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import ToastMessage from './common/ToastMessage';
 import { supabase } from '../supabaseClient';
 import DatabaseService from '../services/DatabaseService';
 import {
@@ -116,6 +117,7 @@ export default function SettingsTab() {
       value: '30',
       type: 'select',
       options: [
+        { value: '5', label: '5 minutes' },
         { value: '15', label: '15 minutes' },
         { value: '30', label: '30 minutes' },
         { value: '60', label: '1 hour' },
@@ -163,6 +165,13 @@ export default function SettingsTab() {
       value: '',
       type: 'text',
       description: 'Email address for system notifications'
+    },
+    {
+      key: 'locations',
+      label: 'Business Locations',
+      value: 'Cherrybrook,Chatswood,Eastgardens',
+      type: 'text',
+      description: 'Available business locations, separated by commas'
     }
   ]);
 
@@ -231,7 +240,10 @@ export default function SettingsTab() {
             setSystemSettings(prevSettings => {
               return prevSettings.map(setting => {
                 const foundSetting = systemSettingsData.find(item => item.key === setting.key);
-                return foundSetting ? { ...setting, value: foundSetting.value } : setting;
+                if (foundSetting) {
+                  return { ...setting, value: foundSetting.value };
+                }
+                return setting;
               });
             });
           }
@@ -475,17 +487,7 @@ export default function SettingsTab() {
       />
       
       {/* Toast Notification Container */}
-      <ToastContainer
-        position="bottom-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
+      <ToastMessage />
     </div>
   );
 }

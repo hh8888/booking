@@ -1,0 +1,161 @@
+.today-cell {
+  border: 2px solid #f3f021 !important;
+  border-radius: 4px;
+}
+
+.selected-date {
+    border: 2px solid #00d31c !important;
+    border-radius: 4px;
+  }
+
+/* Add hover effect for availability events */
+.availability-hover {
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.availability-hover:hover {
+  opacity: 0.8;
+}
+
+/* Ensure availability events show light green background */
+.fc-event.availability-event {
+  background-color: #d4edda !important;
+  border-color: #28a745 !important;
+  opacity: 0.7;
+}
+
+.fc-bg-event.availability-event {
+  background-color: #d4edda !important;
+  border-color: #28a745 !important;
+  opacity: 0.7;
+  min-height: 20px;
+}
+
+/* For background events specifically */
+.fc-daygrid-bg-harness .availability-event,
+.fc-timegrid-bg-harness .availability-event {
+  background-color: #d4edda !important;
+  border: 1px solid #28a745 !important;
+  opacity: 0.7;
+  min-height: 100%;
+}
+
+/* Ensure background events span full time range in time grid */
+.fc-timegrid-slot-lane .fc-bg-event.availability-event {
+  height: 100% !important;
+  top: 0 !important;
+  bottom: 0 !important;
+}
+
+/* For day grid view */
+.fc-daygrid-day-bg .availability-event {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+/* Resource time grid view (day view) - full width availability events */
+.fc-resource-timegrid .fc-bg-event.availability-event {
+  left: 0 !important;
+  width: 100% !important;
+  right: 0 !important;
+  margin: 0 !important;
+  position: absolute !important;
+  z-index: 1 !important;
+  opacity: 0.7 !important;
+  border: 1px dashed #28a745 !important;
+  background-color: #d4edda !important;
+}
+
+/* Override any positioning classes in resource view */
+.fc-resource-timegrid .fc-bg-event[class*="availability-position-"] {
+  left: 0 !important;
+  width: 100% !important;
+}
+
+/* Regular time grid view (week view) - positioned availability events to prevent overlap */
+.fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-0 {
+  left: 0% !important;
+  width: 50% !important;
+}
+
+.fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-1 {
+  left: 50% !important;
+  width: 50% !important;
+}
+
+.fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-2 {
+  left: 0% !important;
+  width: 33.33% !important;
+}
+
+.fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-3 {
+  left: 33.33% !important;
+  width: 33.33% !important;
+}
+
+.fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-4 {
+  left: 66.66% !important;
+  width: 33.33% !important;
+}
+
+.fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-5,
+.fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-6,
+.fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-7 {
+  width: 25% !important;
+}
+
+.fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-5 {
+  left: 0% !important;
+}
+
+.fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-6 {
+  left: 25% !important;
+}
+
+.fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-7 {
+  left: 50% !important;
+}
+
+/* Ensure background events are positioned correctly for non-resource views */
+.fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-event {
+  position: absolute !important;
+  z-index: 1 !important;
+  opacity: 0.7 !important;
+  border: 1px dashed #28a745 !important;
+}
+
+/* Resource view specific styling */
+.fc-resource-timegrid .fc-bg-event.availability-event {
+  left: 0% !important;
+  width: 100% !important;
+}
+
+/* Text overlay for background availability events */
+.availability-text-overlay {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  color: #065f46;
+  pointer-events: none;
+  z-index: 10;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 8px);
+}
+
+.availability-event {
+  cursor: pointer;
+  pointer-events: auto !important;
+}
+
+.fc-event {
+  pointer-events: auto !important;
+}
+
+.fc-tooltip {
+  pointer-events: none !important;
+}

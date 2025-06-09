@@ -233,27 +233,46 @@ class DatabaseService {
    * @param {string|boolean|number} value - Setting value
    * @returns {Promise<void>}
    */
+  /**
+   * Update or create a setting
+   * @param {string} category - Setting category
+   * @param {string} key - Setting key
+   * @param {string} value - Setting value
+   * @returns {Promise<void>}
+   */
   async updateSettings(category, key, value) {
     try {
-      const { error } = await supabase
+      // Check if setting exists
+      const { data, error: fetchError } = await supabase
         .from('settings')
-        .upsert([
-          {
-            category,
-            key,
-            value: value.toString(),
-            updated_at: new Date().toISOString()
-          }
-        ], { 
-          onConflict: 'category,key' // Explicitly specify unique constraint columns
-        });
-
-      if (error) throw error;
+        .select('*')
+        .eq('category', category)
+        .eq('key', key);
       
-      toast.success('Settings updated successfully');
+      if (fetchError) throw fetchError;
+      
+      if (data && data.length > 0) {
+        // Update existing setting
+        const { error: updateError } = await supabase
+          .from('settings')
+          .update({ value })
+          .eq('category', category)
+          .eq('key', key);
+        
+        if (updateError) throw updateError;
+      } else {
+        // Create new setting
+        const { error: insertError } = await supabase
+          .from('settings')
+          .insert([{ category, key, value }]);
+        
+        if (insertError) throw insertError;
+      }
+      
+      toast.success('Setting updated successfully!');
     } catch (error) {
-      console.error('Error updating settings:', error.message);
-      toast.error(`Failed to update settings: ${error.message}`);
+      console.error(`Error updating setting ${category}.${key}:`, error.message);
+      toast.error(`Error: ${error.message}`);
       throw error;
     }
   }

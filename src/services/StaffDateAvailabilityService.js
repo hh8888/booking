@@ -1,0 +1,171 @@
+import { toast } from 'react-toastify';
+import DatabaseService from './DatabaseService';
+
+class StaffDateAvailabilityService {
+  static instance = null;
+  
+  static getInstance() {
+    if (!StaffDateAvailabilityService.instance) {
+      StaffDateAvailabilityService.instance = new StaffDateAvailabilityService();
+    }
+    return StaffDateAvailabilityService.instance;
+  }
+
+  async getStaffDateAvailability(staffId, startDate, endDate) {
+    console.log('Service: getStaffDateAvailability called with:', { staffId, startDate, endDate });
+    try {
+      const dbService = DatabaseService.getInstance();
+      const availability = await dbService.fetchData(
+        'staff_availability',
+        'date',
+        true,
+        {
+          staff_id: staffId,
+          date: {
+            gte: startDate,
+            lte: endDate
+          }
+        }
+      );
+      console.log('Service: availability data received:', availability);
+      return availability;
+    } catch (error) {
+      console.error('Error fetching staff date availability:', error);
+      toast.error('Failed to fetch staff availability');
+      return [];
+    }
+  }
+
+  async updateStaffDateAvailability(staffId, availabilityData) {
+    try {
+      const dbService = DatabaseService.getInstance();
+      const updates = availabilityData.map(async (schedule) => {
+        // Ensure date is used exactly as is without any conversion
+        const data = {
+          staff_id: staffId,
+          date: schedule.date, // Use the date string directly without conversion
+          start_time: schedule.start_time,
+          end_time: schedule.end_time,
+          is_available: schedule.is_available,
+          location: schedule.location
+        };
+
+        console.log('Saving availability with date:', data.date);
+
+        if (schedule.id) {
+          // Update existing availability
+          await dbService.updateItem('staff_availability', {
+            id: schedule.id,
+            ...data
+          });
+        } else {
+          // Create new availability
+          await dbService.createItem('staff_availability', data);
+        }
+      });
+
+      await Promise.all(updates);
+      toast.success('Staff availability updated successfully');
+      return true;
+    } catch (error) {
+      console.error('Error updating staff date availability:', error);
+      toast.error('Failed to update staff availability');
+      return false;
+    }
+  }
+
+  async isStaffAvailableOnDate(staffId, date, startTime, endTime) {
+    try {
+      const dbService = DatabaseService.getInstance();
+      
+      // Get staff availability for the specific date
+      const availability = await dbService.fetchData(
+        'staff_availability',
+        'date',
+        true,
+        {
+          staff_id: staffId,
+          date: date,
+          is_available: true
+        }
+      );
+
+      // If no availability records found for this date, return false
+      if (!availability || availability.length === 0) {
+        return false;
+      }
+
+      // Check if the requested time slot falls within any available time slots
+      return availability.some(slot => {
+        const [slotStartHour, slotStartMinute] = slot.start_time.split(':');
+        const [slotEndHour, slotEndMinute] = slot.end_time.split(':');
+        const [requestStartHour, requestStartMinute] = startTime.split(':');
+        const [requestEndHour, requestEndMinute] = endTime.split(':');
+
+        const slotStartMinutes = parseInt(slotStartHour) * 60 + parseInt(slotStartMinute);
+        const slotEndMinutes = parseInt(slotEndHour) * 60 + parseInt(slotEndMinute);
+        const requestStartMinutes = parseInt(requestStartHour) * 60 + parseInt(requestStartMinute);
+        const requestEndMinutes = parseInt(requestEndHour) * 60 + parseInt(requestEndMinute);
+
+        return requestStartMinutes >= slotStartMinutes && requestEndMinutes <= slotEndMinutes;
+      });
+    } catch (error) {
+      console.error('Error checking staff date availability:', error);
+      return false;
+    }
+  }
+
+  async getAvailableStaffForDateTimeSlot(date, startTime, endTime) {
+    try {
+      const dbService = DatabaseService.getInstance();
+
+      // Get all staff members with their availability for the specific date
+      const availability = await dbService.fetchData(
+        'staff_availability',
+        'date',
+        true,
+        {
+          date: date,
+          is_available: true
+        }
+      );
+
+      // Filter staff members who are available during the requested time slot
+      const availableStaffIds = availability
+        .filter(slot => {
+          const [slotStartHour, slotStartMinute] = slot.start_time.split(':');
+          const [slotEndHour, slotEndMinute] = slot.end_time.split(':');
+          const [requestStartHour, requestStartMinute] = startTime.split(':');
+          const [requestEndHour, requestEndMinute] = endTime.split(':');
+
+          const slotStartMinutes = parseInt(slotStartHour) * 60 + parseInt(slotStartMinute);
+          const slotEndMinutes = parseInt(slotEndHour) * 60 + parseInt(slotEndMinute);
+          const requestStartMinutes = parseInt(requestStartHour) * 60 + parseInt(requestStartMinute);
+          const requestEndMinutes = parseInt(requestEndHour) * 60 + parseInt(requestEndMinute);
+
+          return requestStartMinutes >= slotStartMinutes && requestEndMinutes <= slotEndMinutes;
+        })
+        .map(slot => slot.staff_id);
+
+      // Get staff details for available staff members
+      if (availableStaffIds.length > 0) {
+        return await dbService.fetchData(
+          'users',
+          'created_at',
+          false,
+          {
+            id: { in: availableStaffIds },
+            role: { in: ['staff', 'admin'] }
+          }
+        );
+      }
+
+      return [];
+    } catch (error) {
+      console.error('Error getting available staff:', error);
+      return [];
+    }
+  }
+}
+
+export default StaffDateAvailabilityService;

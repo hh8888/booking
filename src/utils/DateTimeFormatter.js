@@ -40,50 +40,64 @@ class DateTimeFormatter {
   }
 
   formatDateTime(dateTimeString) {
-    const date = new Date(dateTimeString);
-    if (isNaN(date.getTime())) return 'Invalid Date';
+    // Convert GMT time to local time for display
+    const localDate = new Date(dateTimeString);
+    if (isNaN(localDate.getTime())) return 'Invalid Date';
     
     let timeStr = '';
     if (this.timeFormat === '12') {
-      const hours = date.getHours();
-      const minutes = date.getMinutes();
+      const hours = localDate.getHours();
+      const minutes = localDate.getMinutes();
       const period = hours >= 12 ? 'PM' : 'AM';
       const hours12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
       timeStr = `${hours12.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period}`;
     } else {
-      timeStr = date.toLocaleTimeString('en-US', { 
+      timeStr = localDate.toLocaleTimeString('en-US', { 
         hour12: false,
         hour: '2-digit',
         minute: '2-digit'
       });
     }
 
-    let result = date.toLocaleDateString();
+    let result = localDate.toLocaleDateString();
     
     result += ` ${timeStr}`;
 
     if (this.showWeekday) {
       const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat'];
-      result += ` ${weekdays[date.getDay()]}`;
+      result += ` ${weekdays[localDate.getDay()]}`;
     }
 
     return result;
   }
 
-  convertGMTStringToLocalString(value){//value is always GMT time
-    var gmtDate = new Date(value);
-    // var localTimeZoneOffset = new Date(Date.now()).getTimezoneOffset();//take in account for daylight saving
-    var localTimeZoneOffset = new Date('2025/7/1').getTimezoneOffset();//NOT take in account for daylight saving
-    gmtDate.setMinutes(gmtDate.getMinutes() - localTimeZoneOffset); //adjust to local time
-    return gmtDate.toLocaleString();
+  formatDate(dateString) {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    return date.toLocaleDateString();
   }
 
-  convertLocalStringToGMTString(value){//value is always GMT time
-    var gmtDate = new Date(value);
-    var localTimeZoneOffset = new Date(Date.now()).getTimezoneOffset();//take in account for daylight saving
-    gmtDate.setMinutes(gmtDate.getMinutes() + localTimeZoneOffset); //adjust to local time
-    return gmtDate.toISOString();
-  }
+  // convertGMTStringToLocalString(value){//value is always GMT time
+  //   var gmtDate = new Date(value);
+  //   // var localTimeZoneOffset = new Date(Date.now()).getTimezoneOffset();//take in account for daylight saving
+  //   var localTimeZoneOffset = new Date('2025/7/1').getTimezoneOffset();//NOT take in account for daylight saving
+  //   gmtDate.setMinutes(gmtDate.getMinutes() - localTimeZoneOffset); //adjust to local time
+  //   return gmtDate.toLocaleString();
+  // }
+
+  // convertLocalStringToGMTString(value){//value is always GMT time
+  //   var gmtDate = new Date(value);
+  //   var localTimeZoneOffset = new Date(Date.now()).getTimezoneOffset();//take in account for daylight saving
+  //   gmtDate.setMinutes(gmtDate.getMinutes() + localTimeZoneOffset); //adjust to local time
+  //   return gmtDate.toISOString();
+  // }
+
+  to12HourFormat = (hour24) => {
+    const hour = parseInt(hour24);
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return `${hour12} ${period}`; // Remove padStart as hour value doesn't need zero padding
+  };
 }
 
 export default DateTimeFormatter;

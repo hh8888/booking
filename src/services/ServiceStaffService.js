@@ -3,22 +3,22 @@ import { toast } from 'react-toastify';
 import DatabaseService from './DatabaseService';
 
 /**
- * ServiceStaffService - 处理服务与员工之间多对多关系的服务类
+ * ServiceStaffService - Service class handling many-to-many relationships between services and staff
  */
 class ServiceStaffService {
-  // 私有静态实例变量
+  // Private static instance variable
   static instance = null;
 
-  // 私有构造函数，防止外部直接创建实例
+  // Private constructor to prevent direct instance creation
   constructor() {
     if (ServiceStaffService.instance) {
-      throw new Error('ServiceStaffService已经存在，请使用getInstance()方法获取实例');
+      throw new Error('ServiceStaffService already exists, please use getInstance() method to get the instance');
     }
   }
 
   /**
-   * 获取ServiceStaffService的单例实例
-   * @returns {ServiceStaffService} 单例实例
+   * Get the singleton instance of ServiceStaffService
+   * @returns {ServiceStaffService} Singleton instance
    */
   static getInstance() {
     if (!ServiceStaffService.instance) {
@@ -28,28 +28,28 @@ class ServiceStaffService {
   }
 
   /**
-   * 为服务分配多个员工
-   * @param {string} serviceId - 服务ID
-   * @param {Array<string>} staffIds - 员工ID数组
+   * Assign multiple staff to a service
+   * @param {string} serviceId - Service ID
+   * @param {Array<string>} staffIds - Array of staff IDs
    * @returns {Promise<void>}
    */
   async assignStaffToService(serviceId, staffIds) {
     try {
-      // 首先删除该服务的所有现有员工分配
+      // First delete all existing staff assignments for this service
       await this.removeAllStaffFromService(serviceId);
 
-      // 如果没有员工需要分配，则直接返回
+      // If no staff needs to be assigned, return directly
       if (!staffIds || staffIds.length === 0) {
         return;
       }
 
-      // 准备插入数据
+      // Prepare data for insertion
       const assignments = staffIds.map(staffId => ({
         service_id: serviceId,
         staff_id: staffId
       }));
 
-      // 插入新的员工分配
+      // Insert new staff assignments
       const { error } = await supabase
         .from('service_staff')
         .insert(assignments);
@@ -63,8 +63,8 @@ class ServiceStaffService {
   }
 
   /**
-   * 移除服务的所有员工分配
-   * @param {string} serviceId - 服务ID
+   * Remove all staff assignments for a service
+   * @param {string} serviceId - Service ID
    * @returns {Promise<void>}
    */
   async removeAllStaffFromService(serviceId) {
@@ -82,9 +82,9 @@ class ServiceStaffService {
   }
 
   /**
-   * 获取服务的所有分配员工
-   * @param {string} serviceId - 服务ID
-   * @returns {Promise<Array>} 员工ID数组
+   * Get all assigned staff for a service
+   * @param {string} serviceId - Service ID
+   * @returns {Promise<Array>} Array of staff IDs
    */
   async getServiceStaff(serviceId) {
     try {
@@ -102,9 +102,9 @@ class ServiceStaffService {
   }
 
   /**
-   * 获取员工分配的所有服务
-   * @param {string} staffId - 员工ID
-   * @returns {Promise<Array>} 服务ID数组
+   * Get all services assigned to a staff member
+   * @param {string} staffId - Staff ID
+   * @returns {Promise<Array>} Array of service IDs
    */
   async getStaffServices(staffId) {
     try {
@@ -122,12 +122,12 @@ class ServiceStaffService {
   }
 
   /**
-   * 获取所有服务及其分配的员工
-   * @returns {Promise<Array>} 服务及其员工数据
+   * Get all services and their assigned staff
+   * @returns {Promise<Array>} Services and their staff data
    */
   async getAllServicesWithStaff() {
     try {
-      // 获取所有服务
+      // Get all services
       const dbService = DatabaseService.getInstance();
       const services = await dbService.fetchData('services');
       
@@ -138,7 +138,7 @@ class ServiceStaffService {
       
       if (error) throw error;
       
-      // 为每个服务添加员工ID数组
+      // Add staff ID array for each service
       return services.map(service => {
         const staffAssignments = serviceStaffData.filter(item => item.service_id === service.id);
         return {

@@ -3,11 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@fullcalendar/core": "^6.1.15",
-    "@fullcalendar/daygrid": "^6.1.15",
-    "@fullcalendar/interaction": "^6.1.15",
-    "@fullcalendar/react": "^6.1.15",
-    "@fullcalendar/timegrid": "^6.1.15",
+    "@fullcalendar/core": "^6.1.17",
+    "@fullcalendar/daygrid": "^6.1.17",
+    "@fullcalendar/interaction": "^6.1.17",
+    "@fullcalendar/react": "^6.1.17",
+    "@fullcalendar/resource-daygrid": "^6.1.17",
+    "@fullcalendar/resource-timegrid": "^6.1.17",
+    "@fullcalendar/resource-timeline": "^6.1.17",
+    "@fullcalendar/timegrid": "^6.1.17",
     "@heroicons/react": "^2.2.0",
     "@stripe/stripe-js": "^5.7.0",
     "@supabase/supabase-js": "^2.49.1",
@@ -54,6 +57,7 @@
     "autoprefixer": "^10.4.20",
     "eslint-plugin-react": "^7.37.4",
     "postcss": "^8.5.3",
+    "supabase": "^2.24.3",
     "tailwindcss": "^3.4.17"
   }
 }

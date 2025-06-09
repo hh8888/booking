@@ -1,0 +1,70 @@
+table_name,column_name,data_type,is_nullable
+staff_availability,location,smallint,YES
+payments,updated_at,timestamp with time zone,YES
+service_staff,id,uuid,NO
+service_staff,service_id,uuid,NO
+service_staff,staff_id,uuid,NO
+service_staff,created_at,timestamp with time zone,YES
+settings,id,uuid,NO
+settings,created_at,timestamp with time zone,YES
+settings,updated_at,timestamp with time zone,YES
+staff_availability,id,uuid,NO
+staff_availability,staff_id,uuid,YES
+staff_availability,day_of_week,smallint,YES
+staff_availability,start_time,time without time zone,NO
+staff_availability,end_time,time without time zone,NO
+staff_availability,is_available,boolean,YES
+staff_availability,created_at,timestamp with time zone,NO
+staff_availability,updated_at,timestamp with time zone,NO
+staff_availability,date,date,YES
+users,id,uuid,NO
+users,created_at,timestamp with time zone,YES
+users,last_sign_in,timestamp with time zone,YES
+users,birthday,date,YES
+services,id,uuid,NO
+services,duration,interval,NO
+services,price,numeric,NO
+services,staff_id,uuid,YES
+services,created_at,timestamp with time zone,YES
+services,updated_at,timestamp with time zone,YES
+availability,id,uuid,NO
+availability,provider_id,uuid,YES
+availability,start_time,timestamp with time zone,NO
+availability,end_time,timestamp with time zone,NO
+availability,is_available,boolean,YES
+availability,created_at,timestamp with time zone,YES
+availability,updated_at,timestamp with time zone,YES
+bookings,id,uuid,NO
+bookings,customer_id,uuid,YES
+bookings,service_id,uuid,YES
+bookings,provider_id,uuid,YES
+bookings,start_time,timestamp with time zone,NO
+bookings,end_time,timestamp with time zone,NO
+bookings,created_at,timestamp with time zone,YES
+bookings,updated_at,timestamp with time zone,YES
+bookings,recurring_parent_id,uuid,YES
+bookings,recurring_count,integer,YES
+bookings,location,smallint,YES
+location,id,smallint,NO
+payments,id,uuid,NO
+payments,booking_id,uuid,YES
+payments,amount,numeric,NO
+payments,created_at,timestamp with time zone,YES
+users,email,text,NO
+users,full_name,text,YES
+users,phone_number,text,YES
+users,role,text,YES
+payments,transaction_id,text,YES
+location,name,character varying,YES
+users,post_code,text,YES
+bookings,status,text,YES
+users,gender,text,YES
+settings,value,text,YES
+services,name,text,NO
+services,description,text,YES
+settings,category,character varying,NO
+bookings,notes,text,YES
+settings,key,character varying,NO
+bookings,recurring_type,character varying,YES
+payments,payment_method,text,NO
+payments,status,text,YES

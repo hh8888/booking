@@ -45,14 +45,26 @@ class BookingService {
       
       const durationInMinutes = this.calculateDuration(booking, service);
       
+      // Convert GMT times to local time for display
+      // const localStartTime = this.formatter.convertGMTStringToLocalString(booking.start_time);
+      // const localCreatedAt = this.formatter.convertGMTStringToLocalString(booking.created_at);
+      const localStartTime = booking.start_time;
+      const localCreatedAt = booking.created_at;
+      
+      // Extract date and time components from start_time
+      const startDate = new Date(booking.start_time);
+      
       return {
         ...booking,
         service_name: service?.name || '',
         customer_name: customer?.full_name || '',
-        booking_time_formatted: booking.start_time,
-        created_at_formatted: booking.created_at,
+        booking_time_formatted: localStartTime,
+        created_at_formatted: localCreatedAt,
         duration: durationInMinutes,
         start_time: booking.start_time,
+        start_date: startDate.toLocaleDateString('en-CA'),
+        start_time_hour: startDate.getHours().toString().padStart(2, '0'),
+        start_time_minute: startDate.getMinutes().toString().padStart(2, '0'),
         recurring_type: booking.recurring_type,
         recurring_count: booking.recurring_count || 0
       };
@@ -141,11 +153,13 @@ class BookingService {
   }
 
   async createBooking(bookingData) {
+    console.log('Creating:',bookingData.start_time);
     await this.validateBookingTime(bookingData.start_time);
     return await this.dbService.createItem('bookings', bookingData, 'Booking');
   }
 
   async updateBooking(bookingData) {
+    console.log('Updating:',bookingData.start_time);
     await this.validateBookingTime(bookingData.start_time);
     await this.dbService.updateItem('bookings', bookingData, 'Booking');
   }
