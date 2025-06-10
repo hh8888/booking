@@ -11,6 +11,7 @@ export default function Auth() {
   const [postCode, setPostCode] = useState('');
   const [birthday, setBirthday] = useState('');
   const [gender, setGender] = useState('');
+  const [mobile, setMobile] = useState(''); // Add mobile state
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
@@ -63,6 +64,10 @@ export default function Auth() {
       setError('Please enter your name');
       return false;
     }
+    if (!mobile) {
+      setError('Please enter your mobile number');
+      return false;
+    }
     if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
       setError('Please enter a valid email address');
       return false;
@@ -109,6 +114,7 @@ export default function Auth() {
             post_code: postCode,
             birthday: birthday || null,
             gender: gender || null,
+            mobile: mobile || null, // Add mobile to database insert
             role: 'customer',
           },
         ]);
@@ -184,6 +190,7 @@ export default function Auth() {
         setIsSignUp={setIsSignUp}
         email={email}
         setEmail={setEmail}
+        name={name}
         setName={setName}
         password={password}
         setPassword={setPassword}
@@ -193,6 +200,8 @@ export default function Auth() {
         setBirthday={setBirthday}
         gender={gender}
         setGender={setGender}
+        mobile={mobile} // Add mobile prop
+        setMobile={setMobile} // Add setMobile prop
         onSignIn={handleSignIn}
         onSignUp={handleSignUp}
         isLoading={isLoading}

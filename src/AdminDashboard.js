@@ -7,6 +7,7 @@ import ServicesTab from './components/service/ServicesTab';
 import BookingsTab from './components/booking/BookingsTab';
 import ReportsTab from './components/reports/ReportsTab';
 import SettingsTab from './components/SettingsTab';
+import LocationSelector from './components/common/LocationSelector';
 import DatabaseService from './services/DatabaseService';
 import LocationService from './services/LocationService';
 
@@ -17,9 +18,6 @@ export default function AdminDashboard() {
   const [businessName, setBusinessName] = useState('Booking Management System');
   const [userEmail, setUserEmail] = useState('');
   const [userRole, setUserRole] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState('');
-  const [selectedLocationIndex, setSelectedLocationIndex] = useState(null); // Changed to null initially
-  const [locations, setLocations] = useState([]);
   
   // State for storing network error messages
   const [networkError, setNetworkError] = useState(null);
@@ -28,61 +26,7 @@ export default function AdminDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Fetch locations from the location table
   useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        const locationService = LocationService.getInstance();
-        const dbService = DatabaseService.getInstance();
-        
-        // Initialize LocationService with database service
-        await locationService.initializeLocations(dbService);
-        
-        // Get locations from LocationService
-        const data = locationService.getLocations();
-        
-        if (data && data.length > 0) {
-          setLocations(data);
-          
-          // Check URL for location parameter
-          const searchParams = new URLSearchParams(location.search);
-          const locationParam = searchParams.get('location');
-          
-          // Find location by name from URL parameter
-          if (locationParam) {
-            const locationMatch = data.find(loc => loc.name === locationParam);
-            if (locationMatch) {
-              setSelectedLocation(locationMatch.name);
-              setSelectedLocationIndex(locationMatch.id);
-              locationService.setSelectedLocation(locationMatch);
-            } else {
-              // If location from URL not found, use first location
-              setSelectedLocation(data[0].name);
-              setSelectedLocationIndex(data[0].id);
-              locationService.setSelectedLocation(data[0]);
-              
-              // Update URL with default location
-              const newSearchParams = new URLSearchParams(location.search);
-              newSearchParams.set('location', data[0].name);
-              navigate({ search: newSearchParams.toString() }, { replace: true });
-            }
-          } else {
-            // No location in URL, use first location
-            setSelectedLocation(data[0].name);
-            setSelectedLocationIndex(data[0].id);
-            locationService.setSelectedLocation(data[0]);
-            
-            // Update URL with default location
-            const newSearchParams = new URLSearchParams(location.search);
-            newSearchParams.set('location', data[0].name);
-            navigate({ search: newSearchParams.toString() }, { replace: true });
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching locations:', error);
-      }
-    };
-
     const fetchBusinessInfo = async () => {
       try {
         const dbService = DatabaseService.getInstance();
@@ -96,8 +40,8 @@ export default function AdminDashboard() {
       }
     };
 
-    fetchLocations();
     fetchBusinessInfo();
+    
     const fetchUserInfo = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -113,6 +57,7 @@ export default function AdminDashboard() {
       }
     };
     fetchUserInfo();
+    
     const fetchUsers = async () => {
       try {
         const { data, error } = await supabase
@@ -167,26 +112,6 @@ export default function AdminDashboard() {
     fetchUsers();
   };
 
-  // Handle location change
-  const handleLocationChange = (value) => {
-    const locationId = parseInt(value);
-    const locationObj = locations.find(loc => loc.id === locationId);
-    
-    if (locationObj) {
-      setSelectedLocation(locationObj.name);
-      setSelectedLocationIndex(locationId);
-      
-      // Update LocationService with the new selection
-      const locationService = LocationService.getInstance();
-      locationService.setSelectedLocation(locationObj);
-      
-      // Update URL with new location
-      const searchParams = new URLSearchParams(location.search);
-      searchParams.set('location', locationObj.name);
-      navigate({ search: searchParams.toString() }, { replace: true });
-    }
-  };
-
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) alert(error.message);
@@ -198,23 +123,7 @@ export default function AdminDashboard() {
       <div className="flex justify-between items-center mb-4 md:mb-6">
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-gray-800">{businessName}</h1>
-          <div className="mt-2">
-            <label htmlFor="location-select" className="text-sm font-medium text-gray-700 mr-2">
-              Location:
-            </label>
-            <select
-              id="location-select"
-              value={selectedLocationIndex || ''} // Handle null case
-              onChange={(e) => handleLocationChange(e.target.value)}
-              className="text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            >
-              {locations.map((location) => (
-                <option key={location.id} value={location.id}>
-                  {location.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <LocationSelector />
         </div>
         <div className="flex items-center space-x-4">
           <div className="text-right">
@@ -291,11 +200,11 @@ export default function AdminDashboard() {
           </div>
         ) : (
           <>
-            {activeTab === 'dashboard' && <DashboardTab selectedLocation={selectedLocation} />}
-            {activeTab === 'bookings' && <BookingsTab users={users} selectedLocation={selectedLocation} />}
-            {activeTab === 'users' && <UsersTab users={users} setUsers={setUsers} selectedLocation={selectedLocationIndex} />}
-            {activeTab === 'Services' && <ServicesTab users={users} selectedLocation={selectedLocation} />}
-            {activeTab === 'reports' && <ReportsTab selectedLocation={selectedLocation} />}
+            {activeTab === 'dashboard' && <DashboardTab />}
+            {activeTab === 'bookings' && <BookingsTab users={users} />}
+            {activeTab === 'users' && <UsersTab users={users} setUsers={setUsers} />}
+            {activeTab === 'Services' && <ServicesTab users={users} />}
+            {activeTab === 'reports' && <ReportsTab />}
             {activeTab === 'settings' && <SettingsTab />}
           </>
         )}

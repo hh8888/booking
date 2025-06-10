@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../../hooks/useUser';
+import { useNavigate } from 'react-router-dom'; // Add this import
 import DatabaseService from '../../services/DatabaseService';
 import BookingService from '../../services/BookingService';
 import { toast } from 'react-toastify';
 import CustomerProfile from './CustomerProfile';
 import CustomerBookingsList from './CustomerBookingsList';
 import CustomerBooking from './CustomerBooking';
-import ToastMessage from '../common/ToastMessage'; // Add this import
+import ToastMessage from '../common/ToastMessage';
+import LocationSelector from '../common/LocationSelector';
+import { supabase } from '../../supabaseClient'; // Add this import
 
 const CustomerDashboard = () => {
   const { user } = useUser();
+  const navigate = useNavigate(); // Add this hook
   const [customerData, setCustomerData] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -101,7 +105,8 @@ const CustomerDashboard = () => {
           const processedBookings = bookingService.processBookingsData(
             customerBookings, 
             servicesData, 
-            [customerData]
+            [customerData],
+            staffData
           );
           
           setBookings(processedBookings);
@@ -123,13 +128,15 @@ const CustomerDashboard = () => {
         const customerBookings = await dbService.fetchData('bookings', 'start_time', false, {
           customer_id: customerData.id
         });
-        const [servicesData] = await Promise.all([
-          dbService.fetchData('services', 'name')
+        const [servicesData, staffData] = await Promise.all([
+          dbService.fetchData('services', 'name'),
+          dbService.fetchData('users', 'full_name', false, { role: 'staff' })
         ]);
         const processedBookings = bookingService.processBookingsData(
           customerBookings, 
           servicesData, 
-          [customerData]
+          [customerData],
+          staffData
         );
         setBookings(processedBookings);
       } catch (error) {
@@ -220,6 +227,16 @@ const CustomerDashboard = () => {
     setEditingBooking(null);
   };
 
+  // Add logout function
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error('Error signing out: ' + error.message);
+    } else {
+      navigate('/'); // Navigate to home page instead of reloading
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -241,8 +258,21 @@ const CustomerDashboard = () => {
       <div className="max-w-6xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back, {customerData.full_name}!</h1>
-          <p className="text-gray-600">Manage your appointments and book new services</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back, {customerData.full_name}!</h1>
+              <p className="text-gray-600">Manage your appointments and book new services</p>
+            </div>
+            <div className="mt-4 sm:mt-0 flex items-center space-x-4">
+              <LocationSelector />
+              <button
+                onClick={handleSignOut}
+                className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition duration-200 text-sm"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

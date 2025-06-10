@@ -38,10 +38,11 @@ class BookingService {
     return this.processBookingsData(data, serviceData, customerData);
   }
 
-  processBookingsData(bookings, servicesData, customersData) {
+  processBookingsData(bookings, servicesData, customersData, staffData = []) {
     return bookings.map(booking => {
       const service = servicesData.find(s => s.id === booking.service_id);
       const customer = customersData.find(c => c.id === booking.customer_id);
+      const provider = staffData.find(s => s.id === booking.provider_id);
       
       const durationInMinutes = this.calculateDuration(booking, service);
       
@@ -58,6 +59,7 @@ class BookingService {
         ...booking,
         service_name: service?.name || '',
         customer_name: customer?.full_name || '',
+        provider_name: provider?.full_name || '',
         booking_time_formatted: localStartTime,
         created_at_formatted: localCreatedAt,
         duration: durationInMinutes,

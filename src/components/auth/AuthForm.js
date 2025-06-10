@@ -17,6 +17,8 @@ export default function AuthForm({
   setBirthday,
   gender,
   setGender,
+  mobile, // Add mobile prop
+  setMobile, // Add setMobile prop
   onSignIn,
   onSignUp,
   isLoading
@@ -61,6 +63,8 @@ export default function AuthForm({
           setBirthday={setBirthday}
           gender={gender}
           setGender={setGender}
+          mobile={mobile} // Add mobile prop
+          setMobile={setMobile} // Add setMobile prop
           isLoading={isLoading}
         />
       ) : (

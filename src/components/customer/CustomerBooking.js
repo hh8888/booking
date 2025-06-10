@@ -32,10 +32,7 @@ const CustomerBooking = ({ customerData, editingBooking, onSave, onCancel }) => 
           </div>
           
           <EditBookingPopup
-            editItem={editingBooking || {
-              customer_id: customerData?.id,
-              status: 'pending'
-            }}
+            booking={editingBooking} // Change from editItem to booking
             onSave={wrappedOnSave}
             onCancel={onCancel}
             isCreating={!editingBooking}

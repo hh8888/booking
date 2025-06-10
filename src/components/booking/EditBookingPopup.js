@@ -5,6 +5,7 @@ import DatabaseService from '../../services/DatabaseService';
 import DateTimeFormatter from '../../utils/DateTimeFormatter';
 import BookingService from '../../services/BookingService';
 import StaffAvailabilityService from '../../services/StaffAvailabilityService';
+import LocationService from '../../services/LocationService';
 import TimeSlots from './TimeSlots';
 
 
@@ -307,11 +308,16 @@ export default function EditBookingPopup({
         
         console.log('Setting default time:', { defaultHour, defaultMinute }); // Debug log
         
+        // Get current location from LocationService
+        const locationService = LocationService.getInstance();
+        const currentLocation = locationService.getSelectedLocation();
+        
         const defaultBooking = {
           start_date: defaultDate.toLocaleDateString('en-CA'),
           start_time_hour: defaultHour,
           start_time_minute: defaultMinute,
           provider_id: defaultProviderId || '',
+          location: currentLocation?.id || null,
           status: 'pending'
         };
         
@@ -378,11 +384,16 @@ export default function EditBookingPopup({
       
       console.log('Setting default time (no booking):', { defaultHour, defaultMinute }); // Debug log
       
+      // Get current location from LocationService
+      const locationService = LocationService.getInstance();
+      const currentLocation = locationService.getSelectedLocation();
+      
       const defaultBooking = {
         start_date: defaultDate.toLocaleDateString('en-CA'),
         start_time_hour: defaultHour,
         start_time_minute: defaultMinute,
         provider_id: defaultProviderId || '',
+        location: currentLocation?.id || null,
         status: 'pending'
       };
       
@@ -721,6 +732,33 @@ export default function EditBookingPopup({
                 }));
               }
             },
+            {
+              key: "location",
+              label: "Location",
+              type: "select",
+              options: (() => {
+                const locationService = LocationService.getInstance();
+                const locations = locationService.getLocations();
+                return locations.map(location => ({
+                  value: location.id,
+                  label: location.name
+                }));
+              })(),
+              required: true,
+              placeholder: "Select a Location",
+              hidden: isCreating, // Hide when creating new bookings
+              defaultValue: (() => {
+                const locationService = LocationService.getInstance();
+                const currentLocation = locationService.getSelectedLocation();
+                return currentLocation?.id || null;
+              })(),
+              onChange: (value) => {
+                setEditItem(prev => ({
+                  ...prev,
+                  location: parseInt(value)
+                }));
+              }
+            },
             { 
               key: "provider_id", 
               label: "Provider", 
@@ -789,7 +827,7 @@ export default function EditBookingPopup({
                 value: service.id,
                 label: service.name
               })),
-              required: false,
+              required: isCreating,
               placeholder: "Select a Service",
               onChange: (value) => {
                 if (value) {

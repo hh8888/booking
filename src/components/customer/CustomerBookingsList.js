@@ -1,8 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DateTimeFormatter from '../../utils/DateTimeFormatter';
+import LocationService from '../../services/LocationService';
 
 const CustomerBookingsList = ({ bookings, onNewBooking, onEditBooking, onCancelBooking }) => {
   const [showPastBookings, setShowPastBookings] = useState(false);
+  const [locations, setLocations] = useState([]);
+  
+  // Fetch locations for display
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const locationService = LocationService.getInstance();
+        const locationData = locationService.getLocations();
+        setLocations(locationData);
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+      }
+    };
+    
+    fetchLocations();
+  }, []);
+  
+  // Helper function to get location name by ID
+  const getLocationName = (locationId) => {
+    if (!locationId || !locations.length) return 'Location TBD';
+    const location = locations.find(loc => loc.id === locationId);
+    return location ? location.name : 'Location TBD';
+  };
   
   const getStatusColor = (status) => {
     switch (status) {
@@ -14,21 +38,43 @@ const CustomerBookingsList = ({ bookings, onNewBooking, onEditBooking, onCancelB
     }
   };
 
-  // Separate bookings into upcoming and past
+  // Helper function to check if a date is today
+  const isToday = (date) => {
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+  };
+
+  // Helper function to sort bookings by time
+  const sortBookingsByTime = (bookings) => {
+    return bookings.sort((a, b) => {
+      const timeA = parseInt(a.start_time_hour) * 60 + parseInt(a.start_time_minute);
+      const timeB = parseInt(b.start_time_hour) * 60 + parseInt(b.start_time_minute);
+      return timeA - timeB;
+    });
+  };
+
+  // Separate bookings into today, upcoming, and past
   const now = new Date();
+  const todayBookings = sortBookingsByTime(
+    bookings.filter(booking => {
+      const bookingDate = new Date(booking.start_date);
+      return isToday(bookingDate);
+    })
+  );
+  
   const upcomingBookings = bookings.filter(booking => {
     const bookingDate = new Date(booking.start_date);
-    return bookingDate > now;
+    return bookingDate > now && !isToday(bookingDate);
   });
   
   const pastBookings = bookings.filter(booking => {
     const bookingDate = new Date(booking.start_date);
-    return bookingDate <= now;
+    return bookingDate < now && !isToday(bookingDate);
   });
 
   const renderBooking = (booking) => {
     const bookingDate = new Date(booking.start_date);
-    const isUpcoming = bookingDate > now;
+    const isUpcoming = bookingDate > now || isToday(bookingDate);
     
     return (
       <div key={booking.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition duration-200">
@@ -77,11 +123,19 @@ const CustomerBookingsList = ({ bookings, onNewBooking, onEditBooking, onCancelB
                 </svg>
                 <span>{booking.duration} minutes</span>
               </div>
+              
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-label="location-icon">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>Location: {getLocationName(booking.location)}</span>
+              </div>
             </div>
           </div>
           
-          <div className="flex gap-2 ml-4">
-            {isUpcoming && booking.status === 'pending' && (
+          <div className="flex gap-2 ml-4 w-20 justify-end">
+            {isUpcoming && booking.status === 'pending' ? (
               <>
                 <button 
                   onClick={() => onEditBooking(booking)}
@@ -97,6 +151,28 @@ const CustomerBookingsList = ({ bookings, onNewBooking, onEditBooking, onCancelB
                   onClick={() => onCancelBooking(booking.id)}
                   className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition duration-200"
                   title="Cancel booking"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </>
+            ) : (
+              <>
+                <button 
+                  disabled
+                  className="text-gray-300 p-2 rounded-lg cursor-not-allowed"
+                  title="Edit not available"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                
+                <button 
+                  disabled
+                  className="text-gray-300 p-2 rounded-lg cursor-not-allowed"
+                  title="Cancel not available"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -141,6 +217,16 @@ const CustomerBookingsList = ({ bookings, onNewBooking, onEditBooking, onCancelB
         </div>
       ) : (
         <div className="space-y-6">
+          {/* Today's Bookings - Sorted by time */}
+          {todayBookings.length > 0 && (
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Today</h3>
+              <div className="space-y-4">
+                {todayBookings.map(renderBooking)}
+              </div>
+            </div>
+          )}
+          
           {/* Upcoming Bookings */}
           {upcomingBookings.length > 0 && (
             <div>
