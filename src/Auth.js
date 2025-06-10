@@ -11,7 +11,7 @@ export default function Auth() {
   const [postCode, setPostCode] = useState('');
   const [birthday, setBirthday] = useState('');
   const [gender, setGender] = useState('');
-  const [mobile, setMobile] = useState(''); // Add mobile state
+  const [mobile, setMobile] = useState(''); // Keep state name as mobile for consistency
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
@@ -114,7 +114,7 @@ export default function Auth() {
             post_code: postCode,
             birthday: birthday || null,
             gender: gender || null,
-            mobile: mobile || null, // Add mobile to database insert
+            phone_number: mobile || null, // Changed from 'mobile' to 'phone_number'
             role: 'customer',
           },
         ]);
