@@ -77,7 +77,11 @@ function UsersTab({ users, setUsers, handleError, selectedLocation }) {
   if (error) return <div>Error: {error}</div>;
 
   const filteredUsers = users
-    .filter(user => roleFilter === 'all' || user.role === roleFilter)
+    .filter(user => {
+      if (roleFilter === 'all') return true;
+      if (roleFilter === 'staff_admin') return user.role === 'staff' || user.role === 'admin';
+      return user.role === roleFilter;
+    })
     .filter(user => {
       const searchTerm = searchFilter.toLowerCase();
       return searchTerm === '' ||
@@ -101,6 +105,7 @@ function UsersTab({ users, setUsers, handleError, selectedLocation }) {
           <option value="customer">Customer</option>
           <option value="staff">Staff</option>
           <option value="admin">Admin</option>
+          <option value="staff_admin">Staff & Admin</option>
         </select>
 
         <FilterBox
