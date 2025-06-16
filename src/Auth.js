@@ -74,8 +74,10 @@ export default function Auth() {
       console.log('Auth.js useEffect - Pathname:', window.location.pathname);
       console.log('Auth.js useEffect - Hash:', window.location.hash);
 
-      // IMPORTANT: Check if the current path is /reset-password
-      if (window.location.pathname === '/reset-password' || window.location.hash === '#/reset-password') {
+      // UPDATED CHECK:
+      const isResetPasswordPath = window.location.hash.startsWith('#/reset-password');
+
+      if (isResetPasswordPath) {
         console.log('Auth.js: On reset-password path, skipping initial session redirect logic.');
         setIsLoading(false);
         return; 
