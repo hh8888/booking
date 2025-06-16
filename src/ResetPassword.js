@@ -19,16 +19,20 @@ function ResetPassword() {
         const paramsStr = hash.includes('#', 1) ? hash.substring(hash.indexOf('#', 1) + 1) : hash.substring(1);
         const params = new URLSearchParams(paramsStr);
         const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token'); // Supabase recovery URL includes this
+        const refreshToken = params.get('refresh_token');
         const type = params.get('type');
         const errorDescription = params.get('error_description');
+        const error = params.get('error');
 
         console.log('Parsed from URL -> AccessToken:', !!accessToken, 'RefreshToken:', !!refreshToken, 'Type:', type, 'ErrorDescription:', errorDescription);
 
-        if (errorDescription) {
+        // Handle expired or invalid link errors
+        if (error === 'access_denied' || errorDescription) {
             console.error('Error from URL:', errorDescription);
-            setError(`Error: ${errorDescription}`);
+            setError(`Error: ${errorDescription || 'Invalid or expired recovery link'}`);
             setIsRecoveryReady(false);
+            // Redirect to /auth after showing the error
+            setTimeout(() => navigate('/auth'), 5000);
             return;
         }
 
@@ -157,6 +161,7 @@ function ResetPassword() {
             <div className="container">
                 <h2>Reset Password</h2>
                 <p className="message">{message}</p>
+                <p><a href="/">Go to Home</a></p>
             </div>
         );
     }
@@ -166,7 +171,9 @@ function ResetPassword() {
             <div className="container">
                 <h2>Reset Password</h2>
                 <p className="error">{error}</p>
-                <p><a href="/auth">Go to Login</a></p>
+                <p>
+                    <a href="/auth">Go to Login</a> | <a href="/">Go to Home</a>
+                </p>
             </div>
         );
     }
@@ -176,6 +183,7 @@ function ResetPassword() {
             <div className="container">
                 <h2>Reset Password</h2>
                 <p>{error || 'Verifying recovery link, please wait...'}</p>
+                <p><a href="/">Go to Home</a></p>
             </div>
         );
     }
@@ -200,6 +208,7 @@ function ResetPassword() {
                     {loading ? 'Updating...' : 'Update Password'}
                 </button>
             </form>
+            <p><a href="/">Go to Home</a></p>
         </div>
     );
 }
