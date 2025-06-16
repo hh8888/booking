@@ -10,32 +10,35 @@ const ResetPassword = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
-  // const [isRecoveryFlow, setIsRecoveryFlow] = useState(false); // Keeping this commented for now, let's simplify first
+  const [isRecoveryReady, setIsRecoveryReady] = useState(false); // New state
+  const [recoveryLinkProcessed, setRecoveryLinkProcessed] = useState(false); // New state to avoid multiple processing
 
   useEffect(() => {
     console.log('ResetPassword useEffect triggered. Current hash:', window.location.hash);
 
-    // Check if the URL indicates a password recovery attempt
     if (window.location.hash.includes('access_token=')) {
       console.log('Access token found in URL hash.');
-      // setIsRecoveryFlow(true);
     }
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('onAuthStateChange event:', event, 'session:', session);
-      if (event === 'PASSWORD_RECOVERY') {
-        console.log('PASSWORD_RECOVERY event received. User should be able to reset password.');
-        // setIsRecoveryFlow(false);
-      } else if (event === 'SIGNED_IN') {
-        console.log('SIGNED_IN event received.');
+      if (event === 'PASSWORD_RECOVERY' && session && !recoveryLinkProcessed) {
+        console.log('PASSWORD_RECOVERY event received. Session available. Ready to reset.');
+        setIsRecoveryReady(true);
+        setRecoveryLinkProcessed(true); // Mark as processed
+        setError(''); // Clear any previous errors like 'Verifying link...'
+      } else if (event === 'INITIAL_SESSION' && !session && window.location.hash.includes('access_token=')) {
+        // If initial session is null but we have a token, it might still be processing
+        // or PASSWORD_RECOVERY will fire soon.
+        // You could set a message here like "Verifying recovery link..."
+        if (!isRecoveryReady) {
+            setError('Verifying recovery link, please wait...');
+        }
       } else if (event === 'SIGNED_OUT') {
         console.log('SIGNED_OUT event received.');
-        // Only navigate away if not in an active recovery flow via URL token
         if (!window.location.hash.includes('access_token=')) {
           console.log('No access_token in hash, navigating to / on SIGNED_OUT');
           navigate('/');
-        } else {
-          console.log('Access_token in hash, SIGNED_OUT event, but not navigating away yet.');
         }
       }
     });
@@ -45,29 +48,27 @@ const ResetPassword = () => {
       const errorDesc = params.get('error_description').replace(/\+/g, ' ');
       console.error('Error from URL hash:', errorDesc);
       setError(errorDesc);
-      // setIsRecoveryFlow(false);
+      setIsRecoveryReady(false); // Not ready if there's an error in URL
     }
     
-    // Initial check for session - useful for debugging what happens on load
-    const checkInitialSession = async () => {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log('Initial getSession check. Session:', session, 'Error:', sessionError);
-      if (!session && !window.location.hash.includes('access_token=')) {
-        console.log('Initial check: No session and no access_token in hash. Potential redirect point if not handled by onAuthStateChange.');
-        // navigate('/'); // Let's rely on onAuthStateChange for redirects
-      }
-    };
-    checkInitialSession();
+    // Initial check - Supabase client should pick up session from URL if detectSessionInUrl is true
+    // The onAuthStateChange listener with PASSWORD_RECOVERY is the more robust way to confirm readiness.
 
     return () => {
       console.log('ResetPassword useEffect cleanup. Unsubscribing authListener.');
       authListener?.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, isRecoveryReady, recoveryLinkProcessed]); // Added dependencies
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
     console.log('handleResetPassword called');
+
+    if (!isRecoveryReady) {
+      setError('Recovery session not ready. Please ensure the link is valid or try again.');
+      console.log('Attempted password reset, but recovery session not ready.');
+      return;
+    }
     
     if (password !== confirmPassword) {
       console.log('Passwords do not match');
@@ -127,7 +128,7 @@ const ResetPassword = () => {
     );
   }
 
-  console.log('Rendering ResetPassword form. Error state:', error, 'Loading state:', loading);
+  console.log('Rendering ResetPassword form. Error state:', error, 'Loading state:', loading, 'RecoveryReady:', isRecoveryReady);
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8">
@@ -168,11 +169,15 @@ const ResetPassword = () => {
           {error && (
             <div className="text-red-600 text-sm">{error}</div>
           )}
+        {/* Optional: Message while waiting for recovery readiness */}
+        {!isRecoveryReady && !error && !success && window.location.hash.includes('access_token=') && (
+            <p className="text-sm text-gray-600">Verifying link, please wait...</p>
+        )}
           <div>
             <button
               type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              disabled={loading || !isRecoveryReady} // Disable button if not ready
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Updating...' : 'Update Password'}
             </button>
