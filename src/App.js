@@ -69,6 +69,7 @@ function App() {
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/booking" element={<CustomerDashboard />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/auth" element={<Auth />} />
         </Routes>
         <Footer />
       </ErrorBoundary>
