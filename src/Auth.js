@@ -74,15 +74,17 @@ export default function Auth() {
       console.log('Auth.js useEffect - Pathname:', window.location.pathname);
       console.log('Auth.js useEffect - Hash:', window.location.hash);
 
-      // UPDATED CHECK:
-      const isResetPasswordPath = window.location.hash.startsWith('#/reset-password');
+      // UPDATED CHECK for reset password flow (success or error)
+      const isResetPasswordFlow = 
+        window.location.hash.startsWith('#/reset-password') || 
+        window.location.hash.includes('error_description='); // Supabase often includes this for recovery errors
 
-      if (isResetPasswordPath) {
-        console.log('Auth.js: On reset-password path, skipping initial session redirect logic.');
+      if (isResetPasswordFlow) {
+        console.log('Auth.js: On reset-password flow (or error), skipping initial session redirect logic.');
         setIsLoading(false);
         return; 
       } else {
-        console.log('Auth.js: Not on reset-password path. Pathname was:', window.location.pathname, 'Hash was:', window.location.hash);
+        console.log('Auth.js: Not on reset-password flow. Pathname was:', window.location.pathname, 'Hash was:', window.location.hash);
       }
 
       const { data: { session } } = await supabase.auth.getSession();
@@ -94,7 +96,7 @@ export default function Auth() {
       setIsLoading(false);
     };
     checkSessionAndSettings();
-  }, [navigate]);
+  }, [navigate]); // Add dispatch if used
 
   const checkUserRoleAndRedirect = async (user) => {
     try {
