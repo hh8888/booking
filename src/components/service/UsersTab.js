@@ -3,6 +3,7 @@ import Table from '../table/Table';
 import GenericForm from '../common/GenericForm';
 import FilterBox from '../common/FilterBox';
 import DatabaseService from '../../services/DatabaseService';
+import UserService from '../../services/UserService';
 import StaffAvailabilityService from '../../services/StaffAvailabilityService';
 import withErrorHandling from '../common/withErrorHandling';
 import { showToast } from '../common/ToastMessage';
@@ -45,6 +46,13 @@ function UsersTab({ users, setUsers, handleError, selectedLocation }) {
       if(itemData.birthday===''){
         delete itemData.birthday;
       }
+      // Convert empty string location to null
+      if (itemData.location === '') {
+        itemData.location = null;
+      } else if (itemData.location) {
+        // Ensure location is an integer if a value is present
+        itemData.location = parseInt(itemData.location, 10);
+      }
       if (isCreating) {
         const newUser = await dbService.createItem('users', itemData, 'User');
         setUsers([newUser, ...users]);
@@ -70,6 +78,23 @@ function UsersTab({ users, setUsers, handleError, selectedLocation }) {
       setUsers(users.filter((item) => !selectedRows.includes(item.id)));
     } catch (error) {
       handleError('deleting', () => Promise.reject(error));
+    }
+  };
+
+  const handleResetPassword = async (user) => {
+    if (!window.confirm(`Send password reset email to ${user.full_name || user.email}?`)) {
+      return;
+    }
+
+    try {
+      const userService = UserService.getInstance();
+      await userService.resetUserPassword(user);
+      
+      showToast.success('Password reset email sent successfully');
+      alert(`Password reset email has been sent to ${user.email}.\n\nThe user will receive an email with instructions to reset their password.`);
+    } catch (error) {
+      console.error('Password reset error:', error);
+      showToast.error(`Failed to send reset email: ${error.message}`);
     }
   };
 
@@ -151,6 +176,7 @@ function UsersTab({ users, setUsers, handleError, selectedLocation }) {
         setSelectedRows={setSelectedRows}
         onEdit={setEditItem}
         onSetAvailability={(staff) => setSelectedStaffId(staff.id)}
+        onResetPassword={handleResetPassword}
         columns={[
           { key: 'full_name', label: 'Full Name' },
           { key: 'email', label: 'Email' },
@@ -173,13 +199,13 @@ function UsersTab({ users, setUsers, handleError, selectedLocation }) {
             setIsCreating(false);
           }}
           fields={[
-            { name: 'full_name', label: 'Full Name', type: 'text', required: true },
-            { name: 'email', label: 'Email', type: 'email', required: true },
-            { name: 'phone_number', label: 'Phone Number', type: 'text' },
-            { name: 'gender', label: 'Gender', type: 'select', options: [{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }, { value: 'other', label: 'Other' }] },
-            { name: 'birthday', label: 'Birthday', type: 'date' },
-            { name: 'post_code', label: 'Post Code', type: 'text' },
-            { name: 'role', label: 'Role', type: 'select', options: [
+            { key: 'full_name', label: 'Full Name', type: 'text', required: true },
+            { key: 'email', label: 'Email', type: 'email', required: true },
+            { key: 'phone_number', label: 'Phone Number', type: 'text' },
+            { key: 'gender', label: 'Gender', type: 'select', options: [{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }, { value: 'other', label: 'Other' }] },
+            { key: 'birthday', label: 'Birthday', type: 'date' },
+            { key: 'post_code', label: 'Post Code', type: 'text' },
+            { key: 'role', label: 'Role', type: 'select', options: [
               { value: 'customer', label: 'Customer' },
               { value: 'staff', label: 'Staff' },
               { value: 'admin', label: 'Admin' },

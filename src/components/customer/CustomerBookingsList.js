@@ -202,7 +202,7 @@ const CustomerBookingsList = ({ bookings, onNewBooking, onEditBooking, onCancelB
       </div>
 
       {bookings.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="text-center py-12 min-h-[200px] flex flex-col justify-center">
           <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4v10a2 2 0 002 2h4a2 2 0 002-2V11m-6 0h8m-8 0V7a2 2 0 012-2h4a2 2 0 012 2v4" />
           </svg>

@@ -15,6 +15,8 @@ export default function SignUpForm({
   setGender,
   mobile, // Add mobile prop
   setMobile, // Add setMobile prop
+  authMethod, // New prop
+  isMobileAuthEnabled // New prop
 }) {
   return (
     <>
@@ -31,31 +33,35 @@ export default function SignUpForm({
         />
       </div>
 
-      {/* Email Input */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Email<span className="text-red-500">*</span></label>
-        <input
-          type="email"
-          placeholder="Enter your email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+      {/* Email Input - Conditionally render based on authMethod */}
+      {authMethod === 'email' && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Email<span className="text-red-500">*</span></label>
+          <input
+            type="email"
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      )}
 
-      {/* Mobile Input */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Mobile<span className="text-red-500">*</span></label>
-        <input
-          type="tel"
-          placeholder="Enter your mobile number"
-          value={mobile}
-          onChange={(e) => setMobile(e.target.value)}
-          required
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+      {/* Mobile Input - Conditionally render based on authMethod and isMobileAuthEnabled */}
+      {authMethod === 'phone' && isMobileAuthEnabled && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Mobile<span className="text-red-500">*</span></label>
+          <input
+            type="tel"
+            placeholder="Enter your mobile number (e.g. +1234567890)"
+            value={mobile}
+            onChange={(e) => setMobile(e.target.value)}
+            required
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      )}
 
       {/* Password Input */}
       <div className="mb-6">

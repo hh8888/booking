@@ -1,7 +1,7 @@
 import React from 'react';
 import TableRow from './TableRow';
 
-const TableBody = ({ data, columns, selectedRows, onSelectRow, onEdit, onSetAvailability }) => {
+const TableBody = ({ data, columns, selectedRows, onSelectRow, onEdit, onSetAvailability, onResetPassword }) => {
   if (!data || data.length === 0) {
     return (
       <tbody>
@@ -25,6 +25,7 @@ const TableBody = ({ data, columns, selectedRows, onSelectRow, onEdit, onSetAvai
           onSelectRow={onSelectRow}
           onEdit={onEdit}
           onSetAvailability={onSetAvailability}
+          onResetPassword={onResetPassword}
         />
       ))}
     </tbody>

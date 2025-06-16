@@ -33,8 +33,7 @@ const CustomerDashboard = () => {
           
           // Get or create customer record for current user
           let customer = await dbService.fetchData('users', 'created_at', false, { 
-            email: user.email,
-            role: 'customer' 
+            id: user.id  // Use user ID instead of email
           });
           
           console.log('Fetched customer:', customer);
@@ -42,12 +41,17 @@ const CustomerDashboard = () => {
           if (customer.length === 0) {
             // Create customer record if doesn't exist
             const newCustomer = {
-              email: user.email,
-              full_name: user.user_metadata?.full_name || user.email,
+              id: user.id,
+              email: user.email || null,
+              phone_number: user.phone || null,  // Add phone number from auth user
+              full_name: user.user_metadata?.full_name || user.email || user.phone,
+              post_code: user.user_metadata?.post_code || null,
+              birthday: user.user_metadata?.birthday || null,
+              gender: user.user_metadata?.gender || null,
               role: 'customer'
             };
             console.log('Creating new customer:', newCustomer);
-            const created = await dbService.insertData('users', newCustomer);
+            const created = await dbService.createItem('users', newCustomer);
             console.log('Created customer:', created);
             setCustomerData(created[0]);
           } else {

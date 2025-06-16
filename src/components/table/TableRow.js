@@ -1,9 +1,9 @@
 import React from 'react';
 import DateTimeFormatter from '../../utils/DateTimeFormatter';
 import StaffAvailabilityService from '../../services/StaffAvailabilityService';
-import { PencilIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, ClockIcon, KeyIcon } from '@heroicons/react/24/outline';
 
-const TableRow = ({ row, columns, selectedRows, onSelectRow, onEdit, onSetAvailability }) => {
+const TableRow = ({ row, columns, selectedRows, onSelectRow, onEdit, onSetAvailability, onResetPassword }) => {
   // Check if value is a date type
   const isDateValue = (value) => {
     if (!value) return false;
@@ -73,6 +73,15 @@ const TableRow = ({ row, columns, selectedRows, onSelectRow, onEdit, onSetAvaila
               title="Set Availability"
             >
               <ClockIcon className="h-5 w-5" />
+            </button>
+          )}
+          {onResetPassword && (
+            <button
+              onClick={() => onResetPassword(row)}
+              className="text-orange-500 hover:text-orange-700 p-1 rounded-full hover:bg-orange-100 transition-colors duration-200"
+              title="Reset Password"
+            >
+              <KeyIcon className="h-5 w-5" />
             </button>
           )}
         </div>

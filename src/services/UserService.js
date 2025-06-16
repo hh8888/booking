@@ -73,6 +73,62 @@ class UserService {
     }
     return users.filter(user => user.role === role);
   }
+
+  async resetUserPassword(user) {
+    try {
+      console.log('Supabase URL:', process.env.REACT_APP_SUPABASE_URL);
+      console.log('Attempting to send reset email to:', user.email);
+      console.log('Redirect URL:', `${window.location.origin}/#/reset-password`);
+      
+      const { data, error } = await supabase.auth.resetPasswordForEmail(
+        user.email,
+        {
+          redirectTo: `${window.location.origin}/#/reset-password`
+        }
+      );
+      
+      console.log('Reset email response:', { data, error });
+      
+      if (error) {
+        console.error('Reset email error:', error);
+        throw new Error(`Password reset failed: ${error.message}`);
+      }
+      
+      console.log('Reset email sent successfully');
+      return { success: true, method: 'email' };
+    } catch (error) {
+      console.error('Reset password error:', error);
+      throw new Error(`Failed to send reset email: ${error.message}`);
+    }
+  }
+
+  async generateTemporaryPassword() {
+    // Generate a random 12-character password with special characters
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  }
+
+  async manualPasswordReset(user, newPassword) {
+    try {
+      // This requires service role key in environment
+      const { data, error } = await supabase.auth.admin.updateUserById(
+        user.id,
+        { password: newPassword }
+      );
+      
+      if (error) {
+        throw new Error(`Manual password reset failed: ${error.message}`);
+      }
+      
+      return { success: true, method: 'manual', newPassword };
+    } catch (error) {
+      throw new Error(`Failed to reset password manually: ${error.message}`);
+    }
+  }
 }
 
 export default UserService;

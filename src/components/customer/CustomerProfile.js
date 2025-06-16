@@ -20,7 +20,7 @@ const CustomerProfile = ({ customerData }) => {
         </div>
         <div>
           <label className="text-sm font-medium text-gray-500">Email</label>
-          <p className="text-gray-900">{customerData.email}</p>
+          <p className="text-gray-900">{customerData.email || 'Not provided'}</p>
         </div>
         <div>
           <label className="text-sm font-medium text-gray-500">Phone</label>

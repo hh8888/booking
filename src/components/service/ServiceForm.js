@@ -132,8 +132,7 @@ useEffect(() => {
           value={formData.price}
           onChange={handleChange}
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          {...register('price')}
-          aria-invalid={errors.price ? 'true' : 'false'}
+          required
         />
       </div>
 
@@ -145,10 +144,9 @@ useEffect(() => {
           value={formData.duration}
           onChange={handleChange}
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          {...register('duration')}
-          aria-invalid={errors.duration ? 'true' : 'false'}
           step="1"
           min="1"
+          required
         />
       </div>
 

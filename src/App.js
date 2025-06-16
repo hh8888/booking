@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Auth from './Auth';
 import Services from './Services';
 import Bookings from './Bookings';
@@ -9,6 +9,7 @@ import './App.css';
 import AdminDashboard from './AdminDashboard';
 import Footer from './components/common/Footer';
 import CustomerDashboard from './components/customer/CustomerDashboard';
+import ResetPassword from './ResetPassword'; 
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -67,6 +68,7 @@ function App() {
           <Route path="/" element={<Auth />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/booking" element={<CustomerDashboard />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
         <Footer />
       </ErrorBoundary>

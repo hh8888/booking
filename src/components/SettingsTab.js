@@ -172,6 +172,18 @@ export default function SettingsTab() {
       value: 'Cherrybrook,Chatswood,Eastgardens',
       type: 'text',
       description: 'Available business locations, separated by commas'
+    },
+    {
+      key: 'enableMobileAuth',
+      label: 'Enable Mobile Sign-in/Sign-up',
+      value: 'false', // Default to off
+      type: 'select',
+      options: [
+        { value: 'true', label: 'Enable' },
+        { value: 'false', label: 'Disable' }
+      ],
+      description: 'Allow users to sign in or sign up using their mobile number and OTP. (Currently read-only)',
+      readOnly: true // Mark as read-only for now
     }
   ]);
 
@@ -241,6 +253,10 @@ export default function SettingsTab() {
               return prevSettings.map(setting => {
                 const foundSetting = systemSettingsData.find(item => item.key === setting.key);
                 if (foundSetting) {
+                  // Ensure boolean values for enableMobileAuth are strings for select consistency
+                  if (setting.key === 'enableMobileAuth' && typeof foundSetting.value === 'boolean') {
+                    return { ...setting, value: String(foundSetting.value) };
+                  }
                   return { ...setting, value: foundSetting.value };
                 }
                 return setting;
@@ -398,7 +414,9 @@ export default function SettingsTab() {
       const dbService = DatabaseService.getInstance();
       
       // Prepare data to save
-      const settingsToSave = Object.keys(formData).map(key => ({
+      const settingsToSave = Object.keys(formData)
+        .filter(key => key !== 'enableMobileAuth') // Exclude read-only setting from saving
+        .map(key => ({
         category: 'system',
         key,
         value: formData[key]

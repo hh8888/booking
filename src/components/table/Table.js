@@ -10,6 +10,7 @@ const Table = ({
   setSelectedRows = () => {},
   onEdit = () => {},
   onSetAvailability = () => {},
+  onResetPassword = () => {},
 }) => {
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -101,6 +102,7 @@ const Table = ({
             onSelectRow={handleSelectRow}
             onEdit={onEdit}
             onSetAvailability={onSetAvailability}
+            onResetPassword={onResetPassword}
           />
         </table>
       </div>
