@@ -24,7 +24,7 @@ const CustomerProfile = ({ customerData }) => {
         </div>
         <div>
           <label className="text-sm font-medium text-gray-500">Phone</label>
-          <p className="text-gray-900">{customerData.phone || 'Not provided'}</p>
+          <p className="text-gray-900">{customerData.phone_number || 'Not provided'}</p>
         </div>
         <div>
           <label className="text-sm font-medium text-gray-500">Post Code</label>
