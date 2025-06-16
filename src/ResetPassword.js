@@ -3,51 +3,106 @@ import { supabase } from './supabaseClient';
 import { useNavigate } from 'react-router-dom';
 
 const ResetPassword = () => {
+  console.log('ResetPassword component mounted');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
+  // const [isRecoveryFlow, setIsRecoveryFlow] = useState(false); // Keeping this commented for now, let's simplify first
 
   useEffect(() => {
-    // Check if user came from reset email link
-    const { data: { session } } = supabase.auth.getSession();
-    if (!session) {
-      navigate('/');
+    console.log('ResetPassword useEffect triggered. Current hash:', window.location.hash);
+
+    // Check if the URL indicates a password recovery attempt
+    if (window.location.hash.includes('access_token=')) {
+      console.log('Access token found in URL hash.');
+      // setIsRecoveryFlow(true);
     }
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('onAuthStateChange event:', event, 'session:', session);
+      if (event === 'PASSWORD_RECOVERY') {
+        console.log('PASSWORD_RECOVERY event received. User should be able to reset password.');
+        // setIsRecoveryFlow(false);
+      } else if (event === 'SIGNED_IN') {
+        console.log('SIGNED_IN event received.');
+      } else if (event === 'SIGNED_OUT') {
+        console.log('SIGNED_OUT event received.');
+        // Only navigate away if not in an active recovery flow via URL token
+        if (!window.location.hash.includes('access_token=')) {
+          console.log('No access_token in hash, navigating to / on SIGNED_OUT');
+          navigate('/');
+        } else {
+          console.log('Access_token in hash, SIGNED_OUT event, but not navigating away yet.');
+        }
+      }
+    });
+
+    if (window.location.hash.includes('error_description')) {
+      const params = new URLSearchParams(window.location.hash.substring(1));
+      const errorDesc = params.get('error_description').replace(/\+/g, ' ');
+      console.error('Error from URL hash:', errorDesc);
+      setError(errorDesc);
+      // setIsRecoveryFlow(false);
+    }
+    
+    // Initial check for session - useful for debugging what happens on load
+    const checkInitialSession = async () => {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('Initial getSession check. Session:', session, 'Error:', sessionError);
+      if (!session && !window.location.hash.includes('access_token=')) {
+        console.log('Initial check: No session and no access_token in hash. Potential redirect point if not handled by onAuthStateChange.');
+        // navigate('/'); // Let's rely on onAuthStateChange for redirects
+      }
+    };
+    checkInitialSession();
+
+    return () => {
+      console.log('ResetPassword useEffect cleanup. Unsubscribing authListener.');
+      authListener?.unsubscribe();
+    };
   }, [navigate]);
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
+    console.log('handleResetPassword called');
     
     if (password !== confirmPassword) {
+      console.log('Passwords do not match');
       setError('Passwords do not match');
       return;
     }
 
     if (password.length < 6) {
+      console.log('Password too short');
       setError('Password must be at least 6 characters');
       return;
     }
 
     setLoading(true);
     setError('');
+    console.log('Attempting to update user password...');
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      const { error: updateError } = await supabase.auth.updateUser({
         password: password
       });
 
-      if (error) {
-        setError(error.message);
+      if (updateError) {
+        console.error('Error updating password:', updateError.message);
+        setError(updateError.message);
       } else {
+        console.log('Password updated successfully');
         setSuccess(true);
         setTimeout(() => {
+          console.log('Navigating to / after successful password reset.');
           navigate('/');
         }, 2000);
       }
-    } catch (error) {
+    } catch (catchedError) {
+      console.error('Catched error during password update:', catchedError);
       setError('An error occurred while resetting password');
     } finally {
       setLoading(false);
@@ -55,6 +110,7 @@ const ResetPassword = () => {
   };
 
   if (success) {
+    console.log('Rendering success message');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="max-w-md w-full space-y-8">
@@ -71,6 +127,7 @@ const ResetPassword = () => {
     );
   }
 
+  console.log('Rendering ResetPassword form. Error state:', error, 'Loading state:', loading);
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8">

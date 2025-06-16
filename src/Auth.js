@@ -49,7 +49,7 @@ export default function Auth() {
 
   useEffect(() => {
     const checkSessionAndSettings = async () => {
-      setIsLoading(true); // Start loading
+      setIsLoading(true); 
       // Fetch mobile auth setting
       try {
         const dbService = DatabaseService.getInstance();
@@ -70,14 +70,23 @@ export default function Auth() {
         setIsMobileAuthEnabled(false); // Default to false on error
       }
 
+      // IMPORTANT: Check if the current path is /reset-password
+      if (window.location.pathname === '/reset-password' || window.location.hash === '#/reset-password') {
+        console.log('Auth.js: On reset-password path, skipping initial session redirect logic.');
+        setIsLoading(false);
+        return; // Do not proceed with session check and redirect if on reset-password page
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         await checkUserRoleAndRedirect(session.user);
+      } else {
+        console.log('Auth.js: No session, user should be on Auth page or will be handled by route protection.');
       }
-      setIsLoading(false); // End loading after all checks
+      setIsLoading(false); 
     };
     checkSessionAndSettings();
-  }, []);
+  }, [navigate]);
 
   const checkUserRoleAndRedirect = async (user) => {
     try {
