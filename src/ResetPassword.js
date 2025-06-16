@@ -1,191 +1,179 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from './supabaseClient';
+import { supabase } from './supabaseClient'; // Ensure this path is correct
 import { useNavigate } from 'react-router-dom';
 
-const ResetPassword = () => {
-  console.log('ResetPassword component mounted');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-  const navigate = useNavigate();
-  const [isRecoveryReady, setIsRecoveryReady] = useState(false); // New state
-  const [recoveryLinkProcessed, setRecoveryLinkProcessed] = useState(false); // New state to avoid multiple processing
+function ResetPassword() {
+    console.log('ResetPassword component mounted');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [message, setMessage] = useState('');
+    const [isRecoveryReady, setIsRecoveryReady] = useState(false);
+    const navigate = useNavigate();
 
-  useEffect(() => {
-    console.log('ResetPassword useEffect triggered. Current hash:', window.location.hash);
+    // Move onAuthStateChange listener setup outside useEffect
+    // It's important to unsubscribe when the component unmounts.
+    // We'll store the subscription to unsubscribe in the cleanup function of useEffect.
+    let authListener = null;
 
-    if (window.location.hash.includes('access_token=')) {
-      console.log('Access token found in URL hash.');
-    }
+    useEffect(() => {
+        console.log('ResetPassword useEffect triggered. Current hash:', window.location.hash);
+        const hash = window.location.hash;
+        const paramsStr = hash.includes('#', 1) ? hash.substring(hash.indexOf('#', 1) + 1) : hash.substring(1);
+        const params = new URLSearchParams(paramsStr);
+        const accessToken = params.get('access_token');
+        const errorDescription = params.get('error_description');
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('onAuthStateChange event:', event, 'session:', session);
-      if (event === 'PASSWORD_RECOVERY' && session && !recoveryLinkProcessed) {
-        console.log('PASSWORD_RECOVERY event received. Session available. Ready to reset.');
-        setIsRecoveryReady(true);
-        setRecoveryLinkProcessed(true); // Mark as processed
-        setError(''); // Clear any previous errors like 'Verifying link...'
-      } else if (event === 'INITIAL_SESSION' && !session && window.location.hash.includes('access_token=')) {
-        // If initial session is null but we have a token, it might still be processing
-        // or PASSWORD_RECOVERY will fire soon.
-        // You could set a message here like "Verifying recovery link..."
-        if (!isRecoveryReady) {
+        if (errorDescription) {
+            setError(`Error: ${errorDescription}`);
+            return;
+        }
+
+        if (accessToken) {
+            console.log('Access token found in URL hash.');
+            // The PASSWORD_RECOVERY event will handle setting the session
+            // and isRecoveryReady state.
+            // We no longer need to manually call setSession here if onAuthStateChange handles it.
+        } else if (!errorDescription) {
+            // Only set this error if there's no access token AND no error description from Supabase
+            // This avoids overwriting a more specific error from Supabase
+            setError('No recovery token found in URL. Please request a new password reset link.');
+        }
+
+        // Setup the listener
+        const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+            console.log('onAuthStateChange event:', event, 'session:', session);
+            if (event === 'PASSWORD_RECOVERY') {
+                console.log('PASSWORD_RECOVERY event received, session:', session);
+                if (session) {
+                    // Supabase client has processed the recovery token and established a session.
+                    // The user is now effectively logged in for the purpose of updating their password.
+                    setIsRecoveryReady(true);
+                    setError(''); // Clear any previous errors like "Verifying..."
+                    setMessage('You can now set your new password.');
+                } else {
+                    setError('Failed to verify recovery token. The session is null after PASSWORD_RECOVERY event.');
+                    setIsRecoveryReady(false);
+                }
+            } else if (event === 'INITIAL_SESSION') {
+                // This event fires when the listener is first attached.
+                // If a session already exists (e.g. user is already logged in), it will be provided here.
+                // For password recovery, we expect session to be null initially, then populated by PASSWORD_RECOVERY.
+                if (session) {
+                    // This case should ideally not happen in a clean password recovery flow
+                    // unless the user was already logged in in another tab.
+                    console.log('INITIAL_SESSION with an existing session. This might not be the recovery flow.');
+                    // Potentially navigate away or show an error if this is unexpected.
+                }
+            } else if (event === 'SIGNED_IN') {
+                // This might happen after updateUser if it also signs the user in.
+                // We might not need specific handling here if PASSWORD_RECOVERY is sufficient.
+                console.log('SIGNED_IN event received, session:', session);
+            } else if (event === 'USER_UPDATED') {
+                console.log('USER_UPDATED event received, session:', session);
+                // This event fires after a successful password update.
+                setLoading(false);
+                setMessage('Password updated successfully! Redirecting to login...');
+                setTimeout(() => {
+                    navigate('/auth'); // Or your login page
+                }, 3000);
+            }
+        });
+
+        authListener = listener; // Store the listener subscription
+
+        // Initial check for error state based on URL hash, before PASSWORD_RECOVERY event
+        if (!accessToken && !errorDescription) {
+            // Handled above
+        } else if (!isRecoveryReady && !errorDescription) {
+            // If there's an access token but recovery isn't ready yet, show verifying message.
+            // Avoid showing this if there's already an error from Supabase (errorDescription)
             setError('Verifying recovery link, please wait...');
         }
-      } else if (event === 'SIGNED_OUT') {
-        console.log('SIGNED_OUT event received.');
-        if (!window.location.hash.includes('access_token=')) {
-          console.log('No access_token in hash, navigating to / on SIGNED_OUT');
-          navigate('/');
+
+
+        return () => {
+            if (authListener && typeof authListener.unsubscribe === 'function') {
+                console.log('Unsubscribing from auth state changes.');
+                authListener.unsubscribe();
+            }
+        };
+    }, [navigate]); // Added navigate to dependency array as it's used in useEffect
+
+    const handleResetPassword = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+        setMessage('');
+
+        if (!isRecoveryReady) {
+            setError('Recovery session not ready. Please wait or try the link again.');
+            setLoading(false);
+            return;
         }
-      }
-    });
 
-    if (window.location.hash.includes('error_description')) {
-      const params = new URLSearchParams(window.location.hash.substring(1));
-      const errorDesc = params.get('error_description').replace(/\+/g, ' ');
-      console.error('Error from URL hash:', errorDesc);
-      setError(errorDesc);
-      setIsRecoveryReady(false); // Not ready if there's an error in URL
-    }
-    
-    // Initial check - Supabase client should pick up session from URL if detectSessionInUrl is true
-    // The onAuthStateChange listener with PASSWORD_RECOVERY is the more robust way to confirm readiness.
+        // At this point, Supabase client should have the session from the PASSWORD_RECOVERY event.
+        const { data, error: updateError } = await supabase.auth.updateUser({
+            password: password,
+        });
 
-    return () => {
-      console.log('ResetPassword useEffect cleanup. Unsubscribing authListener.');
-      authListener?.unsubscribe();
+        setLoading(false);
+        if (updateError) {
+            console.error('Error updating password:', updateError.message);
+            setError(`Error updating password: ${updateError.message}`);
+        } else {
+            console.log('Password update successful:', data);
+            // The USER_UPDATED event from onAuthStateChange should handle the message and redirect.
+            // setMessage('Password updated successfully! You can now log in with your new password.');
+            // No need to navigate here if USER_UPDATED handles it.
+        }
     };
-  }, [navigate, isRecoveryReady, recoveryLinkProcessed]); // Added dependencies
 
-  const handleResetPassword = async (e) => {
-    e.preventDefault();
-    console.log('handleResetPassword called');
+    // Conditional rendering logic
+    console.log('Rendering ResetPassword form. Error state:', error, 'Loading state:', loading, 'RecoveryReady:', isRecoveryReady);
+    if (error && !isRecoveryReady && error !== 'Verifying recovery link, please wait...') {
+        // If there's a definitive error (not the verifying message) and recovery isn't ready, show only the error.
+        return (
+          <div className="container">
+          <h2>Reset Password</h2>
+          <p className="error">{error}</p>
+          <p><a href="/auth">Go to Login</a></p> 
+      </div>
+        );
+    }
 
     if (!isRecoveryReady) {
-      setError('Recovery session not ready. Please ensure the link is valid or try again.');
-      console.log('Attempted password reset, but recovery session not ready.');
-      return;
-    }
-    
-    if (password !== confirmPassword) {
-      console.log('Passwords do not match');
-      setError('Passwords do not match');
-      return;
+        return (
+            <div className="container">
+                <p>{error || 'Verifying recovery link, please wait...'}</p>
+            </div>
+        );
     }
 
-    if (password.length < 6) {
-      console.log('Password too short');
-      setError('Password must be at least 6 characters');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    console.log('Attempting to update user password...');
-
-    try {
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: password
-      });
-
-      if (updateError) {
-        console.error('Error updating password:', updateError.message);
-        setError(updateError.message);
-      } else {
-        console.log('Password updated successfully');
-        setSuccess(true);
-        setTimeout(() => {
-          console.log('Navigating to / after successful password reset.');
-          navigate('/');
-        }, 2000);
-      }
-    } catch (catchedError) {
-      console.error('Catched error during password update:', catchedError);
-      setError('An error occurred while resetting password');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (success) {
-    console.log('Rendering success message');
+    // If recovery is ready, show the form
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-extrabold text-gray-900">
-              Password Reset Successful
-            </h2>
-            <p className="mt-2 text-sm text-gray-600">
-              Your password has been updated. Redirecting to login...
-            </p>
-          </div>
+        <div className="container">
+            <h2>Reset Password</h2>
+            {message && <p className="message">{message}</p>}
+            {error && <p className="error">{error}</p>} {/* Show error here as well, in case it occurs after form is shown */}
+            <form onSubmit={handleResetPassword}>
+                <div>
+                    <label htmlFor="password">New Password:</label>
+                    <input
+                        type="password"
+                        id="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        disabled={loading || !isRecoveryReady}
+                    />
+                </div>
+                <button type="submit" disabled={loading || !isRecoveryReady}>
+                    {loading ? 'Updating...' : 'Update Password'}
+                </button>
+            </form>
         </div>
-      </div>
     );
-  }
-
-  console.log('Rendering ResetPassword form. Error state:', error, 'Loading state:', loading, 'RecoveryReady:', isRecoveryReady);
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Reset Your Password
-          </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleResetPassword}>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              New Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-              Confirm New Password
-            </label>
-            <input
-              id="confirmPassword"
-              name="confirmPassword"
-              type="password"
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          {error && (
-            <div className="text-red-600 text-sm">{error}</div>
-          )}
-        {/* Optional: Message while waiting for recovery readiness */}
-        {!isRecoveryReady && !error && !success && window.location.hash.includes('access_token=') && (
-            <p className="text-sm text-gray-600">Verifying link, please wait...</p>
-        )}
-          <div>
-            <button
-              type="submit"
-              disabled={loading || !isRecoveryReady} // Disable button if not ready
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Updating...' : 'Update Password'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
+}
 
 export default ResetPassword;
