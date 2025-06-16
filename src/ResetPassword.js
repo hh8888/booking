@@ -147,7 +147,8 @@ function ResetPassword() {
 
     console.log('Rendering ResetPassword. Error:', error, 'Loading:', loading, 'RecoveryReady:', isRecoveryReady, 'Message:', message);
 
-    if (message) { 
+    // If there's a final success/failure message after an action (like password updated), show only that.
+    if (message && (message.includes('Password updated successfully!') || message.includes('Redirecting'))) {
         return (
             <div className="container">
                 <h2>Reset Password</h2>
@@ -157,8 +158,8 @@ function ResetPassword() {
         );
     }
 
-    // Display specific error messages first
-    if (error && error !== 'Verifying recovery link, please wait...') {
+    // Display specific error messages first if recovery is not ready or an error occurred that prevents form display
+    if (error && error !== 'Verifying recovery link, please wait...' && !isRecoveryReady) {
         return (
             <div className="container">
                 <h2>Reset Password</h2>
@@ -170,40 +171,43 @@ function ResetPassword() {
         );
     }
 
-    // If still verifying or recovery not ready (and no other specific error shown above)
-    if (!isRecoveryReady) {
+    // If recovery is ready, show the form. 
+    // Also show any informational message (like 'You can now set your new password') or non-blocking error.
+    if (isRecoveryReady) {
         return (
             <div className="container">
                 <h2>Reset Password</h2>
-                {/* Show the current error/status message. If error is empty, it shows the default verifying message */}
-                <p>{error || 'Verifying recovery link, please wait...'}</p> 
+                {/* Show informational message if present and it's not the initial verifying message */}
+                {message && !message.includes('Password updated successfully!') && <p className="message">{message}</p>}
+                {/* Show error if present and it's not the initial verifying message */}
+                {error && error !== 'Verifying recovery link, please wait...' && <p className="error">{error}</p>}
+                <form onSubmit={handleResetPassword}>
+                    <div>
+                        <label htmlFor="password">New Password:</label>
+                        <input
+                            type="password"
+                            id="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            disabled={loading}
+                        />
+                    </div>
+                    <button type="submit" disabled={loading}>
+                        {loading ? 'Updating...' : 'Update Password'}
+                    </button>
+                </form>
                 <p><a href="/">Go to Home</a></p>
             </div>
         );
     }
 
-    // If recovery is ready, show the form
+    // If still verifying or recovery not ready (and no other specific error shown above, and form not ready)
+    // This will be the default state while loading or if isRecoveryReady is false without a major error.
     return (
         <div className="container">
             <h2>Reset Password</h2>
-            {/* This error display might be redundant if handled by the block above, but kept for safety */}
-            {/* {error && error !== 'Verifying recovery link, please wait...' && <p className="error">{error}</p>}  */}
-            <form onSubmit={handleResetPassword}>
-                <div>
-                    <label htmlFor="password">New Password:</label>
-                    <input
-                        type="password"
-                        id="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        disabled={loading}
-                    />
-                </div>
-                <button type="submit" disabled={loading}>
-                    {loading ? 'Updating...' : 'Update Password'}
-                </button>
-            </form>
+            <p>{error || 'Verifying recovery link, please wait...'}</p>
             <p><a href="/">Go to Home</a></p>
         </div>
     );
