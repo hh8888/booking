@@ -2,6 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabaseClient';
 import { useNavigate } from 'react-router-dom';
 
+// A simple SVG spinner component
+const Spinner = () => (
+    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+);
+
 function ResetPassword() {
     console.log('ResetPassword component mounted');
     const [password, setPassword] = useState('');
@@ -11,7 +19,7 @@ function ResetPassword() {
     const [isRecoveryReady, setIsRecoveryReady] = useState(false);
     const navigate = useNavigate();
     const authListenerRef = useRef(null);
-    const recoveryAttemptedRef = useRef(false); // To prevent multiple setSession attempts
+    const recoveryAttemptedRef = useRef(false);
 
     useEffect(() => {
         console.log('ResetPassword useEffect triggered. Current hash:', window.location.hash);
@@ -22,7 +30,7 @@ function ResetPassword() {
         const refreshToken = params.get('refresh_token');
         const type = params.get('type');
         const errorDescription = params.get('error_description');
-        const urlError = params.get('error'); // Renamed to avoid conflict with state variable
+        const urlError = params.get('error');
 
         console.log('Parsed from URL -> AccessToken:', !!accessToken, 'RefreshToken:', !!refreshToken, 'Type:', type, 'ErrorDescription:', errorDescription, 'URLError:', urlError);
 
@@ -30,7 +38,6 @@ function ResetPassword() {
             console.error('Error from URL:', errorDescription || urlError);
             setError(`Error: ${errorDescription || 'Invalid or expired recovery link.'}`);
             setIsRecoveryReady(false);
-            // No automatic redirect here, let user see the error and use links
             return;
         }
 
@@ -61,7 +68,7 @@ function ResetPassword() {
                 }
             } else if (event === 'INITIAL_SESSION' && accessToken && refreshToken && type === 'recovery' && !isRecoveryReady && !recoveryAttemptedRef.current) {
                 console.log('INITIAL_SESSION event. Recovery tokens present. PASSWORD_RECOVERY not yet fired.');
-                recoveryAttemptedRef.current = true; // Mark that we are attempting manual recovery
+                recoveryAttemptedRef.current = true; 
                 console.log('Attempting manual setSession with access_token and refresh_token...');
                 try {
                     const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
@@ -75,8 +82,6 @@ function ResetPassword() {
                         setIsRecoveryReady(false);
                     } else if (sessionData && sessionData.session) {
                         console.log('Manual setSession successful, session:', sessionData.session);
-                        // Check if this user matches the one in the token if possible, or just proceed
-                        // Supabase should now emit USER_AUTHENTICATED or similar, or we might need to check user state
                         setIsRecoveryReady(true);
                         setError('');
                         setMessage('Recovery link verified. You can now set your new password.');
@@ -109,7 +114,7 @@ function ResetPassword() {
                     recoveryAttemptedRef.current = true; 
                 }
             }
-        }, 7000); // Increased timeout slightly to allow for setSession attempt
+        }, 7000);
 
         return () => {
             clearTimeout(timer);
@@ -118,13 +123,14 @@ function ResetPassword() {
                 authListenerRef.current.unsubscribe();
             }
         };
-    }, [navigate]); // Removed isRecoveryReady from dependencies to avoid re-triggering on its change
+    }, [navigate]);
 
     const handleResetPassword = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
-        setMessage('');
+        // Keep the success message from verification if it's there
+        // setMessage(''); 
 
         if (!isRecoveryReady) {
             setError('Recovery session not ready. Please wait or ensure the link is correct.');
@@ -142,74 +148,115 @@ function ResetPassword() {
             setError(`Error updating password: ${updateError.message}`);
         } else {
             console.log('Password update request successful. Waiting for USER_UPDATED event.');
+            // Message will be set by USER_UPDATED event handler
         }
     };
 
     console.log('Rendering ResetPassword. Error:', error, 'Loading:', loading, 'RecoveryReady:', isRecoveryReady, 'Message:', message);
 
-    // If there's a final success/failure message after an action (like password updated), show only that.
+    const commonLinkClasses = "text-indigo-600 hover:text-indigo-500";
+
+    // Base container for all states
+    const PageContainer = ({ children }) => (
+        <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center py-12 sm:px-6 lg:px-8">
+            <div className="sm:mx-auto sm:w-full sm:max-w-md">
+                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                    Reset Password
+                </h2>
+            </div>
+            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+                <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+                    {children}
+                </div>
+            </div>
+        </div>
+    );
+
     if (message && (message.includes('Password updated successfully!') || message.includes('Redirecting'))) {
         return (
-            <div className="container">
-                <h2>Reset Password</h2>
-                <p className="message">{message}</p>
-                <p><a href="/">Go to Home</a></p>
-            </div>
+            <PageContainer>
+                <p className="text-center text-green-600 text-sm">{message}</p>
+                <p className="mt-2 text-center text-sm text-gray-600">
+                    <a href="/" className={commonLinkClasses}>Go to Home</a>
+                </p>
+            </PageContainer>
         );
     }
 
-    // Display specific error messages first if recovery is not ready or an error occurred that prevents form display
     if (error && error !== 'Verifying recovery link, please wait...' && !isRecoveryReady) {
         return (
-            <div className="container">
-                <h2>Reset Password</h2>
-                <p className="error">{error}</p>
-                <p>
-                    <a href="/auth">Go to Login</a> | <a href="/">Go to Home</a>
-                </p>
-            </div>
+            <PageContainer>
+                <p className="text-center text-red-600 text-sm">{error}</p>
+                <div className="mt-6 flex justify-center space-x-4">
+                    <a href="/auth" className={commonLinkClasses}>Go to Login</a>
+                    <span className="text-gray-400">|</span>
+                    <a href="/" className={commonLinkClasses}>Go to Home</a>
+                </div>
+            </PageContainer>
         );
     }
 
-    // If recovery is ready, show the form. 
-    // Also show any informational message (like 'You can now set your new password') or non-blocking error.
     if (isRecoveryReady) {
         return (
-            <div className="container">
-                <h2>Reset Password</h2>
-                {/* Show informational message if present and it's not the initial verifying message */}
-                {message && !message.includes('Password updated successfully!') && <p className="message">{message}</p>}
-                {/* Show error if present and it's not the initial verifying message */}
-                {error && error !== 'Verifying recovery link, please wait...' && <p className="error">{error}</p>}
-                <form onSubmit={handleResetPassword}>
+            <PageContainer>
+                {message && !message.includes('Password updated successfully!') && (
+                    <p className="text-center text-green-600 text-sm mb-4">{message}</p>
+                )}
+                {error && error !== 'Verifying recovery link, please wait...' && (
+                    <p className="text-center text-red-600 text-sm mb-4">{error}</p>
+                )}
+                <form onSubmit={handleResetPassword} className="space-y-6">
                     <div>
-                        <label htmlFor="password">New Password:</label>
-                        <input
-                            type="password"
-                            id="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            disabled={loading}
-                        />
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                            New Password
+                        </label>
+                        <div className="mt-1">
+                            <input
+                                id="password"
+                                name="password"
+                                type="password"
+                                autoComplete="new-password"
+                                required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                disabled={loading}
+                                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            />
+                        </div>
                     </div>
-                    <button type="submit" disabled={loading}>
-                        {loading ? 'Updating...' : 'Update Password'}
-                    </button>
+
+                    <div>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                        >
+                            {loading ? (
+                                <><Spinner /> Updating...</>
+                            ) : (
+                                'Update Password'
+                            )}
+                        </button>
+                    </div>
                 </form>
-                <p><a href="/">Go to Home</a></p>
-            </div>
+                <p className="mt-6 text-center text-sm text-gray-600">
+                    <a href="/" className={commonLinkClasses}>Go to Home</a>
+                </p>
+            </PageContainer>
         );
     }
 
-    // If still verifying or recovery not ready (and no other specific error shown above, and form not ready)
-    // This will be the default state while loading or if isRecoveryReady is false without a major error.
+    // Default: Verifying link or other non-critical states
     return (
-        <div className="container">
-            <h2>Reset Password</h2>
-            <p>{error || 'Verifying recovery link, please wait...'}</p>
-            <p><a href="/">Go to Home</a></p>
-        </div>
+        <PageContainer>
+            <p className="text-center text-gray-600 text-sm">
+                {error || 'Verifying recovery link, please wait...'}
+            </p>
+            {loading && <div className="flex justify-center mt-4"><Spinner /></div>} {/* Show spinner here too if verifying */}
+            <p className="mt-6 text-center text-sm text-gray-600">
+                <a href="/" className={commonLinkClasses}>Go to Home</a>
+            </p>
+        </PageContainer>
     );
 }
 
