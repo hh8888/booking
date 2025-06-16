@@ -22,17 +22,15 @@ function ResetPassword() {
         const refreshToken = params.get('refresh_token');
         const type = params.get('type');
         const errorDescription = params.get('error_description');
-        const error = params.get('error');
+        const urlError = params.get('error'); // Renamed to avoid conflict with state variable
 
-        console.log('Parsed from URL -> AccessToken:', !!accessToken, 'RefreshToken:', !!refreshToken, 'Type:', type, 'ErrorDescription:', errorDescription);
+        console.log('Parsed from URL -> AccessToken:', !!accessToken, 'RefreshToken:', !!refreshToken, 'Type:', type, 'ErrorDescription:', errorDescription, 'URLError:', urlError);
 
-        // Handle expired or invalid link errors
-        if (error === 'access_denied' || errorDescription) {
-            console.error('Error from URL:', errorDescription);
-            setError(`Error: ${errorDescription || 'Invalid or expired recovery link'}`);
+        if (urlError === 'access_denied' || errorDescription) {
+            console.error('Error from URL:', errorDescription || urlError);
+            setError(`Error: ${errorDescription || 'Invalid or expired recovery link.'}`);
             setIsRecoveryReady(false);
-            // Redirect to /auth after showing the error
-            setTimeout(() => navigate('/auth'), 5000);
+            // No automatic redirect here, let user see the error and use links
             return;
         }
 
@@ -42,9 +40,7 @@ function ResetPassword() {
             setIsRecoveryReady(false);
             return;
         }
-        
-        // If we have an access_token and type=recovery, set up the listener
-        // but also prepare to manually set session if PASSWORD_RECOVERY event is not caught.
+
         if (!recoveryAttemptedRef.current) {
             setError('Verifying recovery link, please wait...');
         }
@@ -54,7 +50,7 @@ function ResetPassword() {
 
             if (event === 'PASSWORD_RECOVERY') {
                 console.log('PASSWORD_RECOVERY event received, session:', session);
-                recoveryAttemptedRef.current = true; // Mark that Supabase handled it
+                recoveryAttemptedRef.current = true;
                 if (session) {
                     setIsRecoveryReady(true);
                     setError('');
@@ -63,35 +59,34 @@ function ResetPassword() {
                     setError('Failed to verify recovery token: Session is null after PASSWORD_RECOVERY event.');
                     setIsRecoveryReady(false);
                 }
-            } else if (event === 'INITIAL_SESSION' && accessToken && type === 'recovery' && !isRecoveryReady && !recoveryAttemptedRef.current) {
-                console.log('INITIAL_SESSION event. AccessToken and type=recovery present. PASSWORD_RECOVERY not yet fired.');
-                // Attempt to manually set session if PASSWORD_RECOVERY hasn't fired and we haven't tried yet.
-                // This is a fallback.
-                console.log('Attempting manual setSession as a fallback...');
+            } else if (event === 'INITIAL_SESSION' && accessToken && refreshToken && type === 'recovery' && !isRecoveryReady && !recoveryAttemptedRef.current) {
+                console.log('INITIAL_SESSION event. Recovery tokens present. PASSWORD_RECOVERY not yet fired.');
                 recoveryAttemptedRef.current = true; // Mark that we are attempting manual recovery
+                console.log('Attempting manual setSession with access_token and refresh_token...');
                 try {
-                    // For password recovery, Supabase expects the access_token from the URL
-                    // to be used to establish a temporary session for password update.
-                    // The `setSession` method might not be the direct way to trigger this for `type=recovery`,
-                    // as `detectSessionInUrl` should handle it. But if it's failing, this is an experiment.
-                    // Supabase internally uses the #access_token for password recovery when `onAuthStateChange` processes it.
-                    // A more direct trigger isn't explicitly documented for manual calls outside that event.
-                    // However, if `detectSessionInUrl` fails, the client might not have the session.
-                    // Let's ensure the client is aware of the token. The `PASSWORD_RECOVERY` event is KEY.
-                    
-                    // The most reliable way is to ensure onAuthStateChange picks up the PASSWORD_RECOVERY event.
-                    // If it doesn't, it points to an issue with Supabase client's URL processing.
-                    // For now, we'll rely on onAuthStateChange. If it consistently fails, we might need to explore
-                    // if there's a bug with supabase-js or a specific interaction.
-                    console.warn('PASSWORD_RECOVERY event not firing as expected. Check Supabase client version and setup.');
-                    // We will not call setSession here directly as it might interfere with the natural flow
-                    // or have unintended consequences if not used as Supabase expects for type=recovery.
-                    // The issue is likely that the event isn't being triggered or caught.
-                    setError('Verification timed out or failed. Please try the link again or request a new one.');
-                    setIsRecoveryReady(false);
+                    const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken,
+                    });
 
+                    if (sessionError) {
+                        console.error('Error during manual setSession:', sessionError);
+                        setError(`Failed to process recovery link: ${sessionError.message}. Please try again.`);
+                        setIsRecoveryReady(false);
+                    } else if (sessionData && sessionData.session) {
+                        console.log('Manual setSession successful, session:', sessionData.session);
+                        // Check if this user matches the one in the token if possible, or just proceed
+                        // Supabase should now emit USER_AUTHENTICATED or similar, or we might need to check user state
+                        setIsRecoveryReady(true);
+                        setError('');
+                        setMessage('Recovery link verified. You can now set your new password.');
+                    } else {
+                        console.warn('Manual setSession did not return a session or error.');
+                        setError('Failed to process recovery link. Please try again.');
+                        setIsRecoveryReady(false);
+                    }
                 } catch (e) {
-                    console.error('Error during manual setSession attempt:', e);
+                    console.error('Exception during manual setSession attempt:', e);
                     setError('Failed to process recovery link. Please try again.');
                     setIsRecoveryReady(false);
                 }
@@ -105,20 +100,16 @@ function ResetPassword() {
 
         authListenerRef.current = listener;
 
-        // Fallback timeout if PASSWORD_RECOVERY event is not received
         const timer = setTimeout(() => {
             if (!isRecoveryReady && !recoveryAttemptedRef.current && accessToken && type === 'recovery') {
-                console.warn('Timeout: PASSWORD_RECOVERY event not received. Manually tried or will mark as failed.');
-                // This path is taken if onAuthStateChange's INITIAL_SESSION didn't trigger the manual attempt block
-                // or if that block itself didn't lead to isRecoveryReady.
-                if (!isRecoveryReady) { // Double check if some other async action made it ready
+                console.warn('Timeout: PASSWORD_RECOVERY event not received and manual setSession not initiated or failed.');
+                if (!isRecoveryReady) {
                     setError('Verification timed out. Please try the link again or request a new one.');
                     setIsRecoveryReady(false);
-                    recoveryAttemptedRef.current = true; // Mark attempt to prevent loops
+                    recoveryAttemptedRef.current = true; 
                 }
             }
-        }, 5000); // 5 seconds timeout
-
+        }, 7000); // Increased timeout slightly to allow for setSession attempt
 
         return () => {
             clearTimeout(timer);
@@ -127,7 +118,7 @@ function ResetPassword() {
                 authListenerRef.current.unsubscribe();
             }
         };
-    }, [navigate]);
+    }, [navigate]); // Removed isRecoveryReady from dependencies to avoid re-triggering on its change
 
     const handleResetPassword = async (e) => {
         e.preventDefault();
@@ -166,6 +157,7 @@ function ResetPassword() {
         );
     }
 
+    // Display specific error messages first
     if (error && error !== 'Verifying recovery link, please wait...') {
         return (
             <div className="container">
@@ -178,20 +170,24 @@ function ResetPassword() {
         );
     }
 
+    // If still verifying or recovery not ready (and no other specific error shown above)
     if (!isRecoveryReady) {
         return (
             <div className="container">
                 <h2>Reset Password</h2>
-                <p>{error || 'Verifying recovery link, please wait...'}</p>
+                {/* Show the current error/status message. If error is empty, it shows the default verifying message */}
+                <p>{error || 'Verifying recovery link, please wait...'}</p> 
                 <p><a href="/">Go to Home</a></p>
             </div>
         );
     }
 
+    // If recovery is ready, show the form
     return (
         <div className="container">
             <h2>Reset Password</h2>
-            {error && error !== 'Verifying recovery link, please wait...' && <p className="error">{error}</p>} 
+            {/* This error display might be redundant if handled by the block above, but kept for safety */}
+            {/* {error && error !== 'Verifying recovery link, please wait...' && <p className="error">{error}</p>}  */}
             <form onSubmit={handleResetPassword}>
                 <div>
                     <label htmlFor="password">New Password:</label>
