@@ -10,7 +10,7 @@ import { showToast } from '../common/ToastMessage';
 import ToastMessage from '../common/ToastMessage';
 import StaffDateAvailabilityForm from './StaffDateAvailabilityForm';
 
-function UsersTab({ users, setUsers, handleError, selectedLocation }) {
+function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = false }) {
   const [selectedRows, setSelectedRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -49,9 +49,11 @@ function UsersTab({ users, setUsers, handleError, selectedLocation }) {
       // Convert empty string location to null
       if (itemData.location === '') {
         itemData.location = null;
-      } else if (itemData.location) {
-        // Ensure location is an integer if a value is present
-        itemData.location = parseInt(itemData.location, 10);
+      }
+      
+      // For staff mode, restrict role to customer only
+      if (staffMode && itemData.role !== 'customer') {
+        itemData.role = 'customer';
       }
       if (isCreating) {
         const newUser = await dbService.createItem('users', itemData, 'User');
@@ -117,66 +119,69 @@ function UsersTab({ users, setUsers, handleError, selectedLocation }) {
   return (
     <div>
       <ToastMessage />
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">Users Management</h2>
       
-      {/* Role filter */}
-      <div className="flex gap-4 items-center mb-4">
-        <select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
-          className="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg focus:outline-none focus:border-blue-500 w-40 h-10"
-        >
-          <option value="all">All Roles</option>
-          <option value="customer">Customer</option>
-          <option value="staff">Staff</option>
-          <option value="admin">Admin</option>
-          <option value="staff_admin">Staff & Admin</option>
-        </select>
+      {/* Only show Add New User and Delete Selected buttons for non-staff users */}
+      {!staffMode && (
+        <>
+          <button
+            onClick={() => setIsCreating(true)}
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 my-4"
+          >
+            Add New User
+          </button>
 
-        <FilterBox
-          filter={searchFilter}
-          setFilter={setSearchFilter}
-          placeholder="Search by name or email..."
-          className="flex-1 h-10"
-        />
-      </div>
+          <button
+            onClick={async () => {
+              console.log('Refreshing users data...');
+              await fetchUsers();
+              console.log('Users data refreshed successfully');
+            }}
+            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 my-4 ml-2"
+          >
+            Refresh
+          </button>
 
-      <button
-        onClick={() => {
-          setEditItem(null);
-          setIsCreating(true);
-        }}
-        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 my-4"
-      >
-        Add New User
-      </button>
+          <button
+            onClick={handleDeleteSelected}
+            className={`${selectedRows.length === 0 ? 'bg-gray-400 hover:bg-gray-500' : 'bg-red-500 hover:bg-red-600'} text-white px-4 py-2 rounded-lg my-4 ml-2`}
+            disabled={selectedRows.length === 0}
+          >
+            Delete Selected
+          </button>
+        </>
+      )}
 
-      <button
-        onClick={async () => {
-          console.log('Refreshing users data...');
-          await fetchUsers();
-          console.log('Users data refreshed successfully');
-        }}
-        className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 my-4 ml-2"
-      >
-        Refresh
-      </button>
-
-      <button
-        onClick={handleDeleteSelected}
-        className={`${selectedRows.length === 0 ? 'bg-gray-400 hover:bg-gray-500' : 'bg-red-500 hover:bg-red-600'} text-white px-4 py-2 rounded-lg my-4 ml-2`}
-        disabled={selectedRows.length === 0}
-      >
-        Delete Selected
-      </button>
+      {/* Show Add New Customer button and refresh button for staff users */}
+      {staffMode && (
+        <>
+          <button
+            onClick={() => setIsCreating(true)}
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 my-4"
+          >
+            Add New Customer
+          </button>
+          
+          <button
+            onClick={async () => {
+              console.log('Refreshing users data...');
+              await fetchUsers();
+              console.log('Users data refreshed successfully');
+            }}
+            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 my-4 ml-2"
+          >
+            Refresh
+          </button>
+        </>
+      )}
 
       <Table
         data={filteredUsers}
         selectedRows={selectedRows}
         setSelectedRows={setSelectedRows}
-        onEdit={setEditItem}
+        onEdit={!staffMode ? setEditItem : null}
         onSetAvailability={(staff) => setSelectedStaffId(staff.id)}
-        onResetPassword={handleResetPassword}
+        onResetPassword={!staffMode ? handleResetPassword : null}
+        staffMode={staffMode}
         columns={[
           { key: 'full_name', label: 'Full Name' },
           { key: 'email', label: 'Email' },
@@ -205,11 +210,18 @@ function UsersTab({ users, setUsers, handleError, selectedLocation }) {
             { key: 'gender', label: 'Gender', type: 'select', options: [{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }, { value: 'other', label: 'Other' }] },
             { key: 'birthday', label: 'Birthday', type: 'date' },
             { key: 'post_code', label: 'Post Code', type: 'text' },
-            { key: 'role', label: 'Role', type: 'select', options: [
-              { value: 'customer', label: 'Customer' },
-              { value: 'staff', label: 'Staff' },
-              { value: 'admin', label: 'Admin' },
-            ], required: true, defaultValue: 'customer' },
+            // Conditionally show role field based on staffMode
+            ...(staffMode ? [
+              { key: 'role', label: 'Role', type: 'select', options: [
+                { value: 'customer', label: 'Customer' }
+              ], required: true, defaultValue: 'customer', disabled: true }
+            ] : [
+              { key: 'role', label: 'Role', type: 'select', options: [
+                { value: 'customer', label: 'Customer' },
+                { value: 'staff', label: 'Staff' },
+                { value: 'admin', label: 'Admin' },
+              ], required: true, defaultValue: 'customer' }
+            ])
           ]}
         />
       )}

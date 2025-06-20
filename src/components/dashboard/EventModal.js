@@ -1,10 +1,11 @@
 import React from 'react';
 
-const EventModal = ({ selectedEvent, onClose, onEdit }) => {
+const EventModal = ({ selectedEvent, onClose, onEdit, onConfirm }) => {
   if (!selectedEvent) return null;
 
   const isAvailabilityEvent = selectedEvent.classNames?.includes('availability-event');
   const { extendedProps } = selectedEvent;
+  const isPending = extendedProps?.status === 'pending';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -91,6 +92,14 @@ const EventModal = ({ selectedEvent, onClose, onEdit }) => {
         </div>
         
         <div className="mt-6 flex justify-end space-x-4">
+          {!isAvailabilityEvent && isPending && (
+            <button
+              onClick={() => onConfirm(selectedEvent)}
+              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+            >
+              Confirm Booking
+            </button>
+          )}
           {!isAvailabilityEvent && (
             <button
               onClick={onEdit}

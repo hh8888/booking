@@ -3,17 +3,15 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import DashboardTab from './components/dashboard/DashboardTab';
 import UsersTab from './components/service/UsersTab';
-import ServicesTab from './components/service/ServicesTab';
 import BookingsTab from './components/booking/BookingsTab';
 import ReportsTab from './components/reports/ReportsTab';
-import SettingsTab from './components/SettingsTab';
 import LocationSelector from './components/common/LocationSelector';
 import UserDropdown from './components/common/UserDropdown';
 import DatabaseService from './services/DatabaseService';
 import LocationService from './services/LocationService';
 import LoadingSpinner from './components/common/LoadingSpinner';
 
-export default function AdminDashboard() {
+export default function StaffDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,30 +44,37 @@ export default function AdminDashboard() {
     
     const fetchUserInfo = async () => {
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('Auth user:', user);
       if (user) {
         setUserEmail(user.email);
         
-        // Find the user record in the users table by email instead of auth ID
         const { data: userData } = await supabase
           .from('users')
           .select('id, role, full_name')
           .eq('email', user.email)
           .single();
           
+        console.log('Database userData:', userData);
+          
         if (userData) {
-          setCurrentUserId(userData.id); // Use the database user ID, not auth ID
+          console.log('Setting currentUserId to:', userData.id);
+          setCurrentUserId(userData.id);
           setUserRole(userData.role);
           setUserName(userData.full_name);
+        } else {
+          console.log('No user found in database for email:', user.email);
         }
       }
     };
     fetchUserInfo();
     
+    // For staff dashboard, we only need to fetch customers and other staff for booking purposes
     const fetchUsers = async () => {
       try {
         const { data, error } = await supabase
           .from("users")
           .select("*")
+          .in('role', ['customer', 'staff']) // Staff can see customers and other staff
           .order("created_at", { ascending: false });
     
         if (error) {
@@ -100,6 +105,7 @@ export default function AdminDashboard() {
         const { data, error } = await supabase
           .from("users")
           .select("*")
+          .in('role', ['customer', 'staff'])
           .order("created_at", { ascending: false });
     
         if (error) {
@@ -129,7 +135,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-100 p-4 md:p-6 flex flex-col">
       <div className="flex justify-between items-center mb-4 md:mb-6">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800">{businessName}</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800">{businessName} - Staff Portal</h1>
           <LocationSelector />
         </div>
         <UserDropdown 
@@ -140,50 +146,44 @@ export default function AdminDashboard() {
         />
       </div>
     
-      {/* Tab Navigation */}
+      {/* Tab Navigation - Removed Settings, Services, and Reports tabs */}
       <div className="flex flex-wrap gap-2 border-b border-gray-200 mb-4 md:mb-6 overflow-x-auto">
         <button
           onClick={() => setActiveTab('dashboard')}
-          className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${activeTab === 'dashboard' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${
+            activeTab === 'dashboard' 
+              ? 'text-blue-500 border-b-2 border-blue-500' 
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
         >
           Dashboard
         </button>
         <button
           onClick={() => setActiveTab('bookings')}
-          className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${activeTab === 'bookings' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${
+            activeTab === 'bookings' 
+              ? 'text-blue-500 border-b-2 border-blue-500' 
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
         >
-          Bookings
+          My Bookings
         </button>
         <button
-          onClick={() => setActiveTab('users')}
-          className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${activeTab === 'users' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
+          onClick={() => setActiveTab('customers')}
+          className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${
+            activeTab === 'customers' 
+              ? 'text-blue-500 border-b-2 border-blue-500' 
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
         >
-          Users
-        </button>
-        <button
-          onClick={() => setActiveTab('Services')}
-          className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${activeTab === 'Services' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          Services
-        </button>
-        <button
-          onClick={() => setActiveTab('reports')}
-          className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${activeTab === 'reports' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          Reports
-        </button>
-        <button
-          onClick={() => setActiveTab('settings')}
-          className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${activeTab === 'settings' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          Settings
+          Customers
         </button>
       </div>
     
       {/* Tab Content */}
       <div className="bg-white p-4 md:p-6 rounded-lg shadow-md flex-grow mb-16">
         {loading ? (
-          <LoadingSpinner text="Loading users..." />
+          <LoadingSpinner fullScreen={true} text="Loading data..." />
         ) : networkError ? (
           <div className="text-center py-6 md:py-8">
             <div className="text-red-500 text-base md:text-xl mb-4">
@@ -201,12 +201,9 @@ export default function AdminDashboard() {
           </div>
         ) : (
           <>
-            {activeTab === 'dashboard' && <DashboardTab />}
-            {activeTab === 'bookings' && <BookingsTab users={users} />}
-            {activeTab === 'users' && <UsersTab users={users} setUsers={setUsers} />}
-            {activeTab === 'Services' && <ServicesTab users={users} />}
-            {activeTab === 'reports' && <ReportsTab />}
-            {activeTab === 'settings' && <SettingsTab />}
+            {activeTab === 'dashboard' && <DashboardTab staffMode={true} currentUserId={currentUserId} />}
+            {activeTab === 'bookings' && <BookingsTab users={users} staffMode={true} currentUserId={currentUserId} />}
+            {activeTab === 'customers' && <UsersTab users={users.filter(user => user.role === 'customer')} setUsers={setUsers} staffMode={true} />}
           </>
         )}
       </div>

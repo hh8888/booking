@@ -10,7 +10,7 @@ import DateTimeFormatter from '../../utils/DateTimeFormatter';
 import ErrorHandlingService from '../../services/ErrorHandlingService';
 import withErrorHandling from '../common/withErrorHandling';
 
-function BookingsTab({ users, userId }) {
+function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
   const errorHandler = ErrorHandlingService.getInstance();
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
@@ -207,10 +207,10 @@ function BookingsTab({ users, userId }) {
     
       // Remove extra display fields and ensure customer_id is included
       // Change this line:
-      // const { service_name, customer_name, booking_time_formatted, created_at_formatted, duration, show_recurring, ...dataToSave } = itemData;
+      // const { service_name, customer_name, booking_time_formatted, created_at_formatted, show_recurring, ...dataToSave } = itemData;
       
-      // To this (remove 'duration' from the destructuring):
-      const { service_name, customer_name, booking_time_formatted, created_at_formatted, show_recurring, ...dataToSave } = itemData;
+      // To this (add provider_name to the destructuring):
+      const { service_name, customer_name, provider_name, booking_time_formatted, created_at_formatted, show_recurring, ...dataToSave } = itemData;
     
       console.log('Data after removing display fields:', dataToSave);
     
@@ -229,6 +229,9 @@ function BookingsTab({ users, userId }) {
       if (!isCreating || !dataToSave?.recurring_type) {
         delete dataToSave.recurring_type;
         delete dataToSave.recurring_count;
+      } else {
+        // Ensure recurring_count is at least 2 for recurring bookings (since 1 would be just the original)
+        dataToSave.recurring_count = Math.max(2, parseInt(dataToSave.recurring_count) || 2);
       }
 
       // Validate required fields and ensure customer_id exists
@@ -446,15 +449,16 @@ function BookingsTab({ users, userId }) {
           }
           
           setEditItem({
-            customer_id: customers.length > 0 ? customers[0].id : null,
-            service_id: services.length > 0 ? services[0].id : null,
+            customer_id: '',
+            service_id: '',
+            provider_id: '',
             start_date: tomorrow.toISOString().split('T')[0],
             start_time_hour: startHour.toString().padStart(2, '0'),
             start_time_minute: '00',
             status: "pending",
             notes: "",
             recurring_type: null,
-            recurring_count: 1
+            recurring_count: 0
           });
         }}
         className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 my-4"
@@ -471,20 +475,22 @@ function BookingsTab({ users, userId }) {
         Cancel Selected
       </button>
 
-      {/* Status filter and time filter */}
-      <div className="my-4 flex items-center space-x-4">
+
+      {/* Filter Controls */}
+      <div className="flex flex-wrap gap-4 mb-4 items-center">
+        {/* Status filter */}
         <div>
-          <label className="mr-2 font-medium">Status:</label>
+          <label className="mr-2 font-medium">Status Filter:</label>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           >
-            <option value="all">All Status</option>
+            <option value="all">All Statuses</option>
             <option value="pending">Pending</option>
             <option value="confirmed">Confirmed</option>
-            <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
+            <option value="completed">Completed</option>
           </select>
         </div>
 
@@ -496,26 +502,31 @@ function BookingsTab({ users, userId }) {
             onChange={(e) => setTimeFilter(e.target.value)}
             className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           >
-            <option value="all">All Bookings</option>
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
             <option value="today+">Today & Future</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
             <option value="past">Past Bookings</option>
           </select>
         </div>
 
-        {/* User filter */}
-        <div>
-          <label className="mr-2 font-medium">User Filter:</label>
-          <select
-            value={userFilter}
-            onChange={(e) => setUserFilter(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="all">All Users</option>
-            {customers.map(customer => (
-              <option key={customer.id} value={customer.id}>{customer.full_name}</option>
-            ))}
-          </select>
-        </div>
+        {/* Only show User Filter for non-staff users */}
+        {!staffMode && (
+          <div>
+            <label className="mr-2 font-medium">User Filter:</label>
+            <select
+              value={userFilter}
+              onChange={(e) => setUserFilter(e.target.value)}
+              className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="all">All Users</option>
+              {customers.map(customer => (
+                <option key={customer.id} value={customer.id}>{customer.full_name}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Bookings Table */}
@@ -556,6 +567,7 @@ function BookingsTab({ users, userId }) {
           };
           setEditItem(formattedBooking);
         }}
+        onResetPassword={null}
       />
 
       {/* Edit/Create popup */}

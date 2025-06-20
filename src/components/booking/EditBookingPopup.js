@@ -1046,7 +1046,7 @@ export default function EditBookingPopup({
               type: "number",
               min: 2,
               max: 52,
-              defaultValue: 2,
+              defaultValue: 0,
               hidden: !isCreating || !showRecurringOptions || hideRecurringOptions  // Hide if hideRecurringOptions is true
             },
           ]}

@@ -1,5 +1,5 @@
-import { supabase } from '../supabaseClient';
 import DatabaseService from './DatabaseService';
+import { supabase } from '../supabaseClient';
 
 class UserService {
   static instance = null;
@@ -127,6 +127,52 @@ class UserService {
       return { success: true, method: 'manual', newPassword };
     } catch (error) {
       throw new Error(`Failed to reset password manually: ${error.message}`);
+    }
+  }
+
+  async getUserProfile(userId) {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('full_name, email, phone_number, birthday, post_code, gender')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      throw new Error('Failed to fetch user profile');
+    }
+  }
+
+  async updateUserProfile(userId, profileData) {
+    try {
+      console.log('Updating user profile for userId:', userId);
+      console.log('Profile data:', profileData);
+      
+      const { data, error } = await supabase
+        .from('users')
+        .update(profileData)
+        .eq('id', userId)
+        .select();
+
+      console.log('Update response:', { data, error });
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        throw new Error(`No user found with ID: ${userId}`);
+      }
+      
+      console.log('Successfully updated user:', data[0]);
+      return data[0];
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      throw new Error(`Failed to update user profile: ${error.message}`);
     }
   }
 }

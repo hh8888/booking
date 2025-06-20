@@ -239,7 +239,29 @@ export default function DashboardTab() {
       }
     }
   };
-  
+  // Add this new function to handle booking confirmation
+  const handleConfirmBooking = async (event) => {
+    try {
+      const dbService = DatabaseService.getInstance();
+      
+      // Update booking status to confirmed
+      await dbService.updateItem('bookings', {
+        id: event.id,
+        status: 'confirmed'
+      }, 'Booking');
+      
+      // Refresh the calendar data
+      await fetchBookingsWithStaff();
+      // Close the modal
+      setShowEventModal(false);
+      setSelectedEvent(null);
+      
+      toast.success('Booking confirmed successfully!');
+    } catch (error) {
+      console.error('Error confirming booking:', error);
+      toast.error('Failed to confirm booking. Please try again.');
+    }
+  };
   // Remove or comment out these functions:
   // const handleEventMouseEnter = (info) => { ... }
   // const handleEventMouseLeave = (info) => { ... }
@@ -287,18 +309,19 @@ export default function DashboardTab() {
         />
       </div>
       
+      
       <EventModal
-        selectedEvent={selectedEvent}
-        onClose={() => {
-          setShowEventModal(false);
-          setSelectedEvent(null);
-        }}
-        onEdit={() => {
-          setShowEventModal(false);
-          setShowEditPopup(true);
-        }}
-      />
-  
+      selectedEvent={selectedEvent}
+      onClose={() => {
+        setShowEventModal(false);
+        setSelectedEvent(null);
+      }}
+      onEdit={() => {
+        setShowEventModal(false);
+        setShowEditPopup(true);
+      }}
+      onConfirm={handleConfirmBooking}
+    />     
       {showEditPopup && (
         <EditBookingPopup
           booking={selectedEvent ? {

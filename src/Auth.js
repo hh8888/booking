@@ -3,7 +3,9 @@ import { supabase } from './supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import AuthForm from './components/auth/AuthForm';
 import AdminDashboard from './AdminDashboard';
-import DatabaseService from './services/DatabaseService'; // Import DatabaseService
+import StaffDashboard from './StaffDashboard'; // Add this import
+import DatabaseService from './services/DatabaseService';
+import LoadingSpinner from './components/common/LoadingSpinner';
 
 export default function Auth() {
   const [email, setEmail] = useState('');
@@ -114,8 +116,10 @@ export default function Auth() {
       // Redirect based on role
       if (userData.role === 'customer') {
         navigate('/booking');
-      } else {
-        // Admin or other roles stay on current page (will show AdminDashboard)
+      } else if (userData.role === 'staff') {
+        navigate('/staff');
+      } else if (userData.role === 'admin') {
+        navigate('/admin');
       }
     } catch (err) {
       console.error('Error checking user role:', err);
@@ -555,19 +559,22 @@ export default function Auth() {
     }
   };
 
-  // Only show AdminDashboard for admin users
-  if (isSignedIn && userRole === 'admin') {
-    return <AdminDashboard />;
+  // Show appropriate dashboard based on user role
+  // Only show dashboards when we're on the root path and user is signed in
+  // Other paths should be handled by their respective route components
+  if (isSignedIn && window.location.pathname === '/') {
+    if (userRole === 'admin') {
+      return <AdminDashboard />;
+    }
+    if (userRole === 'staff') {
+      return <StaffDashboard />;
+    }
   }
 
   // For customers, they will be redirected to /booking
   // This component will only show the auth form for non-authenticated users
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <LoadingSpinner fullScreen={true} text="Loading..." />;
   }
 
   return (

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { showToast } from './ToastMessage';
+import LoadingSpinner from './LoadingSpinner';
 
 const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, loadingAvailability = false }) => {
   const [formData, setFormData] = useState({});
@@ -335,7 +336,7 @@ const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, l
         <h2 className="text-xl font-semibold mb-4">{title || 'Edit Item'}</h2>
         {loadingAvailability && (
           <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
-            <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+            <LoadingSpinner size="lg" text="Loading availability..." />
           </div>
         )}
         

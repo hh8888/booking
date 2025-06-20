@@ -10,6 +10,7 @@ import CustomerBooking from './CustomerBooking';
 import ToastMessage from '../common/ToastMessage';
 import LocationSelector from '../common/LocationSelector';
 import { supabase } from '../../supabaseClient'; // Add this import
+import LoadingSpinner from '../common/LoadingSpinner';
 
 const CustomerDashboard = () => {
   const { user } = useUser();
@@ -242,11 +243,7 @@ const CustomerDashboard = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <LoadingSpinner fullScreen={true} text="Loading dashboard..." />;
   }
 
   if (!customerData) {

@@ -1,10 +1,11 @@
 import React from 'react';
+import LoadingSpinner from '../common/LoadingSpinner';
 
 const DashboardStats = ({ tableStats, currentLocation, loading }) => {
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      <div className="flex justify-center py-8">
+        <LoadingSpinner size="lg" text="Loading statistics..." />
       </div>
     );
   }

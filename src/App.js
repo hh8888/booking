@@ -7,6 +7,7 @@ import Bookings from './Bookings';
 import './index.css'; // Import Tailwind CSS
 import './App.css';
 import AdminDashboard from './AdminDashboard';
+import StaffDashboard from './StaffDashboard'; // Add this import
 import Footer from './components/common/Footer';
 import CustomerDashboard from './components/customer/CustomerDashboard';
 import ResetPassword from './ResetPassword'; 
@@ -67,6 +68,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Auth />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/staff" element={<StaffDashboard />} /> {/* Add this route */}
           <Route path="/booking" element={<CustomerDashboard />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/auth" element={<Auth />} />

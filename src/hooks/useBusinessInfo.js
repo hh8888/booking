@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import DatabaseService from '../services/DatabaseService';
-import { ErrorHandlingService } from '../services/ErrorHandlingService';
+import ErrorHandlingService from '../services/ErrorHandlingService';
 
 export function useBusinessInfo() {
   const [businessName, setBusinessName] = useState('');
