@@ -3,9 +3,10 @@ import { supabase } from './supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import AuthForm from './components/auth/AuthForm';
 import AdminDashboard from './AdminDashboard';
-import StaffDashboard from './StaffDashboard'; // Add this import
+import StaffDashboard from './StaffDashboard';
 import DatabaseService from './services/DatabaseService';
 import LoadingSpinner from './components/common/LoadingSpinner';
+import { toast } from 'react-toastify'; // Use the existing toast library
 
 export default function Auth() {
   const [email, setEmail] = useState('');
@@ -206,6 +207,10 @@ export default function Auth() {
         ]);
 
       if (userError) throw userError;
+      
+      // Replace the single error message with two separate toasts
+      toast.success('Registration successful!');
+      toast.warning('Please check your email for the confirmation link.');
       
       setError('Registration successful! Please check your email for the confirmation link.');
     } catch (err) {
