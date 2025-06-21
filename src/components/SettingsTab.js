@@ -9,7 +9,8 @@ import {
   UserSettings,
   ServiceSettings,
   BookingSettings,
-  SystemSettings
+  SystemSettings,
+  CustomerDashboardSettings
 } from './settings';
 
 export default function SettingsTab() {
@@ -469,6 +470,118 @@ export default function SettingsTab() {
     }
   };
 
+  // Customer Dashboard settings
+  // Replace the customerDashboardSettings state (around line 465)
+const [customerDashboardSettings, setCustomerDashboardSettings] = useState([
+  {
+    key: 'bookingSteps',
+    label: 'Booking Steps',
+    value: JSON.stringify([
+      { id: 1, title: 'Customer makes booking online', description: 'Browse services and select your preferred time slot' },
+      { id: 2, title: 'Staff will call customer to confirm details of booking', description: 'Our team will contact you to verify appointment details' }
+    ]),
+    type: 'booking-steps', // Changed from 'textarea' to custom type
+    description: 'Booking steps displayed on customer dashboard'
+  },
+    {
+      key: 'showBookingSteps',
+      label: 'Show Booking Steps',
+      value: 'true',
+      type: 'select',
+      options: [
+        { value: 'true', label: 'Show' },
+        { value: 'false', label: 'Hide' }
+      ],
+      description: 'Display booking steps section on customer dashboard'
+    }
+  ]);
+
+  // Load customer dashboard settings
+  useEffect(() => {
+    const loadCustomerDashboardSettings = async () => {
+      try {
+        const dbService = DatabaseService.getInstance();
+        const [bookingSteps, showBookingSteps] = await Promise.all([
+          dbService.getSettingsByKey('customer_dashboard', 'bookingSteps'),
+          dbService.getSettingsByKey('customer_dashboard', 'showBookingSteps')
+        ]);
+
+        setCustomerDashboardSettings(prevSettings => {
+          return prevSettings.map(setting => {
+            if (setting.key === 'bookingSteps' && bookingSteps !== null) {
+              return { ...setting, value: bookingSteps };
+            }
+            if (setting.key === 'showBookingSteps' && showBookingSteps !== null) {
+              return { ...setting, value: showBookingSteps };
+            }
+            return setting;
+          });
+        });
+      } catch (error) {
+        console.error('Error loading customer dashboard settings:', error);
+      }
+    };
+
+    loadCustomerDashboardSettings();
+  }, []);
+
+  // Save customer dashboard settings
+  const saveCustomerDashboardSettings = async (formData) => {
+    try {
+      const dbService = DatabaseService.getInstance();
+      
+      // Validate JSON format for bookingSteps
+      if (formData.bookingSteps) {
+        try {
+          JSON.parse(formData.bookingSteps);
+        } catch (e) {
+          toast.error('Invalid JSON format for booking steps');
+          return;
+        }
+      }
+
+      // Prepare data to save
+      const settingsToSave = Object.keys(formData).map(key => ({
+        category: 'customer_dashboard',
+        key,
+        value: formData[key]
+      }));
+
+      // Check if settings exist, update if they do, otherwise create
+      for (const setting of settingsToSave) {
+        const { data } = await supabase
+          .from('settings')
+          .select('*')
+          .eq('category', setting.category)
+          .eq('key', setting.key);
+
+        if (data && data.length > 0) {
+          // Update existing setting
+          await dbService.updateItem('settings', {
+            id: data[0].id,
+            ...setting
+          }, 'Setting');
+        } else {
+          // Create new setting
+          await dbService.createItem('settings', setting, 'Setting');
+        }
+      }
+
+      // Update local state
+      setCustomerDashboardSettings(prevSettings => {
+        return prevSettings.map(setting => ({
+          ...setting,
+          value: formData[setting.key] || setting.value
+        }));
+      });
+
+      toast.success('Customer dashboard settings saved successfully');
+    } catch (error) {
+      console.error('Error saving customer dashboard settings:', error);
+      toast.error(`Save failed: ${error.message}`);
+    }
+  };
+
   return (
     <div className="p-4">
       <h2 className="text-xl font-semibold text-gray-800 mb-6">System Settings</h2>
@@ -496,6 +609,12 @@ export default function SettingsTab() {
       <BookingSettings 
         settings={bookingSettings} 
         onSave={saveBookingSettings} 
+      />
+      
+      {/* Customer Dashboard Settings Group */}
+      <CustomerDashboardSettings 
+        settings={customerDashboardSettings} 
+        onSave={saveCustomerDashboardSettings} 
       />
       
       {/* System Settings Group */}

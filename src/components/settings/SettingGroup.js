@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import BookingStepsEditor from './BookingStepsEditor';
 
 export const SettingGroup = ({ title, settings, onSave }) => {
   const [formData, setFormData] = useState({});
@@ -70,6 +71,22 @@ export const SettingGroup = ({ title, settings, onSave }) => {
             disabled={!isEditing}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             rows={3}
+          />
+        );
+      case 'booking-steps':
+        return (
+          <BookingStepsEditor
+            key={setting.key}
+            value={formData[setting.key]}
+            onChange={(value) => {
+              setFormData({
+                ...formData,
+                [setting.key]: value
+              });
+            }}
+            label={setting.label}
+            description={setting.description}
+            disabled={!isEditing}
           />
         );
       default:

@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../../hooks/useUser';
-import { useNavigate } from 'react-router-dom'; // Add this import
+import { useNavigate } from 'react-router-dom';
 import DatabaseService from '../../services/DatabaseService';
 import BookingService from '../../services/BookingService';
 import { toast } from 'react-toastify';
 import CustomerProfile from './CustomerProfile';
 import CustomerBookingsList from './CustomerBookingsList';
 import CustomerBooking from './CustomerBooking';
+import BookingSteps from './BookingSteps';
 import ToastMessage from '../common/ToastMessage';
 import LocationSelector from '../common/LocationSelector';
-import { supabase } from '../../supabaseClient'; // Add this import
+import { supabase } from '../../supabaseClient';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 const CustomerDashboard = () => {
@@ -275,6 +276,9 @@ const CustomerDashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Booking Steps Section */}
+        <BookingSteps />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Personal Information */}

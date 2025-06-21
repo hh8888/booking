@@ -52,6 +52,9 @@ export default function Auth() {
   useEffect(() => {
     const checkSessionAndSettings = async () => {
       setIsLoading(true);
+      // Clear any existing errors when component mounts
+      setError('');
+      
       // Fetch mobile auth setting
       try {
         const dbService = DatabaseService.getInstance();
@@ -102,17 +105,27 @@ export default function Auth() {
 
   const checkUserRoleAndRedirect = async (user) => {
     try {
+      console.log('Checking user role for:', user.id);
       const { data: userData, error } = await supabase
         .from('users')
         .select('role')
         .eq('id', user.id)
         .single();
-
-      if (error) throw error;
-
+  
+      if (error) {
+        console.error('Database error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw error;
+      }
+  
+      console.log('User role retrieved:', userData.role);
       setUserRole(userData.role);
       setIsSignedIn(true);
-
+  
       // Redirect based on role
       if (userData.role === 'customer') {
         navigate('/booking');
@@ -122,6 +135,7 @@ export default function Auth() {
         navigate('/admin');
       }
     } catch (err) {
+      console.error('Full error object:', err);
       console.error('Error checking user role:', err);
       setError('Error loading user information');
     }
@@ -219,12 +233,16 @@ export default function Auth() {
         return;
       }
 
+      // Try to update last_sign_in but don't fail if it doesn't work
       const { error: updateError } = await supabase
         .from('users')
         .update({ last_sign_in: new Date().toISOString() })
         .eq('id', data.user.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.warn('Could not update last_sign_in:', updateError.message);
+        // Don't throw the error - just log it
+      }
 
       // Check role and redirect
       await checkUserRoleAndRedirect(data.user);
@@ -579,7 +597,7 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      {error && (
+      {!isLoading && error && (
         <div className={`fixed top-4 right-4 px-4 py-3 rounded ${
           resetPasswordSent || otpSent
             ? 'bg-green-100 border border-green-400 text-green-700'
