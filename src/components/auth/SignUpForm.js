@@ -48,7 +48,7 @@ export default function SignUpForm({
         </div>
       )}
 
-      {/* Mobile Input - Conditionally render based on authMethod and isMobileAuthEnabled */}
+      {/* Mobile Input for Phone Authentication - Conditionally render based on authMethod and isMobileAuthEnabled */}
       {authMethod === 'phone' && isMobileAuthEnabled && (
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">Mobile<span className="text-red-500">*</span></label>
@@ -75,6 +75,18 @@ export default function SignUpForm({
         />
       </div>
 
+      {/* Phone Number Input - Always visible for profile data */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+        <input
+          type="tel"
+          placeholder="Enter your phone number"
+          value={mobile}
+          onChange={(e) => setMobile(e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
       {/* Post Code Input */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-1">Post Code</label>
@@ -94,7 +106,7 @@ export default function SignUpForm({
           type="date"
           value={birthday}
           onChange={(e) => setBirthday(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
