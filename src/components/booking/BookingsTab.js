@@ -9,6 +9,7 @@ import DatabaseService from '../../services/DatabaseService';
 import DateTimeFormatter from '../../utils/DateTimeFormatter';
 import ErrorHandlingService from '../../services/ErrorHandlingService';
 import withErrorHandling from '../common/withErrorHandling';
+import LocationService from '../../services/LocationService';
 
 function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
   const errorHandler = ErrorHandlingService.getInstance();
@@ -466,6 +467,57 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
         Create New Booking
       </button>
 
+
+      {/* Refresh button */}
+      <button
+        onClick={async () => {
+          console.log('Refreshing bookings data...');
+          const initData = async () => {
+            // Get booking time interval setting
+            await fetchBookingTimeInterval();
+            
+            // Get business hours
+            const dbService = DatabaseService.getInstance();
+            const businessHours = await dbService.getSettingsByKey('system', 'businessHours');
+            
+            // Parse business hours or use default (9:00-17:00)
+            let startHour = 9;
+            let endHour = 17;
+            
+            if (businessHours) {
+              const [start, end] = businessHours.split('-');
+              startHour = parseInt(start.split(':')[0]);
+              endHour = parseInt(end.split(':')[0]);
+            }
+
+            // Generate hour options
+            const hours = [];
+            for (let hour = startHour; hour <= endHour; hour++) {
+              hours.push(hour.toString().padStart(2, '0'));
+            }
+            setHourOptions(hours);
+
+            // Generate minute options based on interval
+            const minutes = [];
+            for (let minute = 0; minute < 60; minute += bookingTimeInterval) {
+              minutes.push(minute.toString().padStart(2, '0'));
+            }
+            setMinuteOptions(minutes);
+            
+            const [customerData, serviceData] = await Promise.all([
+              fetchCustomers(),
+              fetchServices()
+            ]);
+            fetchBookings(serviceData, customerData);
+          };
+          await initData();
+          console.log('Bookings data refreshed successfully');
+        }}
+        className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 my-4 ml-2"
+      >
+        Refresh
+      </button>
+
       {/* Delete Selected button */}
       <button
         onClick={handleDeleteSelected}
@@ -474,8 +526,6 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
       >
         Cancel Selected
       </button>
-
-
       {/* Filter Controls */}
       <div className="flex flex-wrap gap-4 mb-4 items-center">
         {/* Status filter */}
@@ -536,6 +586,15 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
           { key: "service_name", label: "Service" },
           { key: "booking_time_formatted", label: "Booking Time" },
           { key: "duration", label: "Duration (mins)" },
+          // This will now work properly
+          { 
+            key: "location", 
+            label: "Location",
+            formatter: (locationId) => {
+              const locationService = LocationService.getInstance();
+              return locationService.getLocationNameById(locationId);
+            }
+          },
           { key: "status", label: "Status" },
           { key: "recurring_type", label: "Recurring Type", 
             formatter: (value) => {

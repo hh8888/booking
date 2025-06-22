@@ -184,7 +184,7 @@ function ServicesTab({ users, handleError }) {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">Services Management</h2>
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">Manage Services</h2>
       <button
         onClick={() => {
           setEditItem(null); // Reset form data for new service

@@ -62,6 +62,14 @@ export default function EditBookingPopup({
         try {
           const dbService = DatabaseService.getInstance();
           const staffAvailabilityService = StaffAvailabilityService.getInstance();
+          
+          // Get the selected service to check if it has staff_id
+          const selectedService = services.find(service => service.id === editItem?.service_id);
+          const serviceHasStaff = selectedService?.staff_id;
+          
+          // Use the location from editItem instead of LocationService
+          const locationId = editItem.location || LocationService.getInstance().getSelectedLocationId();
+          
           const startDate = new Date(editItem.start_date);
           startDate.setHours(0, 0, 0, 0);
           const endDate = new Date(editItem.start_date);
@@ -71,15 +79,25 @@ export default function EditBookingPopup({
           console.log('Fetching slots for:', {
             provider_id: editItem.provider_id,
             start_date: editItem.start_date,
+            locationId: locationId,
+            editItemLocation: editItem.location,
             hourOptions: hourOptions,
-            minuteOptions: minuteOptions
+            minuteOptions: minuteOptions,
+            serviceHasStaff: serviceHasStaff
           });
 
-          // 获取该提供者在所选日期的所有预约
-          const existingBookings = await dbService.fetchData('bookings', 'start_time', false, {
+          // 获取该提供者在所选日期的所有预约 - also filter by location
+          const bookingFilters = {
             provider_id: editItem.provider_id,
             start_time: { gte: startDate.toISOString(), lte: endDate.toISOString() }
-          });
+          };
+          
+          // Add location filter for bookings too
+          if (locationId !== null) {
+            bookingFilters.location = locationId;
+          }
+          
+          const existingBookings = await dbService.fetchData('bookings', 'start_time', false, bookingFilters);
 
           // Filter out the current booking being edited
           const filteredBookings = existingBookings.filter(booking => {
@@ -93,29 +111,17 @@ export default function EditBookingPopup({
             return true;
           });
           
-          // REMOVE THIS ENTIRE SECTION - it's causing the error
-          // Check for time overlap with existing bookings
-          // for (const booking of filteredBookings) {
-          //   const bookingStart = new Date(booking.start_time);
-          //   const bookingEnd = new Date(booking.end_time);
-          //   
-          //   // Check if there's any overlap
-          //   if ((startDate < bookingEnd && endDate > bookingStart)) {
-          //     const conflictTime = DateTimeFormatter.getInstance().formatDateTime(bookingStart);
-          //     throw new Error(`The booking duration would conflict with an existing booking at ${conflictTime}. Please select a different time or reduce the duration.`);
-          //   }
-          // }
-
           console.log('Existing bookings:', existingBookings);
           console.log('Filtered bookings (excluding current):', filteredBookings);
 
-          // 获取服务提供者在该日期的可用时间
-          const availability = await staffAvailabilityService.getStaffAvailability(editItem.provider_id);
+          // 获取服务提供者在该日期的可用时间 - now with location filter
+          const availability = await staffAvailabilityService.getStaffAvailability(editItem.provider_id, locationId);
           const dayAvailability = availability.filter(slot => slot.date === editItem.start_date && slot.is_available);
 
           console.log('Day availability:', {
             availability,
-            dayAvailability
+            dayAvailability,
+            locationId
           });
 
           // 生成所有可能的时间槽
@@ -135,6 +141,14 @@ export default function EditBookingPopup({
                 const slotTime = new Date(editItem.start_date);
                 slotTime.setHours(parseInt(hour), parseInt(minute), 0, 0);
                 
+                // Calculate the end time for this slot based on service duration
+                console.log('EditItem:', editItem);
+                console.log('EditItem duration:', editItem?.duration);
+                const serviceDuration = parseInt(editItem?.duration) || 30; // Ensure correct duration
+                console.log('Using service duration (minutes):', serviceDuration);
+                const slotEndTime = new Date(slotTime.getTime() + serviceDuration * 60000);
+                console.log(`Slot ${hour}:${minute} - Start: ${slotTime.toLocaleTimeString()}, End: ${slotEndTime.toLocaleTimeString()}`);
+              
                 // 检查时间槽是否在服务提供者的可用时间内
                 const isInAvailableHours = dayAvailability.some(slot => {
                   const [startHour, startMinute] = slot.start_time.split(':');
@@ -146,11 +160,13 @@ export default function EditBookingPopup({
                   if (parseInt(endHour) < parseInt(startHour)) {
                     availEnd.setDate(availEnd.getDate() + 1);
                   }
-                  return slotTime >= availStart && slotTime < availEnd;
+                  // Check if the entire service duration fits within available hours
+                  return slotTime >= availStart && slotEndTime <= availEnd;
                 });
 
-                // 检查时间槽是否被占用
-                const isSlotBooked = filteredBookings.some(booking => {
+                // 检查时间槽是否被占用 - improved conflict detection
+                // Only check for conflicts if the service has staff_id
+                const isSlotBooked = serviceHasStaff ? filteredBookings.some(booking => {
                   // Exclude cancelled bookings from blocking time slots
                   if (booking.status === 'cancelled') {
                     return false;
@@ -158,17 +174,52 @@ export default function EditBookingPopup({
                   
                   const bookingStart = new Date(booking.start_time);
                   const bookingEnd = new Date(booking.end_time);
-                  return slotTime >= bookingStart && slotTime < bookingEnd;
-                });
+                  
+                  // More explicit overlap check
+                  const slotStartTime = slotTime.getTime();
+                  const slotEndTimeMs = slotEndTime.getTime();
+                  const bookingStartTime = bookingStart.getTime();
+                  const bookingEndTime = bookingEnd.getTime();
+                  
+                  // Check for any overlap: slot starts before booking ends AND slot ends after booking starts
+                  const hasOverlap = slotStartTime < bookingEndTime && slotEndTimeMs > bookingStartTime;
+                  
+                  console.log(`Checking slot ${hour}:${minute}:`);
+                  console.log(`  Slot time: ${new Date(slotStartTime).toLocaleTimeString()} - ${new Date(slotEndTimeMs).toLocaleTimeString()}`);
+                  console.log(`  Booking time: ${new Date(bookingStartTime).toLocaleTimeString()} - ${new Date(bookingEndTime).toLocaleTimeString()}`);
+                  console.log(`  Has overlap: ${hasOverlap}`);
+                  
+                  return hasOverlap;
+                }) : false; // If no staff_id, never consider slots as booked
 
                 if (isInAvailableHours) {
                   const timeSlot = `${hour}:${minute}`;
                   // Add to allSlots regardless of booking status
                   allSlots.push(timeSlot);
                   
-                  if (isSlotBooked) {
-                    bookedSlots.push(timeSlot);
+                  // Only check for booking conflicts if service has staff_id
+                  if (serviceHasStaff) {
+                    // Check if this slot falls within any existing booking duration
+                    const isWithinBooking = filteredBookings.some(booking => {
+                      const bookingStart = new Date(booking.start_time);
+                      const bookingEnd = new Date(booking.end_time);
+                      const slotTime = new Date(bookingStart);
+                      slotTime.setHours(parseInt(hour), parseInt(minute), 0, 0);
+                      
+                      // Check if slot time is within the booking period
+                      return slotTime >= bookingStart && slotTime < bookingEnd;
+                    });
+                    
+                    if (isWithinBooking) {
+                      bookedSlots.push(timeSlot);
+                    } else if (isSlotBooked) {
+                      // This slot would cause overlap but isn't within an existing booking
+                      // Don't add to bookedSlots - let TimeSlots.js handle it as overlap
+                    } else {
+                      availableSlots.push(timeSlot);
+                    }
                   } else {
+                    // For services without staff_id, all slots within available hours are available
                     availableSlots.push(timeSlot);
                   }
                 }
@@ -201,14 +252,19 @@ export default function EditBookingPopup({
       };
       fetchAvailableTimeSlots();
     
-    }, [editItem?.provider_id, editItem?.start_date, hourOptions.length, minuteOptions.length]); // Remove hourOptions and minuteOptions from dependencies
+    }, [editItem?.provider_id, editItem?.start_date, editItem?.location, editItem?.duration, hourOptions.length, minuteOptions.length]); // Remove hourOptions and minuteOptions from dependencies
 
-  const fetchProviderAvailability = async (providerId, days = 30) => {
+  const fetchProviderAvailability = async (providerId, locationId = null, days = 30) => {
     // 获取服务提供者未来days天的可用时间，从最近的周一开始
     if (!providerId) return [];
     
     try {
       const service = StaffAvailabilityService.getInstance();
+      
+      // Use the provided locationId or get the current one
+      const currentLocationId = locationId || LocationService.getInstance().getSelectedLocationId();
+      
+      console.log('Fetching availability for provider:', providerId, 'location:', currentLocationId);
       
       // 找到最近的周一
       const today = new Date();
@@ -227,8 +283,11 @@ export default function EditBookingPopup({
       const availabilityData = await service.getStaffAvailabilityForDateRange(
         providerId, 
         monday, 
-        endDate
+        endDate,
+        currentLocationId
       );
+
+      console.log('Availability Dates:', availabilityData);
       
       const availabilityPromises = [];
       
@@ -264,6 +323,7 @@ export default function EditBookingPopup({
       return availabilityPromises;
     } catch (error) {
       console.error('Error fetching availability:', error);
+      toast.error('Failed to fetch provider availability');
       return [];
     }
   };
@@ -343,15 +403,25 @@ export default function EditBookingPopup({
           start_date: bookingDate.toLocaleDateString('en-CA'),
           start_time_hour: bookingDate.getHours().toString().padStart(2, '0'),
           start_time_minute: bookingDate.getMinutes().toString().padStart(2, '0'),
-          duration: durationInMinutes
+          duration: durationInMinutes,
+          // Explicitly preserve the location field
+          location: booking.location || null
         };
+        
+        // Debug logging - add this before creating formattedBooking
+        console.log('Original booking object:', booking);
+        console.log('Booking location field:', booking.location);
+        
+        console.log('Formatted booking object:', formattedBooking);
+        console.log('Formatted booking location:', formattedBooking.location);
         
         // Debug logging
         console.log('Setting editItem for editing:', {
           original: booking,
           formatted: formattedBooking,
           provider_id: formattedBooking.provider_id,
-          start_date: formattedBooking.start_date
+          start_date: formattedBooking.start_date,
+          location: formattedBooking.location  // Add this line
         });
         
         setEditItem(formattedBooking);
@@ -489,10 +559,19 @@ export default function EditBookingPopup({
     try {
       const dbService = DatabaseService.getInstance();
       
+      // Use the location from the form data instead of the global location service
+      const bookingDataWithLocation = {
+        ...itemData,
+        // Only use global location if form doesn't have a location value
+        location: itemData.location !== null && itemData.location !== undefined 
+          ? itemData.location 
+          : LocationService.getInstance().getSelectedLocationId()
+      };
+      
       // Construct complete start_time
-      const startDate = new Date(itemData.start_date);
-      const hour = parseInt(itemData.start_time_hour);
-      const minute = parseInt(itemData.start_time_minute);
+      const startDate = new Date(bookingDataWithLocation.start_date);
+      const hour = parseInt(bookingDataWithLocation.start_time_hour);
+      const minute = parseInt(bookingDataWithLocation.start_time_minute);
       
       console.log('Date/time parsing:', {
         start_date: itemData.start_date,
@@ -512,14 +591,14 @@ export default function EditBookingPopup({
       const isoStartTime = startDate.toISOString();
       
       // DURATION OVERLAP VALIDATION
-      const duration = parseInt(itemData.duration) || 60;
+      const duration = parseInt(bookingDataWithLocation.duration) || 60;
       const endTime = new Date(startDate.getTime() + duration * 60000);
       
       // Check if the booking would extend beyond working hours
       const staffAvailabilityService = StaffAvailabilityService.getInstance();
-      const availability = await staffAvailabilityService.getStaffAvailability(itemData.provider_id);
+      const availability = await staffAvailabilityService.getStaffAvailability(bookingDataWithLocation.provider_id);
       const dayAvailability = availability.filter(slot => 
-        slot.date === itemData.start_date && slot.is_available
+        slot.date === bookingDataWithLocation.start_date && slot.is_available
       );
       
       // Check if the selected date has no availability at all
@@ -545,39 +624,74 @@ export default function EditBookingPopup({
       
       // Check for conflicts with existing bookings
       const existingBookings = await dbService.fetchData('bookings', 'start_time', false, {
-        provider_id: itemData.provider_id,
+        provider_id: bookingDataWithLocation.provider_id,
         start_time: { gte: startDate.toISOString().split('T')[0] + 'T00:00:00.000Z', 
                      lte: startDate.toISOString().split('T')[0] + 'T23:59:59.999Z' }
       });
       
       // Get the selected service to check if it has assigned staff
-      const selectedService = services.find(service => service.id === itemData.service_id);
+      const selectedService = services.find(service => service.id === bookingDataWithLocation.service_id);
+      
+      // Add debug logging
+      console.log('Debug - selectedService:', selectedService);
+      console.log('Debug - staff_id value:', selectedService?.staff_id);
+      console.log('Debug - staff_id type:', typeof selectedService?.staff_id);
+      console.log('Debug - staff_id trimmed:', selectedService?.staff_id?.trim?.());
       
       // Only check for overlaps if the service has assigned staff
-      if (selectedService && selectedService.staff_id) {
+      if (selectedService && selectedService.staff_id && selectedService.staff_id.trim() !== '') {
+        console.log('Debug - Entering conflict validation (service has staff)');
+        console.log('Debug - isCreating:', isCreating);
+        console.log('Debug - editItem.id:', editItem?.id);
+        console.log('Debug - existingBookings before filter:', existingBookings.map(b => ({ id: b.id, start_time: b.start_time, end_time: b.end_time })));
+        
         // Filter out the current booking being edited
         const filteredBookings = existingBookings.filter(booking => {
+          console.log('Debug - Checking booking:', booking.id, 'vs editItem.id:', editItem?.id, 'equal?', booking.id === editItem?.id);
           if (!isCreating && editItem && booking.id === editItem.id) {
+            console.log('Debug - Filtering out current booking:', booking.id);
             return false;
           }
           // Exclude cancelled bookings from conflict checking
           if (booking.status === 'cancelled') {
+            console.log('Debug - Filtering out cancelled booking:', booking.id);
             return false;
           }
           return true;
         });
+        
+        console.log('Debug - filteredBookings after filter:', filteredBookings.map(b => ({ id: b.id, start_time: b.start_time, end_time: b.end_time })));
         
         // Check for time overlap with existing bookings
         for (const booking of filteredBookings) {
           const bookingStart = new Date(booking.start_time);
           const bookingEnd = new Date(booking.end_time);
           
+          console.log('Debug - Checking overlap with booking:', booking.id, 'from', bookingStart, 'to', bookingEnd);
+          console.log('Debug - New booking time:', startDate, 'to', endTime);
+          
           // Check if there's any overlap
           if ((startDate < bookingEnd && endTime > bookingStart)) {
+            // Get the service for the conflicting booking to check if it allows double-booking
+            const conflictingBookingService = services.find(service => service.id === booking.service_id);
+            console.log('Debug - Conflicting booking service:', conflictingBookingService);
+            console.log('Debug - Conflicting booking staff_id:', conflictingBookingService?.staff_id);
+            
+            // If the conflicting booking's service has no staff_id (allows double-booking), skip this conflict
+            if (!conflictingBookingService?.staff_id || conflictingBookingService.staff_id.trim() === '') {
+              console.log('Debug - Conflicting booking allows double-booking, skipping conflict');
+              continue;
+            }
+            
+            console.log('Debug - CONFLICT DETECTED with booking:', booking.id);
             const conflictTime = DateTimeFormatter.getInstance().formatDateTime(bookingStart);
             throw new Error(`The booking duration would conflict with an existing booking at ${conflictTime}. Please select a different time or reduce the duration.`);
           }
         }
+        
+        console.log('Debug - No conflicts found');
+      } else {
+        console.log('Debug - Skipping conflict validation (service has no staff or staff_id is empty)');
       }
       // If service has no assigned staff (staff_id is null), skip overlap validation entirely
       
@@ -585,14 +699,14 @@ export default function EditBookingPopup({
       
       let updatedData;
       if (isCreating) {
-        const { start_date, start_time_hour, start_time_minute, ...restData } = itemData;
+        const { start_date, start_time_hour, start_time_minute, ...restData } = bookingDataWithLocation;
         updatedData = {
           ...restData,
           start_time: isoStartTime,
           status: restData.status || 'pending'
         };
       } else {
-        const { start_date, start_time_hour, start_time_minute, ...restData } = itemData;
+        const { start_date, start_time_hour, start_time_minute, ...restData } = bookingDataWithLocation;
         updatedData = {
           ...editItem,
           ...restData,
@@ -601,7 +715,26 @@ export default function EditBookingPopup({
       }
       
       // Remove extra display fields
-      const { service_name, customer_name, booking_time_formatted, created_at_formatted, show_recurring, start_datetime, availabledays, timeslots, ...dataToSave } = updatedData;
+      const { service_name, customer_name, booking_time_formatted, created_at_formatted, show_recurring, start_datetime, availabledays, timeslots, ...restDataToSave } = updatedData;
+      
+      // Create a copy of the data to save
+      const dataToSave = { ...restDataToSave };
+      
+      // DEBUG: Log the data before any processing
+      console.log('=== DEBUG: Data before processing ===');
+      console.log('restDataToSave:', restDataToSave);
+      console.log('editItem:', editItem);
+      console.log('bookingDataWithLocation:', bookingDataWithLocation);
+      
+      // Ensure numeric fields are properly converted from strings
+      dataToSave.recurring_count = parseInt(dataToSave.recurring_count) || 0;
+      dataToSave.duration = parseInt(dataToSave.duration) || 60;
+     
+      
+      // Handle location field
+      if (dataToSave.location !== null && dataToSave.location !== undefined) {
+        dataToSave.location = parseInt(dataToSave.location);
+      }
       
       // Ensure ID is preserved in edit mode, but removed in create mode
       if (!isCreating) {
@@ -616,7 +749,7 @@ export default function EditBookingPopup({
       // Handle recurring fields
       if (isCreating) {
         if (showRecurringOptions) {
-          // Ensure recurring_count is a number
+          // Ensure recurring_count is a number and handle empty strings
           dataToSave.recurring_count = parseInt(dataToSave.recurring_count) || 0;
           // Set default recurring_type if not selected
           dataToSave.recurring_type = dataToSave.recurring_type || 'daily';
@@ -655,23 +788,39 @@ export default function EditBookingPopup({
           dataToSave.recurring_type = null;
           dataToSave.recurring_count = 0;
         }
+      } else {
+        // For editing existing bookings, ensure recurring_count is always a number
+        dataToSave.recurring_count = parseInt(dataToSave.recurring_count) || 0;
       }
+
+      // DEBUG: Log final dataToSave before validation
+      console.log('=== DEBUG: Final dataToSave before validation ===');
+      console.log('dataToSave:', dataToSave);
+      console.log('provider_id:', dataToSave.provider_id, 'type:', typeof dataToSave.provider_id);
+      console.log('customer_id:', dataToSave.customer_id, 'type:', typeof dataToSave.customer_id);
+      console.log('service_id:', dataToSave.service_id, 'type:', typeof dataToSave.service_id);
+      console.log('isCreating:', isCreating);
+      console.log('hideCustomerSelection:', hideCustomerSelection);
 
       // Validate required fields
       if (!hideCustomerSelection && (!dataToSave.customer_id || dataToSave.customer_id === '')) {
+        console.log('=== DEBUG: Customer validation failed ===');
         toast.error('Please select a valid customer');
         return;
       }
 
-      if (!dataToSave.provider_id) {
+      if (!dataToSave.provider_id || dataToSave.provider_id === '') {
+        console.log('=== DEBUG: Provider validation failed ===');
+        console.log('!dataToSave.provider_id:', !dataToSave.provider_id);
+        console.log('dataToSave.provider_id === "":', dataToSave.provider_id === '');
         toast.error('Please select a provider');
         return;
       }
       
       // Calculate end_time based on duration input
       const durationInMinutes = parseInt(dataToSave.duration) || 60;
-      // const endTime = new Date(startDate.getTime() + durationInMinutes * 60000);
-      dataToSave.end_time = endTime.toISOString();
+      const endTime2 = new Date(startDate.getTime() + durationInMinutes * 60000);
+      dataToSave.end_time = endTime2.toISOString();
       dataToSave.duration = durationInMinutes; // 确保duration字段为数字类型
 
       // Call the parent onSave handler
@@ -748,15 +897,42 @@ export default function EditBookingPopup({
               placeholder: "Select a Location",
               hidden: isCreating, // Hide when creating new bookings
               defaultValue: (() => {
+                // If editing an existing booking and it has a location, use it
+                if (!isCreating && booking && booking.location !== null && booking.location !== undefined) {
+                  return booking.location;
+                }
+                // Otherwise, use the current selected location (for new bookings or bookings without location)
                 const locationService = LocationService.getInstance();
                 const currentLocation = locationService.getSelectedLocation();
                 return currentLocation?.id || null;
               })(),
-              onChange: (value) => {
+              onChange: async (value) => {
                 setEditItem(prev => ({
                   ...prev,
                   location: parseInt(value)
                 }));
+                
+                // Reset time slots when location changes
+                setAvailableTimeSlots([]);
+                setAllTimeSlots([]);
+                setBookedSlots([]);
+                
+                // Reload date availability when location changes
+                if (editItem?.provider_id) {
+                  setLoadingAvailability(true);
+                  try {
+                    console.log('Location changed, reloading availability for provider:', editItem.provider_id, 'location:', value);
+                    const availabilityData = await fetchProviderAvailability(editItem.provider_id, parseInt(value));
+                    setSelectedProviderAvailability(availabilityData);
+                    
+                    // The useEffect will automatically handle time slot reloading when editItem.location changes
+                  } catch (error) {
+                    console.error('Error reloading availability:', error);
+                    toast.error('Failed to reload availability for new location');
+                  } finally {
+                    setLoadingAvailability(false);
+                  }
+                }
               }
             },
             { 
@@ -950,6 +1126,19 @@ export default function EditBookingPopup({
                     duration={parseInt(editItem?.duration) || 60}
                     timeInterval={bookingTimeInterval}
                     onTimeSelect={(hour, minute) => {
+                      // Get the selected service to check if it has staff_id
+                      const selectedService = services.find(service => service.id === editItem?.service_id);
+                      
+                      // If service has no staff_id (empty/null), bypass all conflict detection
+                      if (!selectedService?.staff_id || selectedService.staff_id.trim() === '') {
+                        setEditItem(prev => ({
+                          ...prev,
+                          start_time_hour: hour,
+                          start_time_minute: minute
+                        }));
+                        return;
+                      }
+                      
                       // Validate if the selected time slot would cause duration overlap
                       const selectedTime = new Date(2000, 0, 1, parseInt(hour), parseInt(minute));
                       const duration = parseInt(editItem?.duration) || 60;
@@ -973,25 +1162,6 @@ export default function EditBookingPopup({
                       
                       if (hasConflict) {
                         toast.error(`Cannot select this time slot. The booking duration would overlap with existing bookings at: ${conflictSlots.join(', ')}`);
-                        return;
-                      }
-                      
-                      // Also check if there are enough consecutive available slots
-                      let consecutiveAvailable = true;
-                      for (let i = 0; i < duration; i += bookingTimeInterval) {
-                        const checkTime = new Date(selectedTime.getTime() + i * 60000);
-                        const checkHour = checkTime.getHours().toString().padStart(2, '0');
-                        const checkMinute = checkTime.getMinutes().toString().padStart(2, '0');
-                        const timeSlot = `${checkHour}:${checkMinute}`;
-                        
-                        if (!availableTimeSlots.includes(timeSlot) && !bookedSlots.includes(timeSlot)) {
-                          consecutiveAvailable = false;
-                          break;
-                        }
-                      }
-                      
-                      if (!consecutiveAvailable) {
-                        toast.error(`Cannot select this time slot. Not enough consecutive available time slots for the ${duration}-minute duration.`);
                         return;
                       }
                       

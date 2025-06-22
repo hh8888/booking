@@ -11,15 +11,26 @@ class StaffAvailabilityService {
     return StaffAvailabilityService.instance;
   }
 
-  async getStaffAvailability(staffId) {
+  async getStaffAvailability(staffId, locationId = null) {
     try {
       const dbService = DatabaseService.getInstance();
+      
+      const filters = { staff_id: staffId };
+      
+      // Add location filter if provided
+      if (locationId !== null) {
+        filters.location = locationId;
+      }
+      
       const availability = await dbService.fetchData(
         'staff_availability',
         'date',
         true,
-        { staff_id: staffId }
+        filters
       );
+
+      console.log('Availability data:', availability);
+
       return availability;
     } catch (error) {
       console.error('Error fetching staff availability:', error);
@@ -172,7 +183,7 @@ class StaffAvailabilityService {
   }
 
   // Add this new method to the StaffAvailabilityService class
-  async getStaffAvailabilityForDateRange(staffId, startDate, endDate) {
+  async getStaffAvailabilityForDateRange(staffId, startDate, endDate, locationId = null) {
     try {
       const dbService = DatabaseService.getInstance();
       
@@ -180,16 +191,24 @@ class StaffAvailabilityService {
       const startDateStr = new Date(startDate).toLocaleDateString("en-CA");
       const endDateStr = new Date(endDate).toLocaleDateString("en-CA");
       
+      // Build filter object
+      const filters = {
+        staff_id: staffId,
+        date: { gte: startDateStr, lte: endDateStr },
+        is_available: true
+      };
+      
+      // Add location filter if provided
+      if (locationId !== null) {
+        filters.location = locationId;
+      }
+      
       // Single query to get all availability data for the date range
       const availability = await dbService.fetchData(
         'staff_availability',
         'date',
         true,
-        {
-          staff_id: staffId,
-          date: { gte: startDateStr, lte: endDateStr },
-          is_available: true
-        }
+        filters
       );
       
       return availability;

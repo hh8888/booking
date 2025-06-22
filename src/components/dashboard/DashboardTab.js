@@ -197,23 +197,91 @@ export default function DashboardTab() {
       const customerName = eventInfo.event.extendedProps.customerName || 'Unknown';
       const staffName = eventInfo.event.extendedProps.staffName || 'Unknown';
       const serviceName = eventInfo.event.extendedProps.serviceName || 'Appointment';
-      const formattedTitle = `${customerName} - ${staffName} - ${serviceName}`;
+      
+      // Truncate long text to prevent overflow
+      const truncateText = (text, maxLength) => {
+        return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+      };
+      
+      // Determine if we should allow full text based on event duration
+      const eventDuration = (new Date(eventInfo.event.end) - new Date(eventInfo.event.start)) / (1000 * 60); // duration in minutes
+      const shouldAllowFullText = eventDuration >= 30; // 30 minutes or longer
+      
+      const formattedTitle = shouldAllowFullText ? 
+        `${customerName} - ${staffName} - ${serviceName}` :
+        `${truncateText(customerName, 15)} - ${truncateText(staffName, 10)} - ${truncateText(serviceName, 20)}`;
       
       return {
-        html: `<div class="booking-event-content" style="color: black; font-size: 12px; line-height: 1.2;">${formattedTitle}</div>`
+        html: `<div class="booking-event-content" style="
+                 color: black; 
+                 font-size: 11px; 
+                 line-height: 1.2;
+                 padding: 2px;
+                 height: 100%;
+                 display: flex;
+                 align-items: ${shouldAllowFullText ? 'flex-start' : 'center'};
+                 word-wrap: break-word;
+                 overflow-wrap: break-word;
+                 white-space: ${shouldAllowFullText ? 'normal' : 'nowrap'};
+                 text-overflow: ${shouldAllowFullText ? 'unset' : 'ellipsis'};
+                 overflow: ${shouldAllowFullText ? 'visible' : 'hidden'};
+               ">${formattedTitle}</div>`
       };
     }
   };
 
   const handleEventDidMount = (info) => {
-    // Set tooltip content using the title attribute for built-in browser tooltips
+    // Set tooltip content using custom tooltips instead of browser's title attribute
     const { extendedProps } = info.event;
     
-    if (extendedProps.isAvailability) {
-      info.el.title = `Staff: ${extendedProps.staffName || 'Unknown'}\nTime: ${extendedProps.startTime || 'N/A'} - ${extendedProps.endTime || 'N/A'}`;
+    let tooltipContent;
+    if (extendedProps.isAvailability) { //time slot hover info
+      tooltipContent = `Staff: ${extendedProps.staffName || 'Unknown'}<br>Time: ${extendedProps.startTime.substr(0, 5)} - ${extendedProps.endTime.substr(0, 5)}<br>Location: ${extendedProps.locationName || 'Unknown'}`;
     } else {
-      info.el.title = `Service: ${extendedProps.serviceName || 'Unknown'}\nCustomer: ${extendedProps.customerName || 'Unknown'}\nStaff: ${extendedProps.staffName || 'Unknown'}\nTime: ${new Date(info.event.start).toLocaleString()} - ${new Date(info.event.end).toLocaleString()}\nStatus: ${extendedProps.status || 'pending'}${extendedProps.notes ? '\nNotes: ' + extendedProps.notes : ''}`;
+      tooltipContent = `Service: ${extendedProps.serviceName || 'Unknown'}<br>Customer: ${extendedProps.customerName || 'Unknown'}<br>Staff: ${extendedProps.staffName || 'Unknown'}<br>Time: ${new Date(info.event.start).toLocaleString()} - ${new Date(info.event.end).toLocaleString()}<br>Location: ${extendedProps.locationName || 'Unknown'}<br>Status: ${extendedProps.status || 'pending'}${extendedProps.notes ? '<br>Notes: ' + extendedProps.notes : ''}`;
     }
+    
+    // Create custom tooltip functionality
+    let tooltip = null;
+    
+    const showTooltip = (e) => {
+      // Remove any existing tooltip
+      if (tooltip) {
+        tooltip.remove();
+      }
+      
+      // Create tooltip element
+      tooltip = document.createElement('div');
+      tooltip.className = 'custom-tooltip';
+      tooltip.innerHTML = tooltipContent;
+      
+      // Position tooltip
+      tooltip.style.position = 'absolute';
+      tooltip.style.left = e.pageX + 10 + 'px';
+      tooltip.style.top = e.pageY + 10 + 'px';
+      tooltip.style.zIndex = '1000';
+      
+      document.body.appendChild(tooltip);
+    };
+    
+    const hideTooltip = () => {
+      if (tooltip) {
+        tooltip.remove();
+        tooltip = null;
+      }
+    };
+    
+    const updateTooltipPosition = (e) => {
+      if (tooltip) {
+        tooltip.style.left = e.pageX + 10 + 'px';
+        tooltip.style.top = e.pageY + 10 + 'px';
+      }
+    };
+    
+    // Add event listeners for custom tooltip
+    info.el.addEventListener('mouseenter', showTooltip);
+    info.el.addEventListener('mouseleave', hideTooltip);
+    info.el.addEventListener('mousemove', updateTooltipPosition);
     
     // Check if this is an availability event in resource view
     if (info.event.extendedProps.isAvailability) {
@@ -331,7 +399,8 @@ export default function DashboardTab() {
             provider_id: selectedEvent.extendedProps?.staffId,
             customer_id: selectedEvent.extendedProps?.customerId,
             service_id: selectedEvent.extendedProps?.serviceId,
-            status: selectedEvent.extendedProps?.status || 'pending'
+            status: selectedEvent.extendedProps?.status || 'pending',
+            location: selectedEvent.extendedProps?.locationId  // Add this line
           } : null}
           onSave={handleEditSave}
           onCancel={() => {

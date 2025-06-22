@@ -4,6 +4,7 @@ import ServiceSettings from './ServiceSettings';
 import BookingSettings from './BookingSettings';
 import SystemSettings from './SystemSettings';
 import CustomerDashboardSettings from './CustomerDashboardSettings';
+import WorkingHoursSettings from './WorkingHoursSettings';
 import { SettingGroup } from './SettingGroup';
 
 export {
@@ -13,5 +14,6 @@ export {
   BookingSettings,
   SystemSettings,
   CustomerDashboardSettings,
+  WorkingHoursSettings,
   SettingGroup
 };

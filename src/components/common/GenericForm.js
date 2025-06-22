@@ -12,7 +12,7 @@ const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, l
       const processedData = {};
       for (const key in data) {
         // For ID fields, preserve null/undefined values instead of converting to empty string
-        if (key === 'id' && (data[key] === null || data[key] === undefined)) {
+        if ((key === 'id' || key.endsWith('_id')) && (data[key] === null || data[key] === undefined)) {
           // Don't include the id field at all if it's null/undefined
           continue;
         }

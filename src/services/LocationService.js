@@ -36,6 +36,8 @@ class LocationService {
       }
       
       this.locations = locations || [];
+
+      console.log('Locations fetched:', this.locations);
       
       // Set initial selected location if not already set
       if (!this.selectedLocation && this.locations.length > 0) {
@@ -103,6 +105,29 @@ class LocationService {
     if (index > -1) {
       this.listeners.splice(index, 1);
     }
+  }
+
+  // New function to get location name by ID
+  getLocationNameById(locationId) {
+    if (!locationId) return 'N/A';
+    
+    console.log('Locations fetched:', this.locations);
+    const location = this.locations.find(loc => loc.id === locationId);
+    console.log('Looking for location ID:', locationId);
+    console.log('Found location:', location);
+    return location ? location.name : 'Unknown Location';
+  }
+
+  // Add new function to get location index by location object or ID
+  getLocationIndex(location) {
+    if (!location) return -1;
+    
+    // If location is an object with id property
+    if (typeof location === 'string') {
+      return this.locations.findIndex(loc => loc.name === location.location);
+    }
+    
+    return -1;
   }
 }
 

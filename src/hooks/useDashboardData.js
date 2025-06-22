@@ -42,34 +42,39 @@ export const useDashboardData = () => {
   const fetchTableStats = useCallback(async () => {
     try {
       const dbService = DatabaseService.getInstance();
+      const locationService = LocationService.getInstance();
+      const currentLocationId = locationService.getSelectedLocationId();
       
       const [usersCount, servicesCount, bookings] = await Promise.all([
         dbService.getCount('users'),
         dbService.getCount('services'),
-        dbService.fetchData('bookings')
+        // Filter bookings by current location
+        currentLocationId 
+          ? dbService.fetchData('bookings', 'created_at', false, { location: currentLocationId })
+          : dbService.fetchData('bookings')
       ]);
-
+  
       const now = new Date();
       now.setHours(0, 0, 0, 0);
       
       const todayEnd = new Date(now);
       todayEnd.setHours(23, 59, 59, 999);
-
+  
       const todayBookings = bookings.filter(booking => {
         const bookingDate = new Date(booking.start_time);
         return bookingDate >= now && bookingDate <= todayEnd;
       }).length;
-
+  
       const futureBookings = bookings.filter(booking => {
         const bookingDate = new Date(booking.start_time);
         return bookingDate > todayEnd;
       }).length;
-
+  
       const pastBookings = bookings.filter(booking => {
         const bookingDate = new Date(booking.start_time);
         return bookingDate < now;
       }).length;
-
+  
       setTableStats({
         users: usersCount,
         services: servicesCount,
@@ -118,15 +123,23 @@ export const useDashboardData = () => {
   const fetchBookingsWithStaff = useCallback(async (customersData) => {
     try {
       const dbService = DatabaseService.getInstance();
+      const locationService = LocationService.getInstance();
+      const currentLocationId = locationService.getSelectedLocationId();
+      
       const [bookingsData, staffDataResult, servicesData, showStaffNameSetting, fetchedCustomersData] = await Promise.all([
-        dbService.fetchData('bookings'),
+        // Filter bookings by current location
+        currentLocationId 
+          ? dbService.fetchData('bookings', 'created_at', false, { location: currentLocationId })
+          : dbService.fetchData('bookings'),
         dbService.fetchData('users', 'created_at', false, { role: { in: ['staff', 'admin'] } }, ['id', 'full_name']),
         dbService.fetchData('services'),
         dbService.getSettingsByKey('booking', 'showStaffName'),
         // Fetch customers data if not provided
         customersData || dbService.fetchData('users', 'created_at', false, { role: 'customer' }, ['id', 'full_name'])
       ]);
-  
+
+      console.log('Bookings filtered by location:', currentLocationId, bookingsData.length);
+
       // Use the provided customersData or the fetched one
       const actualCustomersData = customersData || fetchedCustomersData;
   
@@ -202,7 +215,9 @@ export const useDashboardData = () => {
             customerId: booking.customer_id,
             serviceId: service?.id,
             status: booking.status || 'pending',
-            notes: booking.notes || 'No notes'
+            notes: booking.notes || 'No notes',
+            locationId: booking.location,
+            locationName: booking.location ? LocationService.getInstance().getLocationNameById(booking.location) : 'N/A'
           }
         });
       });
@@ -217,13 +232,20 @@ export const useDashboardData = () => {
   const fetchStaffAvailability = useCallback(async () => {
     try {
       const dbService = DatabaseService.getInstance();
+      const locationService = LocationService.getInstance();
+      const currentLocationId = locationService.getSelectedLocationId();
+      
       const [staffData, availabilityData] = await Promise.all([
         dbService.fetchData('users', 'created_at', false, { role: { in: ['staff', 'admin'] } }, ['id', 'full_name']),
-        dbService.fetchData('staff_availability')
+        // Filter availability data by current location
+        currentLocationId 
+          ? dbService.fetchData('staff_availability', 'created_at', false, { location: currentLocationId })
+          : dbService.fetchData('staff_availability')
       ]);
   
       console.log('Staff data:', staffData);
       console.log('Availability data:', availabilityData);
+      console.log('Filtered by location:', currentLocationId);
   
       // Group availability by date to handle overlapping
       const availabilityByDate = {};
@@ -264,15 +286,15 @@ export const useDashboardData = () => {
             const positionIndex = availabilityByDate[schedule.date].length;
             availabilityByDate[schedule.date].push(staff.id);
             
-            console.log('Availability event:', {
-              staff: staff.full_name,
-              date: schedule.date,
-              start: schedule.start_time,
-              end: schedule.end_time,
-              positionIndex,
-              eventStart: eventStart.toISOString(),
-              eventEnd: eventEnd.toISOString()
-            });
+            // console.log('Availability event:', {
+            //   staff: staff.full_name,
+            //   date: schedule.date,
+            //   start: schedule.start_time,
+            //   end: schedule.end_time,
+            //   positionIndex,
+            //   eventStart: eventStart.toISOString(),
+            //   eventEnd: eventEnd.toISOString()
+            // });
             
             // Create class names - exclude positioning for resource views
             const classNames = ['availability-event'];
@@ -281,7 +303,7 @@ export const useDashboardData = () => {
             classNames.push(`availability-position-${positionIndex}`);
             
             return {
-              title: `${staff.full_name} - Available`,
+              title: `${staff.full_name} - Available${schedule.location ? ` (${LocationService.getInstance().getLocationNameById(schedule.location)})` : ''}`,
               start: eventStart.toISOString(),
               end: eventEnd.toISOString(),
               display: 'background',
@@ -298,28 +320,65 @@ export const useDashboardData = () => {
                 endTime: schedule.end_time,
                 isAvailability: true,
                 positionIndex: positionIndex,
-                isResourceView: true // Add flag to identify resource-compatible events
+                isResourceView: true, // Add flag to identify resource-compatible events
+                locationId: schedule.location,
+                locationName: schedule.location ? LocationService.getInstance().getLocationNameById(schedule.location) : null
               }
             };
           }
           return null;
         }).filter(Boolean);
       }).filter(Boolean);
-      
+
       console.log('Final Availability:', availabilityEvents.filter(Boolean));
-  
+
       // Add availability events to calendar
       const validAvailabilityEvents = availabilityEvents.flat().filter(Boolean);
       
+      // INSERT DYNAMIC WIDTH CALCULATION HERE
+      // Dynamic Width Calculation - Update positioning classes based on actual staff count per date/time
+      const updatedAvailabilityEvents = validAvailabilityEvents.map(event => {
+        const eventDate = event.start.split('T')[0];
+        const eventStartTime = event.extendedProps.startTime;
+        const eventEndTime = event.extendedProps.endTime;
+        
+        // Count how many staff are available at the same time slot on the same date
+        const concurrentStaff = validAvailabilityEvents.filter(otherEvent => {
+          const otherDate = otherEvent.start.split('T')[0];
+          const otherStartTime = otherEvent.extendedProps.startTime;
+          const otherEndTime = otherEvent.extendedProps.endTime;
+          
+          return otherDate === eventDate && 
+                 otherStartTime === eventStartTime && 
+                 otherEndTime === eventEndTime;
+        });
+        
+        // Update class names based on actual concurrent staff count
+        const updatedClassNames = ['availability-event'];
+        
+        if (concurrentStaff.length === 1) {
+          // Single staff - use full width
+          updatedClassNames.push('availability-single-staff');
+        } else {
+          // Multiple staff - use original positioning
+          updatedClassNames.push(`availability-position-${event.extendedProps.positionIndex}`);
+        }
+        
+        return {
+          ...event,
+          classNames: updatedClassNames
+        };
+      });
+  
       setBookings(prevBookings => {
         // Filter out any existing availability events for the same staff
         const bookingEvents = prevBookings.filter(event => 
           !event.classNames?.includes('availability-event') || 
-          !validAvailabilityEvents.some(newEvent => 
+          !updatedAvailabilityEvents.some(newEvent => 
             newEvent.extendedProps.staffId === event.extendedProps.staffId
           )
         );
-        const newBookings = [...bookingEvents, ...validAvailabilityEvents];
+        const newBookings = [...bookingEvents, ...updatedAvailabilityEvents]; // Use updated events
         console.log('Final bookings state with availability:', newBookings);
         return newBookings;
       });
@@ -343,8 +402,21 @@ export const useDashboardData = () => {
       setCurrentLocation(selectedLocation);
       
       // Add listener for location changes
-      const handleLocationChange = (location) => {
+      const handleLocationChange = async (location) => {
         setCurrentLocation(location);
+        
+        // Reload all data when location changes
+        try {
+          console.log('Location changed to:', location.name, 'Reloading data...');
+          await fetchTableStats();
+          const customersData = await fetchCustomers();
+          await fetchServices();
+          await fetchBookingsWithStaff(customersData);
+          await fetchStaffAvailability();
+        } catch (error) {
+          console.error('Error reloading data after location change:', error);
+          toast.error('Failed to reload data for new location');
+        }
       };
       locationService.addLocationChangeListener(handleLocationChange);
       

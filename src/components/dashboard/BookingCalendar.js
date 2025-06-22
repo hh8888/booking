@@ -1,8 +1,10 @@
 import React from 'react';
+// Only import what you actually use
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
+// Remove if not used:
 import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid';
 
 const BookingCalendar = ({
@@ -168,6 +170,11 @@ const BookingCalendar = ({
       expandRows={true}
       resourceAreaHeaderContent="Staff"
       resourceAreaWidth="150px"
+      // Improve event display
+      eventDisplay="block"
+      eventOverlap={false}
+      slotEventOverlap={false}
+      eventMaxStack={3}
       // Enable built-in tooltips
       eventMouseEnter={(info) => {
         // FullCalendar will automatically show tooltip using the event's title property

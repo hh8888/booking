@@ -120,6 +120,9 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
     <div>
       <ToastMessage />
       
+
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">Manage Users</h2>
+      
       {/* Only show Add New User and Delete Selected buttons for non-staff users */}
       {!staffMode && (
         <>
@@ -173,6 +176,20 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
           </button>
         </>
       )}
+      {/* Role filter dropdown - Add this section */}
+      <div className="my-4">
+        <label className="mr-2 font-medium">Filter by Role:</label>
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="all">All Users</option>
+          <option value="admin">Admin</option>
+          <option value="staff">Staff</option>
+          <option value="customer">Customer</option>
+        </select>
+      </div>
 
       <Table
         data={filteredUsers}

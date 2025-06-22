@@ -73,6 +73,11 @@ class DatabaseService {
         } else {
           // Simple equality condition
           query = query.eq(column, value);
+          
+          // For location field, also exclude null values to ensure strict filtering
+          if (column === 'location' && value !== null) {
+            query = query.not(column, 'is', null);
+          }
         }
       });
       
@@ -107,22 +112,21 @@ class DatabaseService {
 
       if (error) throw error;
       
-      toast.success(`${resourceName} created successfully!`);
+      // Only show toast if resourceName is not empty
+      if (resourceName) {
+        toast.success(`${resourceName} created successfully!`);
+      }
       return newData[0];
     } catch (error) {
       console.error(`Error creating ${resourceName}:`, error.message);
-      toast.error(`Error: ${error.message}`);
+      // Only show toast if resourceName is not empty
+      if (resourceName) {
+        toast.error(`Error: ${error.message}`);
+      }
       throw error;
     }
   }
 
-  /**
-   * Generic data update method
-   * @param {string} table - Table name
-   * @param {Object} data - Data to update
-   * @param {string} resourceName - Resource name (for notifications)
-   * @returns {Promise<void>}
-   */
   async updateItem(table, data, resourceName = 'Item') {
     try {
       const { error } = await supabase
@@ -132,10 +136,16 @@ class DatabaseService {
 
       if (error) throw error;
       
-      toast.success(`${resourceName} updated successfully!`);
+      // Only show toast if resourceName is not empty
+      if (resourceName) {
+        toast.success(`${resourceName} updated successfully!`);
+      }
     } catch (error) {
       console.error(`Error updating ${resourceName}:`, error.message);
-      toast.error(`Error: ${error.message}`);
+      // Only show toast if resourceName is not empty
+      if (resourceName) {
+        toast.error(`Error: ${error.message}`);
+      }
       throw error;
     }
   }

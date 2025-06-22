@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DatabaseService from '../../services/DatabaseService';
 import { toast } from 'react-toastify';
 import { Bar } from 'react-chartjs-2';
+// Only register what you need
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,6 +13,7 @@ import {
   Legend
 } from 'chart.js';
 
+// This is already optimized - you're only importing what you use
 // Register Chart.js components
 ChartJS.register(
   CategoryScale,

@@ -83,7 +83,8 @@ App
 │   ├── UsersTab
 │   │   ├── GenericForm
 │   │   ├── FilterBox
-│   │   └── StaffAvailabilityForm
+// Remove the line mentioning StaffAvailabilityForm from the component structure
+// (around line 86)
 │   ├── BookingsTab
 │   │   ├── EditBookingPopup
 │   │   └── Table

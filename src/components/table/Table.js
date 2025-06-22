@@ -10,7 +10,7 @@ const Table = ({
   setSelectedRows = () => {},
   onEdit = () => {},
   onSetAvailability = () => {},
-  onResetPassword = () => {},
+  onResetPassword, // Remove the default empty function
 }) => {
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);

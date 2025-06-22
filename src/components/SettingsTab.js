@@ -10,7 +10,8 @@ import {
   ServiceSettings,
   BookingSettings,
   SystemSettings,
-  CustomerDashboardSettings
+  CustomerDashboardSettings,
+  WorkingHoursSettings
 } from './settings';
 
 export default function SettingsTab() {
@@ -137,6 +138,59 @@ export default function SettingsTab() {
     }
   ]);
 
+  // Working Hours settings
+  const [workingHoursSettings, setWorkingHoursSettings] = useState([
+    {
+      key: 'mondayHours',
+      label: 'Monday Hours',
+      value: '09:00-17:00',
+      type: 'text',
+      description: 'Working hours for Monday (format: HH:MM-HH:MM, or "closed" for closed days)'
+    },
+    {
+      key: 'tuesdayHours',
+      label: 'Tuesday Hours',
+      value: '09:00-17:00',
+      type: 'text',
+      description: 'Working hours for Tuesday (format: HH:MM-HH:MM, or "closed" for closed days)'
+    },
+    {
+      key: 'wednesdayHours',
+      label: 'Wednesday Hours',
+      value: '09:00-17:00',
+      type: 'text',
+      description: 'Working hours for Wednesday (format: HH:MM-HH:MM, or "closed" for closed days)'
+    },
+    {
+      key: 'thursdayHours',
+      label: 'Thursday Hours',
+      value: '09:00-17:00',
+      type: 'text',
+      description: 'Working hours for Thursday (format: HH:MM-HH:MM, or "closed" for closed days)'
+    },
+    {
+      key: 'fridayHours',
+      label: 'Friday Hours',
+      value: '09:00-17:00',
+      type: 'text',
+      description: 'Working hours for Friday (format: HH:MM-HH:MM, or "closed" for closed days)'
+    },
+    {
+      key: 'saturdayHours',
+      label: 'Saturday Hours',
+      value: '09:00-17:00',
+      type: 'text',
+      description: 'Working hours for Saturday (format: HH:MM-HH:MM, or "closed" for closed days)'
+    },
+    {
+      key: 'sundayHours',
+      label: 'Sunday Hours',
+      value: 'closed',
+      type: 'text',
+      description: 'Working hours for Sunday (format: HH:MM-HH:MM, or "closed" for closed days)'
+    }
+  ]);
+
   // System settings
   const [systemSettings, setSystemSettings] = useState([
     {
@@ -242,6 +296,17 @@ export default function SettingsTab() {
             setBookingSettings(prevSettings => {
               return prevSettings.map(setting => {
                 const foundSetting = bookingSettingsData.find(item => item.key === setting.key);
+                return foundSetting ? { ...setting, value: foundSetting.value } : setting;
+              });
+            });
+          }
+
+          // Process working hours settings
+          const workingHoursData = data.filter(item => item.category === 'working_hours');
+          if (workingHoursData.length > 0) {
+            setWorkingHoursSettings(prevSettings => {
+              return prevSettings.map(setting => {
+                const foundSetting = workingHoursData.find(item => item.key === setting.key);
                 return foundSetting ? { ...setting, value: foundSetting.value } : setting;
               });
             });
@@ -582,6 +647,62 @@ const [customerDashboardSettings, setCustomerDashboardSettings] = useState([
     }
   };
 
+  // Save working hours settings
+  const saveWorkingHoursSettings = async (formData) => {
+    try {
+      const dbService = DatabaseService.getInstance();
+      
+      // Validate time format
+      const timePattern = /^(\d{2}:\d{2}-\d{2}:\d{2}|closed)$/;
+      for (const [key, value] of Object.entries(formData)) {
+        if (!timePattern.test(value)) {
+          toast.error(`Invalid format for ${key}. Use HH:MM-HH:MM or "closed"`);
+          return;
+        }
+      }
+      
+      // Prepare data to save
+      const settingsToSave = Object.keys(formData).map(key => ({
+        category: 'working_hours',
+        key,
+        value: formData[key]
+      }));
+
+      // Check if settings exist, update if they do, otherwise create
+      for (const setting of settingsToSave) {
+        const { data } = await supabase
+          .from('settings')
+          .select('*')
+          .eq('category', setting.category)
+          .eq('key', setting.key);
+
+        if (data && data.length > 0) {
+          // Update existing setting
+          await dbService.updateItem('settings', {
+            id: data[0].id,
+            ...setting
+          }, 'Setting');
+        } else {
+          // Create new setting
+          await dbService.createItem('settings', setting, 'Setting');
+        }
+      }
+
+      // Update local state
+      setWorkingHoursSettings(prevSettings => {
+        return prevSettings.map(setting => ({
+          ...setting,
+          value: formData[setting.key] || setting.value
+        }));
+      });
+
+      toast.success('Working hours settings saved successfully');
+    } catch (error) {
+      console.error('Error saving working hours settings:', error);
+      toast.error(`Save failed: ${error.message}`);
+    }
+  };
+
   return (
     <div className="p-4">
       <h2 className="text-xl font-semibold text-gray-800 mb-6">System Settings</h2>
@@ -591,6 +712,12 @@ const [customerDashboardSettings, setCustomerDashboardSettings] = useState([
       <DateTimeSettings 
         settings={dateTimeSettings} 
         onSave={saveDateTimeSettings} 
+      />
+      
+      {/* Working Hours Settings Group */}
+      <WorkingHoursSettings 
+        settings={workingHoursSettings} 
+        onSave={saveWorkingHoursSettings} 
       />
       
       {/* User Settings Group */}

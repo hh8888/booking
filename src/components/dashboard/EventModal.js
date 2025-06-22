@@ -61,6 +61,10 @@ const EventModal = ({ selectedEvent, onClose, onEdit, onConfirm }) => {
                 <span className="ml-2 text-gray-900">{extendedProps?.staffName || 'Unknown'}</span>
               </div>
               <div>
+                <span className="font-medium text-gray-700">Location:</span>
+                <span className="ml-2 text-gray-900">{extendedProps?.locationName || 'N/A'}</span>
+              </div>
+              <div>
                 <span className="font-medium text-gray-700">Start Time:</span>
                 <span className="ml-2 text-gray-900">
                   {new Date(selectedEvent.start).toLocaleString()}

@@ -11,24 +11,40 @@ class StaffDateAvailabilityService {
     return StaffDateAvailabilityService.instance;
   }
 
-  async getStaffDateAvailability(staffId, startDate, endDate) {
-    console.log('Service: getStaffDateAvailability called with:', { staffId, startDate, endDate });
+  async getStaffDateAvailability(staffId, startDate, endDate, locationId = null) {
+    console.log('Service: getStaffDateAvailability called with:', { staffId, startDate, endDate, locationId });
     try {
       const dbService = DatabaseService.getInstance();
+      
+      const filters = {
+        staff_id: staffId,
+        date: {
+          gte: startDate,
+          lte: endDate
+        }
+      };
+      
+      // Add location filter with explicit null exclusion
+      if (locationId !== null) {
+        filters.location = locationId;
+        // You could also add a separate call to exclude nulls
+        // This would require modifying DatabaseService to support 'not null' operator
+      }
+      
       const availability = await dbService.fetchData(
         'staff_availability',
         'date',
         true,
-        {
-          staff_id: staffId,
-          date: {
-            gte: startDate,
-            lte: endDate
-          }
-        }
+        filters
       );
-      console.log('Service: availability data received:', availability);
-      return availability;
+      
+      // Filter out null location records on the client side as a temporary fix
+      const filteredAvailability = locationId !== null 
+        ? availability.filter(record => record.location === locationId)
+        : availability;
+      
+      console.log('Service: availability data received:', filteredAvailability);
+      return filteredAvailability;
     } catch (error) {
       console.error('Error fetching staff date availability:', error);
       toast.error('Failed to fetch staff availability');
@@ -53,23 +69,36 @@ class StaffDateAvailabilityService {
         console.log('Saving availability with date:', data.date);
 
         if (schedule.id) {
-          // Update existing availability
+          // Update existing availability - pass empty string to suppress individual toast
           await dbService.updateItem('staff_availability', {
             id: schedule.id,
             ...data
-          });
+          }, '');
         } else {
-          // Create new availability
-          await dbService.createItem('staff_availability', data);
+          // Create new availability - pass empty string to suppress individual toast
+          await dbService.createItem('staff_availability', data, '');
         }
       });
 
       await Promise.all(updates);
-      toast.success('Staff availability updated successfully');
+      
+      // Show single consolidated toast message
+      const count = availabilityData.length;
+      if (count === 1) {
+        toast.success('Staff availability updated successfully');
+      } else {
+        toast.success(`Staff availability updated successfully × ${count}`);
+      }
+      
       return true;
     } catch (error) {
       console.error('Error updating staff date availability:', error);
-      toast.error('Failed to update staff availability');
+      const count = availabilityData.length;
+      if (count === 1) {
+        toast.error('Failed to update staff availability');
+      } else {
+        toast.error(`Failed to update staff availability × ${count}`);
+      }
       return false;
     }
   }

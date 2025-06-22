@@ -6,7 +6,6 @@ export default function TimeSlots({ selectedHour, selectedMinute, onTimeSelect, 
   console.log('Booked Slots:', bookedSlots);
   console.log('All Slots:', allSlots);
 
-
   const isTimeInSelectedRange = (hour, minute) => {
     if (!selectedHour || !selectedMinute) return false;
     
@@ -68,8 +67,10 @@ export default function TimeSlots({ selectedHour, selectedMinute, onTimeSelect, 
     return false;
   };
 
-  // Use allSlots if provided, otherwise fall back to availableSlots
-  const slotsToRender = allSlots.length > 0 ? allSlots : availableSlots;
+  // Only show available slots - filter out unavailable ones completely
+  // Show both available and booked slots
+  // Show all slots (both available and booked) - this was likely the original behavior
+  const slotsToRender = allSlots.length > 0 ? allSlots : [];
 
   return (
     <div className="mt-4">
@@ -81,6 +82,8 @@ export default function TimeSlots({ selectedHour, selectedMinute, onTimeSelect, 
             const isBooked = bookedSlots.includes(slot);
             const isAvailable = availableSlots.includes(slot);
             const formattedTime = `${hour === '00' ? '12' : (parseInt(hour) > 12 ? parseInt(hour) - 12 : hour)}:${minute}${parseInt(hour) >= 12 ? 'PM' : 'AM'}`;
+            
+
             
             return (
               <button
@@ -104,40 +107,36 @@ export default function TimeSlots({ selectedHour, selectedMinute, onTimeSelect, 
                   e.preventDefault();
                   e.stopPropagation();
                 }}
-                disabled={isBooked && !(selectedHour && selectedMinute && isTimeInSelectedRange(hour, minute))}
+                disabled={
+                  (isBooked && !(selectedHour && selectedMinute && isTimeInSelectedRange(hour, minute))) ||
+                  wouldCauseOverlap(hour, minute)
+                }
                 className={`
                   py-2 px-3 text-sm rounded-md transition-colors duration-200
                   ${isInSelectedRange
                     ? 'bg-blue-600 text-white ring-2 ring-blue-300'
                     : isBooked
                       ? 'bg-red-100 text-red-800 cursor-not-allowed opacity-75'
-                      : !isAvailable
-                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed opacity-50'
-                        : wouldCauseOverlap(hour, minute)
-                          ? 'bg-orange-100 text-orange-800 cursor-not-allowed opacity-75'
-                          : 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer'}
-                  ${isAvailable && !isBooked && !wouldCauseOverlap(hour, minute) ? 'hover:shadow-sm' : ''}
+                      : wouldCauseOverlap(hour, minute)
+                        ? 'bg-orange-100 text-orange-800 cursor-not-allowed opacity-75'
+                        : 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer'}
+                  ${!isBooked && !wouldCauseOverlap(hour, minute) ? 'hover:shadow-sm' : ''}
                 `}
                 title={
                   isBooked 
                     ? 'This time slot is already booked' 
-                    : !isAvailable 
-                      ? 'This time slot is not available'
-                      : wouldCauseOverlap(hour, minute)
-                        ? 'Selecting this time would cause duration overlap with existing bookings'
-                        : ''
+                    : wouldCauseOverlap(hour, minute)
+                      ? 'Selecting this time would cause duration overlap with existing bookings'
+                      : ''
                 }
               >
                 {formattedTime}
                 {isBooked && (
                   <span className="ml-1 text-xs">🚫</span>
                 )}
-                {!isAvailable && !isBooked && (
-                  <span className="ml-1 text-xs">⏰</span>
-                )}
               </button>
             );
-          })
+          }).filter(Boolean) // Remove null entries
         ) : (
           <div className="col-span-4 text-center text-gray-500 py-4">
             No time slots available for this date
