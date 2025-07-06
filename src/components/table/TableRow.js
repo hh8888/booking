@@ -54,7 +54,7 @@ const TableRow = ({ row, columns, selectedRows, onSelectRow, onEdit, onSetAvaila
           key={`${row.id}-${column.key || colIndex}`}
           className={`px-2 md:px-4 py-2 border-b border-gray-200 text-sm md:text-base ${colIndex % 2 === 0 ? 'bg-gray-100' : 'bg-white'}`}
         >
-          {column.formatter ? column.formatter(row[column.key]) : formatCellContent(column, row[column.key])}
+          {column.render ? column.render(row[column.key], row) : column.formatter ? column.formatter(row[column.key]) : formatCellContent(column, row[column.key])}
         </td>
       ))}
       <td className="px-2 md:px-4 py-2 border-b border-gray-200 bg-blue-200">

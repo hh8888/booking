@@ -195,6 +195,10 @@ export const useDashboardData = () => {
         };
 
         const statusColor = getStatusColor(booking.status);
+        
+        // Check if service has no staff_id for special styling
+        const hasNoStaffId = !service?.staff_id || service.staff_id === null || service.staff_id.trim() === '';
+        const borderStyle = hasNoStaffId ? '2px dashed #dc2626' : '#1e40af'; // Red dashed border for no staff, blue solid for others
 
         return ({
           id: booking.id,
@@ -202,7 +206,7 @@ export const useDashboardData = () => {
           start: booking.start_time,
           end: booking.end_time,
           backgroundColor: statusColor,
-          borderColor: '#1e40af', // Deep blue border for all bookings
+          borderColor: borderStyle,
           // Add tooltip content to the title attribute for built-in tooltips
           tooltip: `Service: ${service?.name || 'Appointment'}\nCustomer: ${customerName}\nStaff: ${staffName}\nTime: ${new Date(booking.start_time).toLocaleString()} - ${new Date(booking.end_time).toLocaleString()}\nStatus: ${booking.status || 'pending'}${booking.notes ? '\nNotes: ' + booking.notes : ''}`,
           extendedProps: {

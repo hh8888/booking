@@ -104,40 +104,155 @@ export default function Auth() {
     checkSessionAndSettings();
   }, [navigate]); // Add dispatch if used
 
+  // Add auth state change listener for email verification
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change event:', event);
+      console.log('Session:', session?.user ? 'User present' : 'No user');
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+         console.log('User signed in, checking email verification status');
+         
+         // Check if user's email is confirmed and update email_verified field
+         if (session.user.confirmed_at) {
+           console.log('User email is confirmed, updating email_verified field');
+           try {
+             // First check if email_verified is already true to avoid unnecessary updates
+             const { data: currentUser, error: fetchError } = await supabase
+               .from('users')
+               .select('email_verified')
+               .eq('id', session.user.id)
+               .single();
+             
+             if (!fetchError && !currentUser.email_verified) {
+               const { error: updateError } = await supabase
+                 .from('users')
+                 .update({ email_verified: true })
+                 .eq('id', session.user.id);
+               
+               if (updateError) {
+                 console.error('Error updating email_verified field:', updateError);
+               } else {
+                 console.log('Successfully updated email_verified to true');
+                 // Show success message for email verification
+                 toast.success('Email verified successfully! Welcome to the platform.');
+               }
+             }
+           } catch (err) {
+             console.error('Error updating email verification status:', err);
+           }
+         }
+         
+         // Handle redirect after email verification
+         await checkUserRoleAndRedirect(session.user);
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        console.log('Token refreshed, checking if email verification status changed');
+        
+        // Check if email verification status changed during token refresh
+        if (session.user.confirmed_at) {
+          try {
+            const { data: userData, error: fetchError } = await supabase
+              .from('users')
+              .select('email_verified')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (!fetchError && !userData.email_verified) {
+              console.log('Email verified during token refresh, updating database');
+              const { error: updateError } = await supabase
+                .from('users')
+                .update({ email_verified: true })
+                .eq('id', session.user.id);
+              
+              if (updateError) {
+                console.error('Error updating email_verified field:', updateError);
+              } else {
+                console.log('Successfully updated email_verified to true');
+              }
+            }
+          } catch (err) {
+            console.error('Error checking/updating email verification status:', err);
+          }
+        }
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
+
   const checkUserRoleAndRedirect = async (user) => {
     try {
-      console.log('Checking user role for:', user.id);
+      console.log('=== CHECKING USER ROLE DEBUG START ===');
+      console.log('User object:', {
+        id: user.id,
+        email: user.email,
+        confirmed_at: user.confirmed_at,
+        created_at: user.created_at,
+        user_metadata: user.user_metadata
+      });
+      
+      console.log('Querying users table for user ID:', user.id);
       const { data: userData, error } = await supabase
         .from('users')
         .select('role')
         .eq('id', user.id)
         .single();
   
+      console.log('Database query result:', { userData, error });
+      
       if (error) {
-        console.error('Database error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        throw error;
+        console.error('=== DATABASE ERROR DETAILS ===');
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Error details:', error.details);
+        console.error('Error hint:', error.hint);
+        console.error('Full error object:', error);
+        
+        // Specific error handling
+        if (error.code === 'PGRST116') {
+          console.error('USER NOT FOUND: User exists in auth.users but not in users table');
+          setError('Account setup incomplete. User record not found in database. Please contact support.');
+        } else if (error.code === '42501') {
+          console.error('PERMISSION DENIED: RLS policy blocking access');
+          setError('Access denied. Please check your permissions or contact support.');
+        } else {
+          console.error('UNKNOWN DATABASE ERROR');
+          setError(`Database error granting user: ${error.message}`);
+        }
+        console.error('=== DATABASE ERROR DEBUG END ===');
+        return;
       }
   
-      console.log('User role retrieved:', userData.role);
+      console.log('User role successfully retrieved:', userData.role);
       setUserRole(userData.role);
       setIsSignedIn(true);
   
       // Redirect based on role
+      console.log('Redirecting user based on role:', userData.role);
       if (userData.role === 'customer') {
+        console.log('Redirecting to /booking');
         navigate('/booking');
       } else if (userData.role === 'staff') {
+        console.log('Redirecting to /staff');
         navigate('/staff');
       } else if (userData.role === 'admin') {
+        console.log('Redirecting to /admin');
         navigate('/admin');
+      } else {
+        console.warn('Unknown user role:', userData.role);
+        setError('Unknown user role. Please contact support.');
       }
+      console.log('=== CHECKING USER ROLE DEBUG END ===');
     } catch (err) {
+      console.error('=== UNEXPECTED ERROR IN checkUserRoleAndRedirect ===');
+      console.error('Error type:', typeof err);
+      console.error('Error name:', err.name);
+      console.error('Error message:', err.message);
+      console.error('Error stack:', err.stack);
       console.error('Full error object:', err);
-      console.error('Error checking user role:', err);
+      console.error('=== UNEXPECTED ERROR DEBUG END ===');
       setError('Error loading user information');
     }
   };
@@ -187,7 +302,13 @@ export default function Auth() {
     
     setIsLoading(true);
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+      const { data, error: signUpError } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth`
+        }
+      });
       
       if (signUpError) throw signUpError;
 
@@ -203,6 +324,7 @@ export default function Auth() {
             gender: gender || null,
             phone_number: mobile || null,
             role: 'customer',
+            email_verified: false, // Set to false initially
           },
         ]);
 
@@ -223,22 +345,34 @@ export default function Auth() {
   const handleSignIn = async () => {
     if (!validateSignInForm()) return;
 
+    console.log('=== SIGN IN PROCESS DEBUG START ===');
+    console.log('Attempting sign in for email:', email);
+    
     setIsLoading(true);
     try {
+      console.log('Calling supabase.auth.signInWithPassword...');
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (signInError) throw signInError;
+      console.log('Sign in response:', { data: data?.user ? 'User object received' : 'No user', error: signInError });
+      
+      if (signInError) {
+        console.error('Sign in error:', signInError);
+        throw signInError;
+      }
 
       // Check if user is confirmed
+      console.log('Checking if user is confirmed:', data.user.confirmed_at);
       if (!data.user.confirmed_at) {
+        console.warn('User email not confirmed');
         setError('Please check your email to validate your account before signing in.');
         return;
       }
 
       // Try to update last_sign_in but don't fail if it doesn't work
+      console.log('Updating last_sign_in timestamp...');
       const { error: updateError } = await supabase
         .from('users')
         .update({ last_sign_in: new Date().toISOString() })
@@ -247,11 +381,19 @@ export default function Auth() {
       if (updateError) {
         console.warn('Could not update last_sign_in:', updateError.message);
         // Don't throw the error - just log it
+      } else {
+        console.log('Successfully updated last_sign_in');
       }
 
       // Check role and redirect
+      console.log('Proceeding to check user role and redirect...');
       await checkUserRoleAndRedirect(data.user);
+      console.log('=== SIGN IN PROCESS DEBUG END ===');
     } catch (err) {
+      console.error('=== SIGN IN ERROR ===');
+      console.error('Error during sign in:', err);
+      console.error('Error message:', err.message);
+      console.error('=== SIGN IN ERROR END ===');
       setError(err.message);
     } finally {
       setIsLoading(false);

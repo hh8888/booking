@@ -12,7 +12,7 @@ const Spinner = () => (
 );
 
 function ResetPassword() {
-    console.log('ResetPassword component mounted');
+    
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -23,7 +23,7 @@ function ResetPassword() {
     const recoveryAttemptedRef = useRef(false);
 
     useEffect(() => {
-        console.log('ResetPassword useEffect triggered. Current hash:', window.location.hash);
+        
         const hash = window.location.hash;
         const paramsStr = hash.includes('#', 1) ? hash.substring(hash.indexOf('#', 1) + 1) : hash.substring(1);
         const params = new URLSearchParams(paramsStr);
@@ -33,17 +33,17 @@ function ResetPassword() {
         const errorDescription = params.get('error_description');
         const urlError = params.get('error');
 
-        console.log('Parsed from URL -> AccessToken:', !!accessToken, 'RefreshToken:', !!refreshToken, 'Type:', type, 'ErrorDescription:', errorDescription, 'URLError:', urlError);
+        
 
         if (urlError === 'access_denied' || errorDescription) {
-            console.error('Error from URL:', errorDescription || urlError);
+            
             setError(`Error: ${errorDescription || 'Invalid or expired recovery link.'}`);
             setIsRecoveryReady(false);
             return;
         }
 
         if (!accessToken || type !== 'recovery') {
-            console.error('Missing access token or type is not recovery.');
+            
             setError('Invalid recovery link. Please request a new password reset link.');
             setIsRecoveryReady(false);
             return;
@@ -54,10 +54,10 @@ function ResetPassword() {
         }
 
         const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log('onAuthStateChange event:', event, 'session:', session);
+            
 
             if (event === 'PASSWORD_RECOVERY') {
-                console.log('PASSWORD_RECOVERY event received, session:', session);
+                
                 recoveryAttemptedRef.current = true;
                 if (session) {
                     setIsRecoveryReady(true);
@@ -68,9 +68,9 @@ function ResetPassword() {
                     setIsRecoveryReady(false);
                 }
             } else if (event === 'INITIAL_SESSION' && accessToken && refreshToken && type === 'recovery' && !isRecoveryReady && !recoveryAttemptedRef.current) {
-                console.log('INITIAL_SESSION event. Recovery tokens present. PASSWORD_RECOVERY not yet fired.');
+                
                 recoveryAttemptedRef.current = true; 
-                console.log('Attempting manual setSession with access_token and refresh_token...');
+                
                 try {
                     const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
                         access_token: accessToken,
@@ -78,26 +78,26 @@ function ResetPassword() {
                     });
 
                     if (sessionError) {
-                        console.error('Error during manual setSession:', sessionError);
+                        
                         setError(`Failed to process recovery link: ${sessionError.message}. Please try again.`);
                         setIsRecoveryReady(false);
                     } else if (sessionData && sessionData.session) {
-                        console.log('Manual setSession successful, session:', sessionData.session);
+                        
                         setIsRecoveryReady(true);
                         setError('');
                         setMessage('Recovery link verified. You can now set your new password.');
                     } else {
-                        console.warn('Manual setSession did not return a session or error.');
+                        
                         setError('Failed to process recovery link. Please try again.');
                         setIsRecoveryReady(false);
                     }
                 } catch (e) {
-                    console.error('Exception during manual setSession attempt:', e);
+                    
                     setError('Failed to process recovery link. Please try again.');
                     setIsRecoveryReady(false);
                 }
             } else if (event === 'USER_UPDATED') {
-                console.log('USER_UPDATED event received, session:', session);
+                
                 setLoading(false);
                 setMessage('Password updated successfully! Redirecting to login...');
                 setTimeout(() => navigate('/auth'), 3000);
@@ -108,7 +108,7 @@ function ResetPassword() {
 
         const timer = setTimeout(() => {
             if (!isRecoveryReady && !recoveryAttemptedRef.current && accessToken && type === 'recovery') {
-                console.warn('Timeout: PASSWORD_RECOVERY event not received and manual setSession not initiated or failed.');
+                
                 if (!isRecoveryReady) {
                     setError('Verification timed out. Please try the link again or request a new one.');
                     setIsRecoveryReady(false);

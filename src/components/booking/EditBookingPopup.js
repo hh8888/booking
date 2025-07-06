@@ -966,8 +966,16 @@ export default function EditBookingPopup({
               renderField: () => (
                 <div className="bg-gray-50 rounded-md">
                   <h3 className="text-sm font-medium text-gray-700 mb-2">Date availability</h3>
-                  <div className="grid grid-cols-7 gap-2">
-                    {selectedProviderAvailability.map((day, index) => (
+              {/* Day of week headers */}
+              <div className="grid grid-cols-7 gap-2 mb-1">
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                  <div key={day} className="text-xs text-gray-500 text-center py-1 font-medium">
+                    {day}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-2">
+                {selectedProviderAvailability.map((day, index) => (
                       <div 
                         key={index}
                         className={`p-2 text-center rounded cursor-pointer 

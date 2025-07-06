@@ -30,8 +30,8 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
 
   const fetchUsers = async () => {
     try {
-      const dbService = DatabaseService.getInstance();
-      const data = await dbService.fetchData('users', 'created_at', false);
+      const userService = UserService.getInstance();
+      const data = await userService.fetchUsers();
       setUsers(data);
     } catch (error) {
       setError(error.message);
@@ -202,6 +202,30 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
         columns={[
           { key: 'full_name', label: 'Full Name' },
           { key: 'email', label: 'Email' },
+          { 
+            key: 'email_verified', 
+            label: 'Email Verified',
+            render: (value, row) => {
+              console.log('Email verified render - value:', value, 'type:', typeof value, 'row:', row.full_name);
+              return (
+                <div className="flex items-center justify-center">
+                  {value === true ? (
+                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                      ✅ Verified
+                    </span>
+                  ) : value === false ? (
+                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
+                      ❌ Unverified
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                      ? Unknown ({String(value)})
+                    </span>
+                  )}
+                </div>
+              );
+            }
+          },
           { key: 'phone_number', label: 'Phone Number' },
           { key: 'gender', label: 'Gender' },
           { key: 'birthday', label: 'Birthday' },

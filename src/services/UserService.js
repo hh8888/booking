@@ -16,7 +16,21 @@ class UserService {
   }
 
   async fetchUsers() {
-    return await this.dbService.fetchData('users', 'created_at', false);
+    try {
+      // Fetch users from the users table (email_verified column now exists in database)
+      const users = await this.dbService.fetchData('users', 'created_at', false);
+      console.log('UserService.fetchUsers - Raw data from database:', users);
+      console.log('UserService.fetchUsers - First user email_verified:', users[0]?.email_verified, 'type:', typeof users[0]?.email_verified);
+      return users;
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      // Fallback: return users without verification status
+      const fallbackUsers = await this.dbService.fetchData('users', 'created_at', false);
+      return fallbackUsers.map(user => ({
+        ...user,
+        email_verified: false // Default to false if there's an error
+      }));
+    }
   }
 
   async fetchRequiredFields() {

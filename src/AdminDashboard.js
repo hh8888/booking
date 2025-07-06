@@ -11,6 +11,7 @@ import LocationSelector from './components/common/LocationSelector';
 import UserDropdown from './components/common/UserDropdown';
 import DatabaseService from './services/DatabaseService';
 import LocationService from './services/LocationService';
+import UserService from './services/UserService';
 import LoadingSpinner from './components/common/LoadingSpinner';
 
 export default function AdminDashboard() {
@@ -67,18 +68,10 @@ export default function AdminDashboard() {
     
     const fetchUsers = async () => {
       try {
-        const { data, error } = await supabase
-          .from("users")
-          .select("*")
-          .order("created_at", { ascending: false });
-    
-        if (error) {
-          console.error("Error fetching users:", error);
-          setNetworkError("Network connection issue. Unable to fetch user data. Please check your connection and try again.");
-        } else {
-          setUsers(data);
-          setNetworkError(null); // Clear previous errors
-        }
+        const userService = UserService.getInstance();
+        const data = await userService.fetchUsers();
+        setUsers(data);
+        setNetworkError(null); // Clear previous errors
       } catch (e) {
         console.error("Exception fetching users:", e);
         setNetworkError("Network connection issue. Unable to fetch user data. Please check your connection and try again.");
@@ -97,18 +90,10 @@ export default function AdminDashboard() {
     // Trigger useEffect again
     const fetchUsers = async () => {
       try {
-        const { data, error } = await supabase
-          .from("users")
-          .select("*")
-          .order("created_at", { ascending: false });
-    
-        if (error) {
-          console.error("Error fetching users:", error);
-          setNetworkError("Network connection issue. Unable to fetch user data. Please check your connection and try again.");
-        } else {
-          setUsers(data);
-          setNetworkError(null);
-        }
+        const userService = UserService.getInstance();
+        const data = await userService.fetchUsers();
+        setUsers(data);
+        setNetworkError(null);
       } catch (e) {
         console.error("Exception fetching users:", e);
         setNetworkError("Network connection issue. Unable to fetch user data. Please check your connection and try again.");

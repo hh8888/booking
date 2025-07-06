@@ -9,6 +9,7 @@ import LocationSelector from './components/common/LocationSelector';
 import UserDropdown from './components/common/UserDropdown';
 import DatabaseService from './services/DatabaseService';
 import LocationService from './services/LocationService';
+import UserService from './services/UserService';
 import LoadingSpinner from './components/common/LoadingSpinner';
 
 export default function StaffDashboard() {
@@ -71,19 +72,12 @@ export default function StaffDashboard() {
     // For staff dashboard, we only need to fetch customers and other staff for booking purposes
     const fetchUsers = async () => {
       try {
-        const { data, error } = await supabase
-          .from("users")
-          .select("*")
-          .in('role', ['customer', 'staff']) // Staff can see customers and other staff
-          .order("created_at", { ascending: false });
-    
-        if (error) {
-          console.error("Error fetching users:", error);
-          setNetworkError("Network connection issue. Unable to fetch user data. Please check your connection and try again.");
-        } else {
-          setUsers(data);
-          setNetworkError(null); // Clear previous errors
-        }
+        const userService = UserService.getInstance();
+        const allUsers = await userService.fetchUsers();
+        // Filter to only show customers and staff for staff dashboard
+        const filteredUsers = allUsers.filter(user => ['customer', 'staff'].includes(user.role));
+        setUsers(filteredUsers);
+        setNetworkError(null); // Clear previous errors
       } catch (e) {
         console.error("Exception fetching users:", e);
         setNetworkError("Network connection issue. Unable to fetch user data. Please check your connection and try again.");
@@ -102,19 +96,12 @@ export default function StaffDashboard() {
     // Trigger useEffect again
     const fetchUsers = async () => {
       try {
-        const { data, error } = await supabase
-          .from("users")
-          .select("*")
-          .in('role', ['customer', 'staff'])
-          .order("created_at", { ascending: false });
-    
-        if (error) {
-          console.error("Error fetching users:", error);
-          setNetworkError("Network connection issue. Unable to fetch user data. Please check your connection and try again.");
-        } else {
-          setUsers(data);
-          setNetworkError(null);
-        }
+        const userService = UserService.getInstance();
+        const allUsers = await userService.fetchUsers();
+        // Filter to only show customers and staff for staff dashboard
+        const filteredUsers = allUsers.filter(user => ['customer', 'staff'].includes(user.role));
+        setUsers(filteredUsers);
+        setNetworkError(null);
       } catch (e) {
         console.error("Exception fetching users:", e);
         setNetworkError("Network connection issue. Unable to fetch user data. Please check your connection and try again.");

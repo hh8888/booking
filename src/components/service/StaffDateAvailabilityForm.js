@@ -358,9 +358,12 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
             </button>
           </div>
           
+          {/* Day of week headers */}
           <div className="grid grid-cols-7 gap-1 mb-2">
             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-              <div key={day} className="text-center font-medium text-gray-500">{day}</div>
+              <div key={day} className="text-center font-medium text-gray-600 py-1">
+                {day}
+              </div>
             ))}
           </div>
           <div className="grid grid-cols-7 gap-1">

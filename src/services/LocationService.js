@@ -111,10 +111,10 @@ class LocationService {
   getLocationNameById(locationId) {
     if (!locationId) return 'N/A';
     
-    console.log('Locations fetched:', this.locations);
+    // console.log('Locations fetched:', this.locations);
     const location = this.locations.find(loc => loc.id === locationId);
-    console.log('Looking for location ID:', locationId);
-    console.log('Found location:', location);
+    // console.log('Looking for location ID:', locationId);
+    // console.log('Found location:', location);
     return location ? location.name : 'Unknown Location';
   }
 

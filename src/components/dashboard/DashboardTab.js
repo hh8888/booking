@@ -241,47 +241,91 @@ export default function DashboardTab() {
       tooltipContent = `Service: ${extendedProps.serviceName || 'Unknown'}<br>Customer: ${extendedProps.customerName || 'Unknown'}<br>Staff: ${extendedProps.staffName || 'Unknown'}<br>Time: ${new Date(info.event.start).toLocaleString()} - ${new Date(info.event.end).toLocaleString()}<br>Location: ${extendedProps.locationName || 'Unknown'}<br>Status: ${extendedProps.status || 'pending'}${extendedProps.notes ? '<br>Notes: ' + extendedProps.notes : ''}`;
     }
     
-    // Create custom tooltip functionality
+    // Create custom tooltip functionality with improved cleanup
     let tooltip = null;
+    let hideTimeout = null;
     
     const showTooltip = (e) => {
-      // Remove any existing tooltip
-      if (tooltip) {
-        tooltip.remove();
+      // Clear any pending hide timeout
+      if (hideTimeout) {
+        clearTimeout(hideTimeout);
+        hideTimeout = null;
       }
+      
+      // Remove any existing tooltips from the entire document
+      const existingTooltips = document.querySelectorAll('.custom-tooltip');
+      existingTooltips.forEach(tip => tip.remove());
       
       // Create tooltip element
       tooltip = document.createElement('div');
       tooltip.className = 'custom-tooltip';
       tooltip.innerHTML = tooltipContent;
       
-      // Position tooltip
+      // Position tooltip with boundary checking
+      const x = Math.min(e.pageX + 10, window.innerWidth - 250); // Prevent tooltip from going off-screen
+      const y = Math.max(e.pageY - 10, 10); // Keep tooltip visible
+      
       tooltip.style.position = 'absolute';
-      tooltip.style.left = e.pageX + 10 + 'px';
-      tooltip.style.top = e.pageY + 10 + 'px';
+      tooltip.style.left = x + 'px';
+      tooltip.style.top = y + 'px';
       tooltip.style.zIndex = '1000';
+      tooltip.style.pointerEvents = 'none'; // Prevent tooltip from interfering with mouse events
       
       document.body.appendChild(tooltip);
     };
     
     const hideTooltip = () => {
+      // Add a small delay to prevent flickering when moving between elements
+      hideTimeout = setTimeout(() => {
+        if (tooltip) {
+          tooltip.remove();
+          tooltip = null;
+        }
+      }, 50);
+    };
+    
+    const updateTooltipPosition = (e) => {
+      if (tooltip) {
+        const x = Math.min(e.pageX + 10, window.innerWidth - 250);
+        const y = Math.max(e.pageY - 10, 10);
+        tooltip.style.left = x + 'px';
+        tooltip.style.top = y + 'px';
+      }
+    };
+    
+    // Store cleanup function on the element for later removal
+    const cleanup = () => {
+      if (hideTimeout) {
+        clearTimeout(hideTimeout);
+      }
       if (tooltip) {
         tooltip.remove();
         tooltip = null;
       }
     };
     
-    const updateTooltipPosition = (e) => {
-      if (tooltip) {
-        tooltip.style.left = e.pageX + 10 + 'px';
-        tooltip.style.top = e.pageY + 10 + 'px';
-      }
-    };
+    // Store cleanup function on the element and mark for cleanup tracking
+    info.el._tooltipCleanup = cleanup;
+    info.el.setAttribute('data-tooltip-cleanup', 'true');
     
     // Add event listeners for custom tooltip
     info.el.addEventListener('mouseenter', showTooltip);
     info.el.addEventListener('mouseleave', hideTooltip);
     info.el.addEventListener('mousemove', updateTooltipPosition);
+    
+    // Add cleanup when element is removed
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.removedNodes.forEach((node) => {
+          if (node === info.el || (node.contains && node.contains(info.el))) {
+            cleanup();
+            observer.disconnect();
+          }
+        });
+      });
+    });
+    
+    observer.observe(document.body, { childList: true, subtree: true });
     
     // Check if this is an availability event in resource view
     if (info.event.extendedProps.isAvailability) {
@@ -333,6 +377,43 @@ export default function DashboardTab() {
   // Remove or comment out these functions:
   // const handleEventMouseEnter = (info) => { ... }
   // const handleEventMouseLeave = (info) => { ... }
+  
+  // Cleanup tooltips when component unmounts and add global cleanup
+  useEffect(() => {
+    // Global cleanup function for tooltips
+    const globalCleanupTooltips = () => {
+      const existingTooltips = document.querySelectorAll('.custom-tooltip');
+      existingTooltips.forEach(tip => tip.remove());
+    };
+    
+    // Add global mouse leave listener to calendar container
+    const calendarContainer = document.querySelector('.fc');
+    if (calendarContainer) {
+      calendarContainer.addEventListener('mouseleave', globalCleanupTooltips);
+    }
+    
+    // Also add to document body as a fallback
+    document.addEventListener('click', globalCleanupTooltips);
+    
+    return () => {
+      // Remove all custom tooltips
+      globalCleanupTooltips();
+      
+      // Clean up any tooltip-related data on calendar elements
+      const calendarElements = document.querySelectorAll('[data-tooltip-cleanup]');
+      calendarElements.forEach(el => {
+        if (el._tooltipCleanup) {
+          el._tooltipCleanup();
+        }
+      });
+      
+      // Remove global event listeners
+      if (calendarContainer) {
+        calendarContainer.removeEventListener('mouseleave', globalCleanupTooltips);
+      }
+      document.removeEventListener('click', globalCleanupTooltips);
+    };
+  }, []);
   
   return (
     <div className="space-y-6">
