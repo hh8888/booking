@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import DateTimeFormatter from '../../utils/DateTimeFormatter';
 import LocationService from '../../services/LocationService';
+import { BOOKING_STATUS, CSS_CLASSES } from '../../constants';
+import { getBookingStatusClass, isUpcomingBooking, isPendingBooking } from '../../utils';
 
 const CustomerBookingsList = ({ bookings, onNewBooking, onEditBooking, onCancelBooking }) => {
   const [showPastBookings, setShowPastBookings] = useState(false);
@@ -28,15 +30,8 @@ const CustomerBookingsList = ({ bookings, onNewBooking, onEditBooking, onCancelB
     return location ? location.name : 'Location TBD';
   };
   
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'confirmed': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // Using centralized utility function for status colors
+  // const getStatusColor = getBookingStatusClass; // Now imported from utils
 
   // Helper function to check if a date is today
   const isToday = (date) => {
@@ -74,7 +69,7 @@ const CustomerBookingsList = ({ bookings, onNewBooking, onEditBooking, onCancelB
 
   const renderBooking = (booking) => {
     const bookingDate = new Date(booking.start_date);
-    const isUpcoming = bookingDate > now || isToday(bookingDate);
+    const isUpcoming = isUpcomingBooking(booking) || isToday(bookingDate);
     
     return (
       <div key={booking.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition duration-200">
@@ -82,7 +77,7 @@ const CustomerBookingsList = ({ bookings, onNewBooking, onEditBooking, onCancelB
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
               <h3 className="font-semibold text-gray-900">{booking.service_name}</h3>
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getBookingStatusClass(booking.status)}`}>
                 {booking.status}
               </span>
             </div>
@@ -135,7 +130,7 @@ const CustomerBookingsList = ({ bookings, onNewBooking, onEditBooking, onCancelB
           </div>
           
           <div className="flex gap-2 ml-4 w-20 justify-end">
-            {isUpcoming && booking.status === 'pending' ? (
+            {isUpcoming && isPendingBooking(booking) ? (
               <>
                 <button 
                   onClick={() => onEditBooking(booking)}
@@ -192,7 +187,7 @@ const CustomerBookingsList = ({ bookings, onNewBooking, onEditBooking, onCancelB
         <h2 className="text-xl font-semibold text-gray-900">Your Bookings</h2>
         <button 
           onClick={onNewBooking}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition duration-200 flex items-center gap-2"
+          className={`${CSS_CLASSES.BUTTON_PRIMARY} flex items-center gap-2`}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

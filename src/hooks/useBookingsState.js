@@ -2,6 +2,7 @@ import { useReducer, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import BookingService from '../services/BookingService';
 import DatabaseService from '../services/DatabaseService';
+import { TABLES } from '../constants';
 
 // Define action types
 const ACTIONS = {
@@ -95,7 +96,7 @@ export function useBookingsState(users, userId) {
   const fetchServices = useCallback(async () => {
     try {
       const dbService = DatabaseService.getInstance();
-      const data = await dbService.fetchData('services');
+      const data = await dbService.fetchData(TABLES.SERVICES);
       dispatch({ type: ACTIONS.SET_SERVICES, payload: data });
       return data;
     } catch (error) {
@@ -114,7 +115,7 @@ export function useBookingsState(users, userId) {
         return customerData;
       } else {
         const dbService = DatabaseService.getInstance();
-        const data = await dbService.fetchSpecificColumns('users', 'id, full_name', { role: 'customer' });
+        const data = await dbService.fetchSpecificColumns(TABLES.USERS, 'id, full_name', { role: 'customer' });
         dispatch({ type: ACTIONS.SET_CUSTOMERS, payload: data });
         return data;
       }

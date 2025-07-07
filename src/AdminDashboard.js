@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import DashboardTab from './components/dashboard/DashboardTab';
@@ -9,100 +9,25 @@ import ReportsTab from './components/reports/ReportsTab';
 import SettingsTab from './components/SettingsTab';
 import LocationSelector from './components/common/LocationSelector';
 import UserDropdown from './components/common/UserDropdown';
-import DatabaseService from './services/DatabaseService';
-import LocationService from './services/LocationService';
-import UserService from './services/UserService';
 import LoadingSpinner from './components/common/LoadingSpinner';
+import { useBusinessInfo } from './hooks/useBusinessInfo';
+import { useDashboardUser } from './hooks/useDashboardUser';
+import { useUsersData } from './hooks/useUsersData';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [businessName, setBusinessName] = useState('Booking Management System');
-  const [userEmail, setUserEmail] = useState('');
-  const [userRole, setUserRole] = useState('');
-  const [userName, setUserName] = useState('');
-  const [currentUserId, setCurrentUserId] = useState(null);
-  
-  const [networkError, setNetworkError] = useState(null);
   
   const location = useLocation();
   const navigate = useNavigate();
   
-  useEffect(() => {
-    const fetchBusinessInfo = async () => {
-      try {
-        const dbService = DatabaseService.getInstance();
-        const name = await dbService.getSettingsByKey('system', 'businessName');
-        
-        if (name) {
-          setBusinessName(name);
-        }
-      } catch (error) {
-        console.error('Error fetching business info:', error);
-      }
-    };
-
-    fetchBusinessInfo();
-    
-    const fetchUserInfo = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserEmail(user.email);
-        
-        // Find the user record in the users table by email instead of auth ID
-        const { data: userData } = await supabase
-          .from('users')
-          .select('id, role, full_name')
-          .eq('email', user.email)
-          .single();
-          
-        if (userData) {
-          setCurrentUserId(userData.id); // Use the database user ID, not auth ID
-          setUserRole(userData.role);
-          setUserName(userData.full_name);
-        }
-      }
-    };
-    fetchUserInfo();
-    
-    const fetchUsers = async () => {
-      try {
-        const userService = UserService.getInstance();
-        const data = await userService.fetchUsers();
-        setUsers(data);
-        setNetworkError(null); // Clear previous errors
-      } catch (e) {
-        console.error("Exception fetching users:", e);
-        setNetworkError("Network connection issue. Unable to fetch user data. Please check your connection and try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Use custom hooks for shared logic
+  const { businessName } = useBusinessInfo();
+  const { userEmail, userRole, userName, currentUserId } = useDashboardUser();
+  const { users, setUsers, loading, networkError, retryFetch } = useUsersData();
   
-    fetchUsers();
-  }, []);
 
-  // Retry fetching user data
-  const retryFetchUsers = () => {
-    setLoading(true);
-    setNetworkError(null);
-    // Trigger useEffect again
-    const fetchUsers = async () => {
-      try {
-        const userService = UserService.getInstance();
-        const data = await userService.fetchUsers();
-        setUsers(data);
-        setNetworkError(null);
-      } catch (e) {
-        console.error("Exception fetching users:", e);
-        setNetworkError("Network connection issue. Unable to fetch user data. Please check your connection and try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUsers();
-  };
+
+
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -178,7 +103,7 @@ export default function AdminDashboard() {
               <p>{networkError}</p>
             </div>
             <button 
-              onClick={retryFetchUsers}
+              onClick={retryFetch}
               className="mt-4 bg-blue-500 text-white py-2 px-4 md:px-6 rounded-lg hover:bg-blue-600 transition duration-200 text-sm md:text-base"
             >
               Retry

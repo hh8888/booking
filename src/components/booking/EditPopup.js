@@ -1,4 +1,5 @@
 import React from 'react';
+import { USER_ROLES } from '../../constants';
 
 export default function EditPopup({ data, onSave, onCancel, fields }) {
   const [editedData, setEditedData] = React.useState(data);
@@ -24,9 +25,9 @@ export default function EditPopup({ data, onSave, onCancel, fields }) {
                 onChange={(e) => handleChange(field.key, e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="customer">Customer</option>
-                <option value="admin">Admin</option>
-                <option value="staff">Staff</option>
+                <option value={USER_ROLES.CUSTOMER}>Customer</option>
+                <option value={USER_ROLES.ADMIN}>Admin</option>
+                <option value={USER_ROLES.STAFF}>Staff</option>
               </select>
             ) : field.key === 'birthday' ? (
               <input

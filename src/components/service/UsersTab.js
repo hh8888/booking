@@ -9,6 +9,7 @@ import withErrorHandling from '../common/withErrorHandling';
 import { showToast } from '../common/ToastMessage';
 import ToastMessage from '../common/ToastMessage';
 import StaffDateAvailabilityForm from './StaffDateAvailabilityForm';
+import { USER_ROLES, TABLES } from '../../constants';
 
 function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = false }) {
   const [selectedRows, setSelectedRows] = useState([]);
@@ -56,12 +57,12 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
         itemData.role = 'customer';
       }
       if (isCreating) {
-        const newUser = await dbService.createItem('users', itemData, 'User');
+        const newUser = await dbService.createItem(TABLES.USERS, itemData, 'User');
         setUsers([newUser, ...users]);
         setIsCreating(false);
         showToast.success('User created successfully');
       } else {
-        await dbService.updateItem('users', itemData, 'User');
+        await dbService.updateItem(TABLES.USERS, itemData, 'User');
         setUsers(users.map((item) => 
           item.id === itemData.id ? { ...item, ...itemData } : item
         ));
@@ -76,7 +77,7 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
   const handleDeleteSelected = async () => {
     try {
       const dbService = DatabaseService.getInstance();
-      await dbService.deleteItems('users', selectedRows, 'User');
+      await dbService.deleteItems(TABLES.USERS, selectedRows, 'User');
       setUsers(users.filter((item) => !selectedRows.includes(item.id)));
     } catch (error) {
       handleError('deleting', () => Promise.reject(error));
@@ -106,7 +107,7 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
   const filteredUsers = users
     .filter(user => {
       if (roleFilter === 'all') return true;
-      if (roleFilter === 'staff_admin') return user.role === 'staff' || user.role === 'admin';
+      if (roleFilter === 'staff_admin') return user.role === USER_ROLES.STAFF || user.role === USER_ROLES.ADMIN;
       return user.role === roleFilter;
     })
     .filter(user => {
@@ -185,9 +186,9 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
           className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         >
           <option value="all">All Users</option>
-          <option value="admin">Admin</option>
-          <option value="staff">Staff</option>
-          <option value="customer">Customer</option>
+          <option value={USER_ROLES.ADMIN}>Admin</option>
+          <option value={USER_ROLES.STAFF}>Staff</option>
+          <option value={USER_ROLES.CUSTOMER}>Customer</option>
         </select>
       </div>
 
@@ -206,7 +207,7 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
             key: 'email_verified', 
             label: 'Email Verified',
             render: (value, row) => {
-              console.log('Email verified render - value:', value, 'type:', typeof value, 'row:', row.full_name);
+              // console.log('Email verified render - value:', value, 'type:', typeof value, 'row:', row.full_name);
               return (
                 <div className="flex items-center justify-center">
                   {value === true ? (
@@ -254,14 +255,14 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
             // Conditionally show role field based on staffMode
             ...(staffMode ? [
               { key: 'role', label: 'Role', type: 'select', options: [
-                { value: 'customer', label: 'Customer' }
-              ], required: true, defaultValue: 'customer', disabled: true }
+                { value: USER_ROLES.CUSTOMER, label: 'Customer' }
+              ], required: true, defaultValue: USER_ROLES.CUSTOMER, disabled: true }
             ] : [
               { key: 'role', label: 'Role', type: 'select', options: [
-                { value: 'customer', label: 'Customer' },
-                { value: 'staff', label: 'Staff' },
-                { value: 'admin', label: 'Admin' },
-              ], required: true, defaultValue: 'customer' }
+                { value: USER_ROLES.CUSTOMER, label: 'Customer' },
+                { value: USER_ROLES.STAFF, label: 'Staff' },
+                { value: USER_ROLES.ADMIN, label: 'Admin' },
+              ], required: true, defaultValue: USER_ROLES.CUSTOMER }
             ])
           ]}
         />

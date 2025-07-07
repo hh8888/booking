@@ -4,6 +4,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import ToastMessage from './common/ToastMessage';
 import { supabase } from '../supabaseClient';
 import DatabaseService from '../services/DatabaseService';
+import { USER_ROLES, BOOKING_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES, TABLES } from '../constants';
 import {
   DateTimeSettings,
   UserSettings,
@@ -46,12 +47,12 @@ export default function SettingsTab() {
     {
       key: 'defaultUserRole',
       label: 'Default User Role',
-      value: 'customer',
+      value: USER_ROLES.CUSTOMER,
       type: 'select',
       options: [
-        { value: 'customer', label: 'Customer' },
-        { value: 'staff', label: 'Staff' },
-        { value: 'admin', label: 'Administrator' }
+        { value: USER_ROLES.CUSTOMER, label: 'Customer' },
+        { value: USER_ROLES.STAFF, label: 'Staff' },
+        { value: USER_ROLES.ADMIN, label: 'Administrator' }
       ],
       description: 'Default role for newly registered users'
     },
@@ -92,13 +93,13 @@ export default function SettingsTab() {
     {
       key: 'defaultBookingStatus',
       label: 'Default Booking Status',
-      value: 'pending',
+      value: BOOKING_STATUS.PENDING,
       type: 'select',
       options: [
-        { value: 'pending', label: 'Pending' },
-        { value: 'confirmed', label: 'Confirmed' },
-        { value: 'completed', label: 'Completed' },
-        { value: 'cancelled', label: 'Cancelled' }
+        { value: BOOKING_STATUS.PENDING, label: 'Pending' },
+        { value: BOOKING_STATUS.CONFIRMED, label: 'Confirmed' },
+        { value: BOOKING_STATUS.COMPLETED, label: 'Completed' },
+        { value: BOOKING_STATUS.CANCELLED, label: 'Cancelled' }
       ],
       description: 'Default status when creating a new booking'
     },
@@ -265,7 +266,7 @@ export default function SettingsTab() {
       });
       try {
         const dbService = DatabaseService.getInstance();
-        const data = await dbService.fetchData('settings');
+        const data = await dbService.fetchData(TABLES.SETTINGS);
         
         if (data && data.length > 0) {
           // Process user settings
@@ -332,7 +333,7 @@ export default function SettingsTab() {
         }
       } catch (error) {
         console.error('Error loading settings:', error);
-        toast.error('Failed to load settings');
+        toast.error(ERROR_MESSAGES.SETTINGS_LOAD_FAILED);
       }
     };
 
@@ -354,20 +355,20 @@ export default function SettingsTab() {
       // Check if settings exist, update if they do, otherwise create
       for (const setting of settingsToSave) {
         const { data } = await supabase
-          .from('settings')
+          .from(TABLES.SETTINGS)
           .select('*')
           .eq('category', setting.category)
           .eq('key', setting.key);
 
         if (data && data.length > 0) {
           // Update existing setting
-          await dbService.updateItem('settings', {
+          await dbService.updateItem(TABLES.SETTINGS, {
             id: data[0].id,
             ...setting
           }, 'Setting');
         } else {
           // Create new setting
-          await dbService.createItem('settings', setting, 'Setting');
+          await dbService.createItem(TABLES.SETTINGS, setting, 'Setting');
         }
       }
 
@@ -380,7 +381,7 @@ export default function SettingsTab() {
       });
     } catch (error) {
       console.error('Error saving user settings:', error);
-      toast.error(`Save failed: ${error.message}`);
+      toast.error(`${ERROR_MESSAGES.SAVE_FAILED}: ${error.message}`);
     }
   };
 
@@ -399,20 +400,20 @@ export default function SettingsTab() {
       // Check if settings exist, update if they do, otherwise create
       for (const setting of settingsToSave) {
         const { data } = await supabase
-          .from('settings')
+          .from(TABLES.SETTINGS)
           .select('*')
           .eq('category', setting.category)
           .eq('key', setting.key);
 
         if (data && data.length > 0) {
           // Update existing setting
-          await dbService.updateItem('settings', {
+          await dbService.updateItem(TABLES.SETTINGS, {
             id: data[0].id,
             ...setting
           }, 'Setting');
         } else {
           // Create new setting
-          await dbService.createItem('settings', setting, 'Setting');
+          await dbService.createItem(TABLES.SETTINGS, setting, 'Setting');
         }
       }
 
@@ -425,7 +426,7 @@ export default function SettingsTab() {
       });
     } catch (error) {
       console.error('Error saving service settings:', error);
-      toast.error(`Save failed: ${error.message}`);
+      toast.error(`${ERROR_MESSAGES.SAVE_FAILED}: ${error.message}`);
     }
   };
 
@@ -444,20 +445,20 @@ export default function SettingsTab() {
       // Check if settings exist, update if they do, otherwise create
       for (const setting of settingsToSave) {
         const { data } = await supabase
-          .from('settings')
+          .from(TABLES.SETTINGS)
           .select('*')
           .eq('category', setting.category)
           .eq('key', setting.key);
 
         if (data && data.length > 0) {
           // Update existing setting
-          await dbService.updateItem('settings', {
+          await dbService.updateItem(TABLES.SETTINGS, {
             id: data[0].id,
             ...setting
           }, 'Setting');
         } else {
           // Create new setting
-          await dbService.createItem('settings', setting, 'Setting');
+          await dbService.createItem(TABLES.SETTINGS, setting, 'Setting');
         }
       }
 
@@ -470,7 +471,7 @@ export default function SettingsTab() {
       });
     } catch (error) {
       console.error('Error saving booking settings:', error);
-      toast.error(`Save failed: ${error.message}`);
+      toast.error(`${ERROR_MESSAGES.SAVE_FAILED}: ${error.message}`);
     }
   };
 
@@ -491,20 +492,20 @@ export default function SettingsTab() {
       // Check if settings exist, update if they do, otherwise create
       for (const setting of settingsToSave) {
         const { data } = await supabase
-          .from('settings')
+          .from(TABLES.SETTINGS)
           .select('*')
           .eq('category', setting.category)
           .eq('key', setting.key);
 
         if (data && data.length > 0) {
           // Update existing setting
-          await dbService.updateItem('settings', {
+          await dbService.updateItem(TABLES.SETTINGS, {
             id: data[0].id,
             ...setting
           }, 'Setting');
         } else {
           // Create new setting
-          await dbService.createItem('settings', setting, 'Setting');
+          await dbService.createItem(TABLES.SETTINGS, setting, 'Setting');
         }
       }
 
@@ -517,7 +518,7 @@ export default function SettingsTab() {
       });
     } catch (error) {
       console.error('Error saving system settings:', error);
-      toast.error(`Save failed: ${error.message}`);
+      toast.error(`${ERROR_MESSAGES.SAVE_FAILED}: ${error.message}`);
     }
   };
 
@@ -531,7 +532,7 @@ export default function SettingsTab() {
       ]);
     } catch (error) {
       console.error('Error saving datetime settings:', error);
-      toast.error(`Save failed: ${error.message}`);
+      toast.error(`${ERROR_MESSAGES.SAVE_FAILED}: ${error.message}`);
     }
   };
 
@@ -600,7 +601,7 @@ const [customerDashboardSettings, setCustomerDashboardSettings] = useState([
         try {
           JSON.parse(formData.bookingSteps);
         } catch (e) {
-          toast.error('Invalid JSON format for booking steps');
+          toast.error(ERROR_MESSAGES.INVALID_JSON_FORMAT);
           return;
         }
       }
@@ -615,20 +616,20 @@ const [customerDashboardSettings, setCustomerDashboardSettings] = useState([
       // Check if settings exist, update if they do, otherwise create
       for (const setting of settingsToSave) {
         const { data } = await supabase
-          .from('settings')
+          .from(TABLES.SETTINGS)
           .select('*')
           .eq('category', setting.category)
           .eq('key', setting.key);
 
         if (data && data.length > 0) {
           // Update existing setting
-          await dbService.updateItem('settings', {
+          await dbService.updateItem(TABLES.SETTINGS, {
             id: data[0].id,
             ...setting
           }, 'Setting');
         } else {
           // Create new setting
-          await dbService.createItem('settings', setting, 'Setting');
+          await dbService.createItem(TABLES.SETTINGS, setting, 'Setting');
         }
       }
 
@@ -640,10 +641,10 @@ const [customerDashboardSettings, setCustomerDashboardSettings] = useState([
         }));
       });
 
-      toast.success('Customer dashboard settings saved successfully');
+      toast.success(SUCCESS_MESSAGES.CUSTOMER_DASHBOARD_SETTINGS_SAVED);
     } catch (error) {
       console.error('Error saving customer dashboard settings:', error);
-      toast.error(`Save failed: ${error.message}`);
+      toast.error(`${ERROR_MESSAGES.SAVE_FAILED}: ${error.message}`);
     }
   };
 
@@ -696,10 +697,10 @@ const [customerDashboardSettings, setCustomerDashboardSettings] = useState([
         }));
       });
 
-      toast.success('Working hours settings saved successfully');
+      toast.success(SUCCESS_MESSAGES.WORKING_HOURS_SETTINGS_SAVED);
     } catch (error) {
       console.error('Error saving working hours settings:', error);
-      toast.error(`Save failed: ${error.message}`);
+      toast.error(`${ERROR_MESSAGES.SAVE_FAILED}: ${error.message}`);
     }
   };
 

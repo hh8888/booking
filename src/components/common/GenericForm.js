@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { showToast } from './ToastMessage';
 import LoadingSpinner from './LoadingSpinner';
+import { ERROR_MESSAGES } from '../../constants';
 
 const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, loadingAvailability = false }) => {
   const [formData, setFormData] = useState({});
@@ -73,7 +74,7 @@ const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, l
         if (value === undefined || value === null || value === '' || (typeof value === 'string' && value.trim() === '')) {
           newErrors[field.key] = true;
           hasErrors = true;
-          showToast.error(`${field.label || field.key} is required`);
+          showToast.error(`${field.label || field.key} ${ERROR_MESSAGES.FIELD_REQUIRED}`);
         }
       }
     }
@@ -87,7 +88,7 @@ const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, l
         if (isNaN(date.getTime())) {
           newErrors[field.key] = true;
           hasErrors = true;
-          showToast.error('Please provide a valid date');
+          showToast.error(ERROR_MESSAGES.INVALID_DATE);
         }
       }
     }

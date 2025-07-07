@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import DatabaseService from '../services/DatabaseService';
 import { toast } from 'react-toastify';
+import { ERROR_MESSAGES } from '../../constants';
 
 const withTableOperations = (WrappedComponent, resourceName, supabaseTable) => {
   return function WithTableOperations(props) {
@@ -36,7 +37,7 @@ const withTableOperations = (WrappedComponent, resourceName, supabaseTable) => {
         }
       } catch (error) {
         console.error('Error:', error);
-        toast.error(`Error: ${error.message}`);
+        toast.error(`${ERROR_MESSAGES.OPERATION_ERROR}: ${error.message}`);
       }
       return null;
     };
@@ -57,7 +58,7 @@ const withTableOperations = (WrappedComponent, resourceName, supabaseTable) => {
         setSelectedRows([]);
       } catch (error) {
         console.error(`Error deleting ${resourceName.toLowerCase()}s:`, error);
-        toast.error(`Error: ${error.message}`);
+        toast.error(`${ERROR_MESSAGES.DELETE_ERROR}: ${error.message}`);
       }
     };
 

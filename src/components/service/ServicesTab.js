@@ -8,6 +8,7 @@ import ServiceForm from './ServiceForm';
 import DatabaseService from '../../services/DatabaseService';
 import ServiceStaffService from '../../services/ServiceStaffService';
 import withErrorHandling from '../common/withErrorHandling';
+import { USER_ROLES, TABLES, QUERY_FILTERS } from '../../constants';
 
 function ServicesTab({ users, handleError }) {
   const [services, setServices] = useState([]);
@@ -95,14 +96,14 @@ function ServicesTab({ users, handleError }) {
   const fetchStaffUsers = async () => {
     try {
       if (users && users.length > 0) {
-        const staffData = users.filter(user => user.role === 'staff' || user.role === 'admin')
+        const staffData = users.filter(user => user.role === USER_ROLES.STAFF || user.role === USER_ROLES.ADMIN)
           .map(user => ({ id: user.id, full_name: user.full_name }));
         setStaffUsers(staffData);
         return staffData;
       } else {
         // Use DatabaseService singleton to get staff data
         const dbService = DatabaseService.getInstance();
-        const data = await dbService.fetchSpecificColumns('users', 'id, full_name', { role: 'staff' });
+        const data = await dbService.fetchSpecificColumns(TABLES.USERS, 'id, full_name', QUERY_FILTERS.ROLE_STAFF);
         
         setStaffUsers(data);
         return data;
@@ -125,7 +126,7 @@ function ServicesTab({ users, handleError }) {
       
       if (isCreating) {
         // Create new service
-        const newService = await dbService.createItem('services', serviceData, 'Service');
+        const newService = await dbService.createItem(TABLES.SERVICES, serviceData, 'Service');
         
         // Assign staff to new service
         if (staff_ids.length > 0) {
@@ -142,7 +143,7 @@ function ServicesTab({ users, handleError }) {
           id: itemData.id,
           ...serviceData
         };
-        await dbService.updateItem('services', serviceDataWithId, 'Service');
+        await dbService.updateItem(TABLES.SERVICES, serviceDataWithId, 'Service');
         
         // Update service staff assignments
         await ServiceStaffService.getInstance().assignStaffToService(itemData.id, staff_ids);
@@ -161,7 +162,7 @@ function ServicesTab({ users, handleError }) {
   const handleDeleteSelected = async () => {
     try {
       const dbService = DatabaseService.getInstance();
-      await dbService.deleteItems('services', selectedRows, 'Service');
+      await dbService.deleteItems(TABLES.SERVICES, selectedRows, 'Service');
       setServices(services.filter((item) => !selectedRows.includes(item.id)));
     } catch (error) {
       handleError('deleting', () => Promise.reject(error));

@@ -1,6 +1,7 @@
 import { supabase } from '../supabaseClient';
 import { toast } from 'react-toastify';
 import DatabaseService from './DatabaseService';
+import { TABLES } from '../constants';
 
 /**
  * ServiceStaffService - Service class handling many-to-many relationships between services and staff
@@ -129,7 +130,7 @@ class ServiceStaffService {
     try {
       // Get all services
       const dbService = DatabaseService.getInstance();
-      const services = await dbService.fetchData('services');
+      const services = await dbService.fetchData(TABLES.SERVICES);
       
       // Get all service-staff assignments
       const { data: serviceStaffData, error } = await supabase

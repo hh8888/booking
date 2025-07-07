@@ -7,6 +7,8 @@ import StaffDashboard from './StaffDashboard';
 import DatabaseService from './services/DatabaseService';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { toast } from 'react-toastify'; // Use the existing toast library
+import { USER_ROLES, ERROR_MESSAGES, SUCCESS_MESSAGES, TABLES } from './constants';
+import { filterUsersByRole } from './utils';
 
 export default function Auth() {
   const [email, setEmail] = useState('');
@@ -65,7 +67,7 @@ export default function Auth() {
         } else {
           // Default to false if setting not found, and create it
           setIsMobileAuthEnabled(false);
-          await dbService.createItem('settings', {
+          await dbService.createItem(TABLES.SETTINGS, {
             category: 'system',
             key: 'enableMobileAuth',
             value: 'false'
@@ -119,14 +121,14 @@ export default function Auth() {
            try {
              // First check if email_verified is already true to avoid unnecessary updates
              const { data: currentUser, error: fetchError } = await supabase
-               .from('users')
+               .from(TABLES.USERS)
                .select('email_verified')
                .eq('id', session.user.id)
                .single();
              
              if (!fetchError && !currentUser.email_verified) {
                const { error: updateError } = await supabase
-                 .from('users')
+                 .from(TABLES.USERS)
                  .update({ email_verified: true })
                  .eq('id', session.user.id);
                
@@ -152,7 +154,7 @@ export default function Auth() {
         if (session.user.confirmed_at) {
           try {
             const { data: userData, error: fetchError } = await supabase
-              .from('users')
+              .from(TABLES.USERS)
               .select('email_verified')
               .eq('id', session.user.id)
               .single();
@@ -160,7 +162,7 @@ export default function Auth() {
             if (!fetchError && !userData.email_verified) {
               console.log('Email verified during token refresh, updating database');
               const { error: updateError } = await supabase
-                .from('users')
+                .from(TABLES.USERS)
                 .update({ email_verified: true })
                 .eq('id', session.user.id);
               
@@ -195,7 +197,7 @@ export default function Auth() {
       
       console.log('Querying users table for user ID:', user.id);
       const { data: userData, error } = await supabase
-        .from('users')
+        .from(TABLES.USERS)
         .select('role')
         .eq('id', user.id)
         .single();
@@ -231,18 +233,18 @@ export default function Auth() {
   
       // Redirect based on role
       console.log('Redirecting user based on role:', userData.role);
-      if (userData.role === 'customer') {
+      if (userData.role === USER_ROLES.CUSTOMER) {
         console.log('Redirecting to /booking');
         navigate('/booking');
-      } else if (userData.role === 'staff') {
+      } else if (userData.role === USER_ROLES.STAFF) {
         console.log('Redirecting to /staff');
         navigate('/staff');
-      } else if (userData.role === 'admin') {
+      } else if (userData.role === USER_ROLES.ADMIN) {
         console.log('Redirecting to /admin');
         navigate('/admin');
       } else {
         console.warn('Unknown user role:', userData.role);
-        setError('Unknown user role. Please contact support.');
+        setError(ERROR_MESSAGES.UNKNOWN_ROLE);
       }
       console.log('=== CHECKING USER ROLE DEBUG END ===');
     } catch (err) {
@@ -313,7 +315,7 @@ export default function Auth() {
       if (signUpError) throw signUpError;
 
       const { error: userError } = await supabase
-        .from('users')
+        .from(TABLES.USERS)
         .insert([
           {
             id: data.user.id,
@@ -323,7 +325,7 @@ export default function Auth() {
             birthday: birthday || null,
             gender: gender || null,
             phone_number: mobile || null,
-            role: 'customer',
+            role: USER_ROLES.CUSTOMER,
             email_verified: false, // Set to false initially
           },
         ]);
@@ -374,7 +376,7 @@ export default function Auth() {
       // Try to update last_sign_in but don't fail if it doesn't work
       console.log('Updating last_sign_in timestamp...');
       const { error: updateError } = await supabase
-        .from('users')
+        .from(TABLES.USERS)
         .update({ last_sign_in: new Date().toISOString() })
         .eq('id', data.user.id);
 
@@ -695,12 +697,12 @@ export default function Auth() {
           post_code: postCode,
           birthday: birthday || null,
           gender: gender || null,
-          role: 'customer',
+          role: USER_ROLES.CUSTOMER,
         };
         console.log('User insert data:', userInsertData);
         
         const { error: userError } = await supabase
-          .from('users')
+          .from(TABLES.USERS)
           .insert([userInsertData]);
 
         console.log('User insert error:', userError);
@@ -728,10 +730,10 @@ export default function Auth() {
   // Only show dashboards when we're on the root path and user is signed in
   // Other paths should be handled by their respective route components
   if (isSignedIn && window.location.pathname === '/') {
-    if (userRole === 'admin') {
+    if (userRole === USER_ROLES.ADMIN) {
       return <AdminDashboard />;
     }
-    if (userRole === 'staff') {
+    if (userRole === USER_ROLES.STAFF) {
       return <StaffDashboard />;
     }
   }

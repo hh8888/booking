@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DatabaseService from '../../services/DatabaseService';
 import { toast } from 'react-toastify';
+import { TABLES } from '../../constants';
 import { Bar } from 'react-chartjs-2';
 // Only register what you need
 import {
@@ -50,7 +51,7 @@ export default function ReportsTab() {
 
       // Get booking data from database for specified date range
       const bookings = await dbService.fetchData(
-        'bookings',
+        TABLES.BOOKINGS,
         'start_time',
         false,
         {

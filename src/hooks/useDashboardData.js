@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import DatabaseService from '../services/DatabaseService';
+import { TABLES } from '../constants';
 import LocationService from '../services/LocationService';
 import StaffAvailabilityService from '../services/StaffAvailabilityService';
 import { toast } from 'react-toastify';
@@ -46,12 +47,12 @@ export const useDashboardData = () => {
       const currentLocationId = locationService.getSelectedLocationId();
       
       const [usersCount, servicesCount, bookings] = await Promise.all([
-        dbService.getCount('users'),
-        dbService.getCount('services'),
+        dbService.getCount(TABLES.USERS),
+        dbService.getCount(TABLES.SERVICES),
         // Filter bookings by current location
         currentLocationId 
-          ? dbService.fetchData('bookings', 'created_at', false, { location: currentLocationId })
-          : dbService.fetchData('bookings')
+          ? dbService.fetchData(TABLES.BOOKINGS, 'created_at', false, { location: currentLocationId })
+          : dbService.fetchData(TABLES.BOOKINGS)
       ]);
   
       const now = new Date();
@@ -94,7 +95,7 @@ export const useDashboardData = () => {
   const fetchServices = useCallback(async () => {
     try {
       const dbService = DatabaseService.getInstance();
-      const data = await dbService.fetchData('services');
+      const data = await dbService.fetchData(TABLES.SERVICES);
       setServices(data);
       return data;
     } catch (error) {
@@ -107,7 +108,7 @@ export const useDashboardData = () => {
   const fetchCustomers = useCallback(async () => {
     try {
       const dbService = DatabaseService.getInstance();
-      const data = await dbService.fetchSpecificColumns('users', 'id, full_name', { role: 'customer' });
+      const data = await dbService.fetchSpecificColumns(TABLES.USERS, 'id, full_name', { role: 'customer' });
       setCustomers(data);
       return data;
     } catch (error) {
@@ -129,13 +130,13 @@ export const useDashboardData = () => {
       const [bookingsData, staffDataResult, servicesData, showStaffNameSetting, fetchedCustomersData] = await Promise.all([
         // Filter bookings by current location
         currentLocationId 
-          ? dbService.fetchData('bookings', 'created_at', false, { location: currentLocationId })
-          : dbService.fetchData('bookings'),
-        dbService.fetchData('users', 'created_at', false, { role: { in: ['staff', 'admin'] } }, ['id', 'full_name']),
-        dbService.fetchData('services'),
+          ? dbService.fetchData(TABLES.BOOKINGS, 'created_at', false, { location: currentLocationId })
+          : dbService.fetchData(TABLES.BOOKINGS),
+        dbService.fetchData(TABLES.USERS, 'created_at', false, { role: { in: ['staff', 'admin'] } }, ['id', 'full_name']),
+        dbService.fetchData(TABLES.SERVICES),
         dbService.getSettingsByKey('booking', 'showStaffName'),
         // Fetch customers data if not provided
-        customersData || dbService.fetchData('users', 'created_at', false, { role: 'customer' }, ['id', 'full_name'])
+        customersData || dbService.fetchData(TABLES.USERS, 'created_at', false, { role: 'customer' }, ['id', 'full_name'])
       ]);
 
       console.log('Bookings filtered by location:', currentLocationId, bookingsData.length);
@@ -240,7 +241,7 @@ export const useDashboardData = () => {
       const currentLocationId = locationService.getSelectedLocationId();
       
       const [staffData, availabilityData] = await Promise.all([
-        dbService.fetchData('users', 'created_at', false, { role: { in: ['staff', 'admin'] } }, ['id', 'full_name']),
+        dbService.fetchData(TABLES.USERS, 'created_at', false, { role: { in: ['staff', 'admin'] } }, ['id', 'full_name']),
         // Filter availability data by current location
         currentLocationId 
           ? dbService.fetchData('staff_availability', 'created_at', false, { location: currentLocationId })

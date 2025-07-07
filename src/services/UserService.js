@@ -1,5 +1,6 @@
 import DatabaseService from './DatabaseService';
 import { supabase } from '../supabaseClient';
+import { TABLES } from '../constants';
 
 class UserService {
   static instance = null;
@@ -18,14 +19,14 @@ class UserService {
   async fetchUsers() {
     try {
       // Fetch users from the users table (email_verified column now exists in database)
-      const users = await this.dbService.fetchData('users', 'created_at', false);
+      const users = await this.dbService.fetchData(TABLES.USERS, 'created_at', false);
       console.log('UserService.fetchUsers - Raw data from database:', users);
       console.log('UserService.fetchUsers - First user email_verified:', users[0]?.email_verified, 'type:', typeof users[0]?.email_verified);
       return users;
     } catch (error) {
       console.error('Error fetching users:', error);
       // Fallback: return users without verification status
-      const fallbackUsers = await this.dbService.fetchData('users', 'created_at', false);
+      const fallbackUsers = await this.dbService.fetchData(TABLES.USERS, 'created_at', false);
       return fallbackUsers.map(user => ({
         ...user,
         email_verified: false // Default to false if there's an error
@@ -70,15 +71,15 @@ class UserService {
     userDataWithoutPassword.id = authData.user.id;
     
     // Create new user
-    return await this.dbService.createItem('users', userDataWithoutPassword, 'User');
+    return await this.dbService.createItem(TABLES.USERS, userDataWithoutPassword, 'User');
   }
 
   async updateUser(userData) {
-    await this.dbService.updateItem('users', userData, 'User');
+    await this.dbService.updateItem(TABLES.USERS, userData, 'User');
   }
 
   async deleteUsers(userIds) {
-    await this.dbService.deleteItems('users', userIds, 'User');
+    await this.dbService.deleteItems(TABLES.USERS, userIds, 'User');
   }
 
   async filterUsersByRole(users, role) {
@@ -147,7 +148,7 @@ class UserService {
   async getUserProfile(userId) {
     try {
       const { data, error } = await supabase
-        .from('users')
+        .from(TABLES.USERS)
         .select('full_name, email, phone_number, birthday, post_code, gender')
         .eq('id', userId)
         .single();
@@ -166,7 +167,7 @@ class UserService {
       console.log('Profile data:', profileData);
       
       const { data, error } = await supabase
-        .from('users')
+        .from(TABLES.USERS)
         .update(profileData)
         .eq('id', userId)
         .select();

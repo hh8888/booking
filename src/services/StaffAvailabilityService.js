@@ -1,4 +1,5 @@
 import DatabaseService from './DatabaseService';
+import { TABLES } from '../constants';
 import { toast } from 'react-toastify';
 
 class StaffAvailabilityService {
@@ -165,7 +166,7 @@ class StaffAvailabilityService {
       // Get staff details for available staff members
       if (availableStaffIds.length > 0) {
         return await dbService.fetchData(
-          'users',
+          TABLES.USERS,
           'created_at',
           false,
           {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import DashboardTab from './components/dashboard/DashboardTab';
@@ -7,110 +7,28 @@ import BookingsTab from './components/booking/BookingsTab';
 import ReportsTab from './components/reports/ReportsTab';
 import LocationSelector from './components/common/LocationSelector';
 import UserDropdown from './components/common/UserDropdown';
-import DatabaseService from './services/DatabaseService';
-import LocationService from './services/LocationService';
-import UserService from './services/UserService';
 import LoadingSpinner from './components/common/LoadingSpinner';
+import { useBusinessInfo } from './hooks/useBusinessInfo';
+import { useDashboardUser } from './hooks/useDashboardUser';
+import { useUsersData } from './hooks/useUsersData';
+import { USER_ROLES } from './constants';
 
 export default function StaffDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [businessName, setBusinessName] = useState('Booking Management System');
-  const [userEmail, setUserEmail] = useState('');
-  const [userRole, setUserRole] = useState('');
-  const [userName, setUserName] = useState('');
-  const [currentUserId, setCurrentUserId] = useState(null);
-  
-  const [networkError, setNetworkError] = useState(null);
   
   const location = useLocation();
   const navigate = useNavigate();
   
-  useEffect(() => {
-    const fetchBusinessInfo = async () => {
-      try {
-        const dbService = DatabaseService.getInstance();
-        const name = await dbService.getSettingsByKey('system', 'businessName');
-        
-        if (name) {
-          setBusinessName(name);
-        }
-      } catch (error) {
-        console.error('Error fetching business info:', error);
-      }
-    };
-
-    fetchBusinessInfo();
-    
-    const fetchUserInfo = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('Auth user:', user);
-      if (user) {
-        setUserEmail(user.email);
-        
-        const { data: userData } = await supabase
-          .from('users')
-          .select('id, role, full_name')
-          .eq('email', user.email)
-          .single();
-          
-        console.log('Database userData:', userData);
-          
-        if (userData) {
-          console.log('Setting currentUserId to:', userData.id);
-          setCurrentUserId(userData.id);
-          setUserRole(userData.role);
-          setUserName(userData.full_name);
-        } else {
-          console.log('No user found in database for email:', user.email);
-        }
-      }
-    };
-    fetchUserInfo();
-    
-    // For staff dashboard, we only need to fetch customers and other staff for booking purposes
-    const fetchUsers = async () => {
-      try {
-        const userService = UserService.getInstance();
-        const allUsers = await userService.fetchUsers();
-        // Filter to only show customers and staff for staff dashboard
-        const filteredUsers = allUsers.filter(user => ['customer', 'staff'].includes(user.role));
-        setUsers(filteredUsers);
-        setNetworkError(null); // Clear previous errors
-      } catch (e) {
-        console.error("Exception fetching users:", e);
-        setNetworkError("Network connection issue. Unable to fetch user data. Please check your connection and try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Use custom hooks for shared logic
+  const { businessName } = useBusinessInfo();
+  const { userEmail, userRole, userName, currentUserId } = useDashboardUser();
+  const { users, setUsers, loading, networkError, retryFetch } = useUsersData({
+    roleFilter: ['customer', 'staff'] // Staff dashboard only shows customers and staff
+  });
   
-    fetchUsers();
-  }, []);
 
-  // Retry fetching user data
-  const retryFetchUsers = () => {
-    setLoading(true);
-    setNetworkError(null);
-    // Trigger useEffect again
-    const fetchUsers = async () => {
-      try {
-        const userService = UserService.getInstance();
-        const allUsers = await userService.fetchUsers();
-        // Filter to only show customers and staff for staff dashboard
-        const filteredUsers = allUsers.filter(user => ['customer', 'staff'].includes(user.role));
-        setUsers(filteredUsers);
-        setNetworkError(null);
-      } catch (e) {
-        console.error("Exception fetching users:", e);
-        setNetworkError("Network connection issue. Unable to fetch user data. Please check your connection and try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUsers();
-  };
+
+
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -180,7 +98,7 @@ export default function StaffDashboard() {
               <p>{networkError}</p>
             </div>
             <button 
-              onClick={retryFetchUsers}
+              onClick={retryFetch}
               className="mt-4 bg-blue-500 text-white py-2 px-4 md:px-6 rounded-lg hover:bg-blue-600 transition duration-200 text-sm md:text-base"
             >
               Retry
@@ -190,7 +108,7 @@ export default function StaffDashboard() {
           <>
             {activeTab === 'dashboard' && <DashboardTab staffMode={true} currentUserId={currentUserId} />}
             {activeTab === 'bookings' && <BookingsTab users={users} staffMode={true} currentUserId={currentUserId} />}
-            {activeTab === 'customers' && <UsersTab users={users.filter(user => user.role === 'customer')} setUsers={setUsers} staffMode={true} />}
+            {activeTab === 'customers' && <UsersTab users={users.filter(user => user.role === USER_ROLES.CUSTOMER)} setUsers={setUsers} staffMode={true} />}
           </>
         )}
       </div>

@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import StaffDateAvailabilityService from '../../services/StaffDateAvailabilityService';
 import DatabaseService from '../../services/DatabaseService';
 import LocationService from '../../services/LocationService';
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../constants';
 
 const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
   const [availability, setAvailability] = useState([]);
@@ -141,7 +142,7 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
       setOriginalAvailability(initialAvailability);
     } catch (error) {
       console.error('Error fetching availability:', error);
-      toast.error('Failed to fetch availability schedule');
+      toast.error(ERROR_MESSAGES.FAILED_FETCH_AVAILABILITY);
     } finally {
       setLoading(false);
     }
@@ -207,7 +208,7 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
       onClose();
     } catch (error) {
       console.error('Error updating availability:', error);
-      toast.error('Failed to update availability schedule');
+      toast.error(ERROR_MESSAGES.FAILED_UPDATE_AVAILABILITY);
     }
   };
 

@@ -10,18 +10,27 @@ import CustomerBooking from './CustomerBooking';
 import BookingSteps from './BookingSteps';
 import ToastMessage from '../common/ToastMessage';
 import LocationSelector from '../common/LocationSelector';
+import UserDropdown from '../common/UserDropdown';
 import { supabase } from '../../supabaseClient';
 import LoadingSpinner from '../common/LoadingSpinner';
+import { useBusinessInfo } from '../../hooks/useBusinessInfo';
+import { useDashboardUser } from '../../hooks/useDashboardUser';
+import { BOOKING_STATUS, TABLES, SUCCESS_MESSAGES, ERROR_MESSAGES, QUERY_FILTERS } from '../../constants';
 
 const CustomerDashboard = () => {
   const { user } = useUser();
-  const navigate = useNavigate(); // Add this hook
+  const navigate = useNavigate();
   const [customerData, setCustomerData] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showBookingForm, setShowBookingForm] = useState(false);
-  const [editingBooking, setEditingBooking] = useState(null);
   const [error, setError] = useState(null);
+  const [activeView, setActiveView] = useState('profile');
+  const [editingBooking, setEditingBooking] = useState(null);
+  const [showBookingForm, setShowBookingForm] = useState(false);
+  
+  // Use custom hooks for shared logic
+  const { businessName } = useBusinessInfo();
+  const { userEmail, userRole, userName, currentUserId } = useDashboardUser();
 
   useEffect(() => {
     const initCustomerData = async () => {
@@ -34,7 +43,7 @@ const CustomerDashboard = () => {
           console.log('DatabaseService instance:', dbService);
           
           // Get or create customer record for current user
-          let customer = await dbService.fetchData('users', 'created_at', false, { 
+          let customer = await dbService.fetchData(TABLES.USERS, 'created_at', false, { 
             id: user.id  // Use user ID instead of email
           });
           
@@ -53,7 +62,7 @@ const CustomerDashboard = () => {
               role: 'customer'
             };
             console.log('Creating new customer:', newCustomer);
-            const created = await dbService.createItem('users', newCustomer);
+            const created = await dbService.createItem(TABLES.USERS, newCustomer);
             console.log('Created customer:', created);
             setCustomerData(created[0]);
           } else {
@@ -61,8 +70,8 @@ const CustomerDashboard = () => {
           }
         } catch (error) {
           console.error('Error initializing customer data:', error);
-          setError('Failed to load customer information: ' + error.message);
-          toast.error('Failed to load customer information');
+          setError(`${ERROR_MESSAGES.FAILED_LOAD_CUSTOMER_INFO}: ${error.message}`);
+          toast.error(ERROR_MESSAGES.FAILED_LOAD_CUSTOMER_INFO);
         }
       }
       setLoading(false);
@@ -97,14 +106,14 @@ const CustomerDashboard = () => {
           const bookingService = new BookingService();
           
           // Fetch customer's bookings
-          const customerBookings = await dbService.fetchData('bookings', 'start_time', false, {
+          const customerBookings = await dbService.fetchData(TABLES.BOOKINGS, 'start_time', false, {
             customer_id: customerData.id
           });
           
           // Get services and staff data for booking details
           const [servicesData, staffData] = await Promise.all([
-            dbService.fetchData('services', 'name'),
-            dbService.fetchData('users', 'full_name', false, { role: 'staff' })
+            dbService.fetchData(TABLES.SERVICES, 'name'),
+            dbService.fetchData(TABLES.USERS, 'full_name', false, QUERY_FILTERS.ROLE_STAFF)
           ]);
           
           // Process bookings with additional details
@@ -118,7 +127,7 @@ const CustomerDashboard = () => {
           setBookings(processedBookings);
         } catch (error) {
           console.error('Error fetching bookings:', error);
-          toast.error('Failed to load bookings');
+          toast.error(ERROR_MESSAGES.FAILED_LOAD_BOOKINGS);
         }
       }
     };
@@ -131,12 +140,12 @@ const CustomerDashboard = () => {
       try {
         const dbService = DatabaseService.getInstance();
         const bookingService = new BookingService();
-        const customerBookings = await dbService.fetchData('bookings', 'start_time', false, {
+        const customerBookings = await dbService.fetchData(TABLES.BOOKINGS, 'start_time', false, {
           customer_id: customerData.id
         });
         const [servicesData, staffData] = await Promise.all([
-          dbService.fetchData('services', 'name'),
-          dbService.fetchData('users', 'full_name', false, { role: 'staff' })
+          dbService.fetchData(TABLES.SERVICES, 'name'),
+          dbService.fetchData(TABLES.USERS, 'full_name', false, QUERY_FILTERS.ROLE_STAFF)
         ]);
         const processedBookings = bookingService.processBookingsData(
           customerBookings, 
@@ -147,7 +156,7 @@ const CustomerDashboard = () => {
         setBookings(processedBookings);
       } catch (error) {
         console.error('Error refreshing bookings:', error);
-        toast.error('Failed to refresh bookings');
+        toast.error(ERROR_MESSAGES.FAILED_REFRESH_BOOKINGS);
       }
     }
   };
@@ -177,12 +186,12 @@ const CustomerDashboard = () => {
         };
         await bookingService.updateBooking(bookingWithId);
         console.log('Update completed');
-        toast.success('Booking updated successfully!');
+        toast.success(SUCCESS_MESSAGES.BOOKING_UPDATED);
       } else {
         console.log('Creating new booking...');
         const result = await bookingService.createBooking(bookingWithCustomer);
         console.log('Create result:', result);
-        toast.success('Booking created successfully!');
+        toast.success(SUCCESS_MESSAGES.BOOKING_CREATED);
       }
       
       console.log('Closing booking form and refreshing...');
@@ -196,7 +205,7 @@ const CustomerDashboard = () => {
       console.error('=== CustomerDashboard handleBookingSave ERROR ===');
       console.error('Error saving booking:', error);
       console.error('Error stack:', error.stack);
-      toast.error(`Failed to save booking: ${error.message}`);
+      toast.error(`${ERROR_MESSAGES.BOOKING_SAVE_ERROR}: ${error.message}`);
     }
   };
 
@@ -204,16 +213,16 @@ const CustomerDashboard = () => {
     if (window.confirm('Are you sure you want to cancel this booking?')) {
       try {
         const dbService = DatabaseService.getInstance();
-        await dbService.updateItem('bookings', { id: bookingId, status: 'cancelled' }, 'Booking');
-        toast.success('Booking cancelled successfully');
+        await dbService.updateItem(TABLES.BOOKINGS, { id: bookingId, status: BOOKING_STATUS.CANCELLED }, 'Booking');
+        toast.success(SUCCESS_MESSAGES.BOOKING_CANCELLED);
         
         // Refresh bookings
         setBookings(prev => prev.map(booking => 
-          booking.id === bookingId ? { ...booking, status: 'cancelled' } : booking
+          booking.id === bookingId ? { ...booking, status: BOOKING_STATUS.CANCELLED } : booking
         ));
       } catch (error) {
         console.error('Error cancelling booking:', error);
-        toast.error('Failed to cancel booking');
+        toast.error(ERROR_MESSAGES.FAILED_CANCEL_BOOKING);
       }
     }
   };
@@ -233,15 +242,25 @@ const CustomerDashboard = () => {
     setEditingBooking(null);
   };
 
-  // Add logout function
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error('Error signing out: ' + error.message);
-    } else {
-      navigate('/'); // Navigate to home page instead of reloading
+  const handleProfileUpdate = async () => {
+    // Refresh customer data when profile is updated
+    if (user) {
+      try {
+        const dbService = DatabaseService.getInstance();
+        const customer = await dbService.fetchData(TABLES.USERS, 'created_at', false, { 
+          id: user.id
+        });
+        
+        if (customer.length > 0) {
+          setCustomerData(customer[0]);
+        }
+      } catch (error) {
+        console.error('Error refreshing customer data:', error);
+      }
     }
   };
+
+
 
   if (loading) {
     return <LoadingSpinner fullScreen={true} text="Loading dashboard..." />;
@@ -262,18 +281,17 @@ const CustomerDashboard = () => {
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back, {customerData.full_name}!</h1>
-              <p className="text-gray-600">Manage your appointments and book new services</p>
-            </div>
-            <div className="mt-4 sm:mt-0 flex items-center space-x-4">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-800">{businessName}</h1>
+              <p className="text-gray-600">Welcome back, {customerData.full_name}! Manage your appointments and book new services</p>
               <LocationSelector />
-              <button
-                onClick={handleSignOut}
-                className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition duration-200 text-sm"
-              >
-                Sign Out
-              </button>
             </div>
+            <UserDropdown 
+              userEmail={userEmail}
+              userRole={userRole}
+              userName={userName}
+              currentUserId={currentUserId}
+              onProfileUpdate={handleProfileUpdate}
+            />
           </div>
         </div>
 

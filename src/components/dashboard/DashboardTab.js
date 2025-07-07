@@ -11,6 +11,7 @@ import ToastMessage from '../common/ToastMessage';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import DatabaseService from '../../services/DatabaseService';
 import BookingService from '../../services/BookingService';
+import { BOOKING_STATUS, USER_ROLES, TABLES, SUCCESS_MESSAGES, ERROR_MESSAGES } from '../../constants';
 import '../../styles/calendar.css';
 
 export default function DashboardTab() {
@@ -87,27 +88,27 @@ export default function DashboardTab() {
       // Validate required fields
       if (!dataToSave.customer_id) {
         console.error('Invalid customer_id:', dataToSave.customer_id);
-        toast.error('Please select a valid customer');
+        toast.error(ERROR_MESSAGES.INVALID_CUSTOMER);
         return;
       }
       
       if (!dataToSave.service_id) {
         console.error('Missing service_id');
-        toast.error('Please select a service');
+        toast.error(ERROR_MESSAGES.INVALID_SERVICE);
         return;
       }
       
       if (!dataToSave.provider_id) {
         console.error('Missing provider_id');
-        toast.error('Please select a provider');
+        toast.error(ERROR_MESSAGES.INVALID_PROVIDER);
         return;
       }
       
       // Validate if customer exists
-      const customerExists = await dbService.fetchSpecificColumns('users', 'id', { id: dataToSave.customer_id, role: 'customer' });
+      const customerExists = await dbService.fetchSpecificColumns(TABLES.USERS, 'id', { id: dataToSave.customer_id, role: USER_ROLES.CUSTOMER });
       if (!customerExists || customerExists.length === 0) {
         console.error('Customer not found in users table:', dataToSave.customer_id);
-        toast.error('Please select a valid customer');
+        toast.error(ERROR_MESSAGES.INVALID_CUSTOMER);
         return;
       }
       
@@ -115,7 +116,7 @@ export default function DashboardTab() {
       const startTime = new Date(dataToSave.start_time);
       if (isNaN(startTime.getTime())) {
         console.error('Invalid start time:', dataToSave.start_time);
-        toast.error('Invalid start time');
+        toast.error(ERROR_MESSAGES.INVALID_START_TIME);
         return;
       }
       
@@ -135,7 +136,7 @@ export default function DashboardTab() {
       const endTime = new Date(startTime.getTime() + durationInMinutes * 60000);
       dataToSave.end_time = endTime.toISOString();
       dataToSave.duration = durationInMinutes;
-      dataToSave.status = dataToSave.status || 'pending';
+      dataToSave.status = dataToSave.status || BOOKING_STATUS.PENDING;
       
       console.log('Final data to save:', dataToSave);
       
@@ -144,12 +145,12 @@ export default function DashboardTab() {
         // Update existing booking using BookingService
         await bookingService.updateBooking(dataToSave);
         console.log('Booking updated successfully');
-        toast.success('Booking updated successfully!');
+        toast.success(SUCCESS_MESSAGES.BOOKING_UPDATED);
       } else {
         // Create new booking using BookingService
         await bookingService.createBooking(dataToSave);
         console.log('Booking created successfully');
-        toast.success('Booking created successfully!');
+        toast.success(SUCCESS_MESSAGES.BOOKING_CREATED);
       }
       
       // Refresh the dashboard data
@@ -167,7 +168,7 @@ export default function DashboardTab() {
     } catch (error) {
       console.error('=== DashboardTab handleEditSave ERROR ===');
       console.error('Error saving booking:', error);
-      toast.error(`Error saving booking: ${error.message}`);
+      toast.error(`${ERROR_MESSAGES.BOOKING_SAVE_ERROR}: ${error.message}`);
     }
   };
 
@@ -238,7 +239,7 @@ export default function DashboardTab() {
     if (extendedProps.isAvailability) { //time slot hover info
       tooltipContent = `Staff: ${extendedProps.staffName || 'Unknown'}<br>Time: ${extendedProps.startTime.substr(0, 5)} - ${extendedProps.endTime.substr(0, 5)}<br>Location: ${extendedProps.locationName || 'Unknown'}`;
     } else {
-      tooltipContent = `Service: ${extendedProps.serviceName || 'Unknown'}<br>Customer: ${extendedProps.customerName || 'Unknown'}<br>Staff: ${extendedProps.staffName || 'Unknown'}<br>Time: ${new Date(info.event.start).toLocaleString()} - ${new Date(info.event.end).toLocaleString()}<br>Location: ${extendedProps.locationName || 'Unknown'}<br>Status: ${extendedProps.status || 'pending'}${extendedProps.notes ? '<br>Notes: ' + extendedProps.notes : ''}`;
+      tooltipContent = `Service: ${extendedProps.serviceName || 'Unknown'}<br>Customer: ${extendedProps.customerName || 'Unknown'}<br>Staff: ${extendedProps.staffName || 'Unknown'}<br>Time: ${new Date(info.event.start).toLocaleString()} - ${new Date(info.event.end).toLocaleString()}<br>Location: ${extendedProps.locationName || 'Unknown'}<br>Status: ${extendedProps.status || BOOKING_STATUS.PENDING}${extendedProps.notes ? '<br>Notes: ' + extendedProps.notes : ''}`;
     }
     
     // Create custom tooltip functionality with improved cleanup
@@ -357,9 +358,9 @@ export default function DashboardTab() {
       const dbService = DatabaseService.getInstance();
       
       // Update booking status to confirmed
-      await dbService.updateItem('bookings', {
+      await dbService.updateItem(TABLES.BOOKINGS, {
         id: event.id,
-        status: 'confirmed'
+        status: BOOKING_STATUS.CONFIRMED
       }, 'Booking');
       
       // Refresh the calendar data
@@ -368,10 +369,10 @@ export default function DashboardTab() {
       setShowEventModal(false);
       setSelectedEvent(null);
       
-      toast.success('Booking confirmed successfully!');
+      toast.success(SUCCESS_MESSAGES.BOOKING_CONFIRMED);
     } catch (error) {
       console.error('Error confirming booking:', error);
-      toast.error('Failed to confirm booking. Please try again.');
+      toast.error(ERROR_MESSAGES.BOOKING_CONFIRM_FAILED);
     }
   };
   // Remove or comment out these functions:
@@ -480,7 +481,7 @@ export default function DashboardTab() {
             provider_id: selectedEvent.extendedProps?.staffId,
             customer_id: selectedEvent.extendedProps?.customerId,
             service_id: selectedEvent.extendedProps?.serviceId,
-            status: selectedEvent.extendedProps?.status || 'pending',
+            status: selectedEvent.extendedProps?.status || BOOKING_STATUS.PENDING,
             location: selectedEvent.extendedProps?.locationId  // Add this line
           } : null}
           onSave={handleEditSave}

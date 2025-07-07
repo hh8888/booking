@@ -2,6 +2,7 @@ import React from 'react';
 import DateTimeFormatter from '../../utils/DateTimeFormatter';
 import StaffAvailabilityService from '../../services/StaffAvailabilityService';
 import { PencilIcon, ClockIcon, KeyIcon } from '@heroicons/react/24/outline';
+import { USER_ROLES } from '../../constants';
 
 const TableRow = ({ row, columns, selectedRows, onSelectRow, onEdit, onSetAvailability, onResetPassword }) => {
   // Check if value is a date type
@@ -66,7 +67,7 @@ const TableRow = ({ row, columns, selectedRows, onSelectRow, onEdit, onSetAvaila
           >
             <PencilIcon className="h-5 w-5" />
           </button>
-          {(row.role === 'staff' || row.role === 'admin') && (
+          {(row.role === USER_ROLES.STAFF || row.role === USER_ROLES.ADMIN) && (
             <button
               onClick={() => onSetAvailability(row)}
               className="text-green-500 hover:text-green-700 p-1 rounded-full hover:bg-green-100 transition-colors duration-200"

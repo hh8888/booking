@@ -1,5 +1,6 @@
 import { supabase } from '../supabaseClient';
 import DatabaseService from './DatabaseService';
+import { TABLES } from '../constants';
 import DateTimeFormatter from '../utils/DateTimeFormatter';
 
 class BookingService {
@@ -34,7 +35,7 @@ class BookingService {
   }
 
   async fetchBookings(serviceData, customerData) {
-    const data = await this.dbService.fetchData('bookings', 'start_time', false);
+    const data = await this.dbService.fetchData(TABLES.BOOKINGS, 'start_time', false);
     return this.processBookingsData(data, serviceData, customerData);
   }
 
@@ -157,17 +158,17 @@ class BookingService {
   async createBooking(bookingData) {
     console.log('Creating:',bookingData.start_time);
     await this.validateBookingTime(bookingData.start_time);
-    return await this.dbService.createItem('bookings', bookingData, 'Booking');
+    return await this.dbService.createItem(TABLES.BOOKINGS, bookingData, 'Booking');
   }
 
   async updateBooking(bookingData) {
     console.log('Updating:',bookingData.start_time);
     await this.validateBookingTime(bookingData.start_time);
-    await this.dbService.updateItem('bookings', bookingData, 'Booking');
+    await this.dbService.updateItem(TABLES.BOOKINGS, bookingData, 'Booking');
   }
 
   async deleteBookings(bookingIds) {
-    await this.dbService.deleteItems('bookings', bookingIds, 'Booking');
+    await this.dbService.deleteItems(TABLES.BOOKINGS, bookingIds, 'Booking');
   }
 }
 

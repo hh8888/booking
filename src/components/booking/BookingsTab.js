@@ -10,6 +10,8 @@ import DateTimeFormatter from '../../utils/DateTimeFormatter';
 import ErrorHandlingService from '../../services/ErrorHandlingService';
 import withErrorHandling from '../common/withErrorHandling';
 import LocationService from '../../services/LocationService';
+import { BOOKING_STATUS, USER_ROLES, TABLES, QUERY_FILTERS, SUCCESS_MESSAGES, ERROR_MESSAGES } from '../../constants';
+import { filterUsersByRole, isUpcomingBooking, isPendingBooking } from '../../utils';
 
 function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
   const errorHandler = ErrorHandlingService.getInstance();
@@ -115,7 +117,7 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
   const fetchServices = async () => {
     try {
       const dbService = DatabaseService.getInstance();
-      const data = await dbService.fetchData('services');
+      const data = await dbService.fetchData(TABLES.SERVICES);
       setServices(data);
       return data;
     } catch (error) {
@@ -127,13 +129,13 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
   const fetchCustomers = async () => {
     try {
       if (users && users.length > 0) {
-        const customerData = users.filter(user => user.role === 'customer')
+        const customerData = filterUsersByRole(users, [USER_ROLES.CUSTOMER])
           .map(user => ({ id: user.id, full_name: user.full_name }));
         setCustomers(customerData);
         return customerData;
       } else {
         const dbService = DatabaseService.getInstance();
-        const data = await dbService.fetchSpecificColumns('users', 'id, full_name', { role: 'customer' });
+        const data = await dbService.fetchSpecificColumns(TABLES.USERS, 'id, full_name', QUERY_FILTERS.ROLE_CUSTOMER);
         setCustomers(data);
         return data;
       }
@@ -238,25 +240,25 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
       // Validate required fields and ensure customer_id exists
       if (!dataToSave.customer_id) {
         console.error('Invalid customer_id:', dataToSave.customer_id);
-        toast.error('Please select a valid customer');
+        toast.error(ERROR_MESSAGES.INVALID_CUSTOMER);
         return;
       }
       console.log('Customer ID validation passed:', dataToSave.customer_id);
     
       // Validate if customer ID exists in users table
       console.log('Checking if customer exists in database...');
-      const customerExists = await dbService.fetchSpecificColumns('users', 'id', { id: dataToSave.customer_id, role: 'customer' });
+      const customerExists = await dbService.fetchSpecificColumns(TABLES.USERS, 'id', { id: dataToSave.customer_id, role: USER_ROLES.CUSTOMER });
       console.log('Customer exists check result:', customerExists);
     
       if (!customerExists || customerExists.length === 0) {
         console.error('Customer not found in users table:', dataToSave.customer_id);
-        toast.error('Please select a valid customer');
+        toast.error(ERROR_MESSAGES.INVALID_CUSTOMER);
         return;
       }
     
       if (!dataToSave.service_id) {
         console.error('Missing service_id');
-        toast.error('Please select a service');
+        toast.error(ERROR_MESSAGES.INVALID_SERVICE);
         return;
       }
       console.log('Service ID validation passed:', dataToSave.service_id);
@@ -318,7 +320,7 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
             setEditItem(null);
           } else {
             // Create a single new booking
-            await dbService.createItem('bookings', dataToSave, 'Booking');
+            await dbService.createItem(TABLES.BOOKINGS, dataToSave, 'Booking');
             
             // Update local state
             const staffData = await fetchServices();
@@ -335,7 +337,7 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
             throw new Error('Missing booking ID for update');
           }
           console.log('updating booking:', dataToSave);
-          await dbService.updateItem('bookings', dataToSave, 'Booking');
+          await dbService.updateItem(TABLES.BOOKINGS, dataToSave, 'Booking');
           
           // Update local state
           const staffData = await fetchServices();
@@ -360,7 +362,7 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
   const handleDeleteSelected = async () => {
     try {
       const dbService = DatabaseService.getInstance();
-      await dbService.deleteItems('bookings', selectedRows, 'Booking');
+      await dbService.deleteItems(TABLES.BOOKINGS, selectedRows, 'Booking');
       setBookings(bookings.filter((item) => !selectedRows.includes(item.id)));
     } catch (error) {
       errorHandler.handleDatabaseError(error, 'deleting', 'bookings');
@@ -456,7 +458,7 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
             start_date: tomorrow.toISOString().split('T')[0],
             start_time_hour: startHour.toString().padStart(2, '0'),
             start_time_minute: '00',
-            status: "pending",
+            status: BOOKING_STATUS.PENDING,
             notes: "",
             recurring_type: null,
             recurring_count: 0
@@ -537,10 +539,10 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
             className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="all">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="completed">Completed</option>
+            <option value={BOOKING_STATUS.PENDING}>Pending</option>
+            <option value={BOOKING_STATUS.CONFIRMED}>Confirmed</option>
+            <option value={BOOKING_STATUS.CANCELLED}>Cancelled</option>
+            <option value={BOOKING_STATUS.COMPLETED}>Completed</option>
           </select>
         </div>
 

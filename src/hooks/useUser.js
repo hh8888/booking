@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { TABLES } from '../constants';
 
 export function useUser() {
   const [user, setUser] = useState(null);
@@ -17,7 +18,7 @@ export function useUser() {
           setUserEmail(currentUser.email);
 
           const { data: userData, error: userError } = await supabase
-            .from('users')
+            .from(TABLES.USERS)
             .select('role')
             .eq('id', currentUser.id)
             .single();

@@ -7,6 +7,7 @@ import BookingService from '../../services/BookingService';
 import StaffAvailabilityService from '../../services/StaffAvailabilityService';
 import LocationService from '../../services/LocationService';
 import TimeSlots from './TimeSlots';
+import { BOOKING_STATUS, USER_ROLES, TABLES, ERROR_MESSAGES } from '../../constants';
 
 
 export default function EditBookingPopup({ 
@@ -97,7 +98,7 @@ export default function EditBookingPopup({
             bookingFilters.location = locationId;
           }
           
-          const existingBookings = await dbService.fetchData('bookings', 'start_time', false, bookingFilters);
+          const existingBookings = await dbService.fetchData(TABLES.BOOKINGS, 'start_time', false, bookingFilters);
 
           // Filter out the current booking being edited
           const filteredBookings = existingBookings.filter(booking => {
@@ -105,7 +106,7 @@ export default function EditBookingPopup({
               return false;
             }
             // Exclude cancelled bookings from conflict checking
-            if (booking.status === 'cancelled') {
+            if (booking.status === BOOKING_STATUS.CANCELLED) {
               return false;
             }
             return true;
@@ -168,7 +169,7 @@ export default function EditBookingPopup({
                 // Only check for conflicts if the service has staff_id
                 const isSlotBooked = serviceHasStaff ? filteredBookings.some(booking => {
                   // Exclude cancelled bookings from blocking time slots
-                  if (booking.status === 'cancelled') {
+                  if (booking.status === BOOKING_STATUS.CANCELLED) {
                     return false;
                   }
                   
@@ -240,7 +241,7 @@ export default function EditBookingPopup({
             setBookedSlots(bookedSlots);
           } catch (error) {
             console.error('Error fetching available time slots:', error);
-            toast.error('Failed to fetch available time slots');
+            toast.error(ERROR_MESSAGES.FAILED_FETCH_TIME_SLOTS);
           }
         } else {
           console.log('Missing provider_id or start_date:', {
@@ -323,7 +324,7 @@ export default function EditBookingPopup({
       return availabilityPromises;
     } catch (error) {
       console.error('Error fetching availability:', error);
-      toast.error('Failed to fetch provider availability');
+      toast.error(ERROR_MESSAGES.FAILED_FETCH_PROVIDER_AVAILABILITY);
       return [];
     }
   };
@@ -332,7 +333,7 @@ export default function EditBookingPopup({
     const fetchProviders = async () => {
       try {
         const dbService = DatabaseService.getInstance();
-        const data = await dbService.fetchData('users', 'created_at', false, { role: { in: ['staff', 'admin'] } }, ['id', 'full_name']);
+        const data = await dbService.fetchData(TABLES.USERS, 'created_at', false, { role: { in: [USER_ROLES.STAFF, USER_ROLES.ADMIN] } }, ['id', 'full_name']);
         setProviders(data);
         return data;
       } catch (error) {
@@ -378,7 +379,7 @@ export default function EditBookingPopup({
           start_time_minute: defaultMinute,
           provider_id: defaultProviderId || '',
           location: currentLocation?.id || null,
-          status: 'pending'
+          status: BOOKING_STATUS.PENDING
         };
         
         console.log('Default booking object:', defaultBooking); // Debug log
@@ -464,7 +465,7 @@ export default function EditBookingPopup({
         start_time_minute: defaultMinute,
         provider_id: defaultProviderId || '',
         location: currentLocation?.id || null,
-        status: 'pending'
+        status: BOOKING_STATUS.PENDING
       };
       
       console.log('Default booking object (no booking):', defaultBooking); // Debug log
@@ -527,7 +528,7 @@ export default function EditBookingPopup({
   const fetchServices = async () => {
     try {
       const dbService = DatabaseService.getInstance();
-      const data = await dbService.fetchData('services');
+      const data = await dbService.fetchData(TABLES.SERVICES);
       setServices(data);
       return data;
     } catch (error) {
@@ -539,7 +540,7 @@ export default function EditBookingPopup({
   const fetchCustomers = async () => {
     try {
       const dbService = DatabaseService.getInstance();
-      const data = await dbService.fetchSpecificColumns('users', 'id, full_name', { role: 'customer' });
+      const data = await dbService.fetchSpecificColumns(TABLES.USERS, 'id, full_name', { role: USER_ROLES.CUSTOMER });
       setCustomers(data);
       return data;
     } catch (error) {
@@ -623,7 +624,7 @@ export default function EditBookingPopup({
       }
       
       // Check for conflicts with existing bookings
-      const existingBookings = await dbService.fetchData('bookings', 'start_time', false, {
+      const existingBookings = await dbService.fetchData(TABLES.BOOKINGS, 'start_time', false, {
         provider_id: bookingDataWithLocation.provider_id,
         start_time: { gte: startDate.toISOString().split('T')[0] + 'T00:00:00.000Z', 
                      lte: startDate.toISOString().split('T')[0] + 'T23:59:59.999Z' }
@@ -653,7 +654,7 @@ export default function EditBookingPopup({
             return false;
           }
           // Exclude cancelled bookings from conflict checking
-          if (booking.status === 'cancelled') {
+          if (booking.status === BOOKING_STATUS.CANCELLED) {
             console.log('Debug - Filtering out cancelled booking:', booking.id);
             return false;
           }
@@ -703,7 +704,7 @@ export default function EditBookingPopup({
         updatedData = {
           ...restData,
           start_time: isoStartTime,
-          status: restData.status || 'pending'
+          status: restData.status || BOOKING_STATUS.PENDING
         };
       } else {
         const { start_date, start_time_hour, start_time_minute, ...restData } = bookingDataWithLocation;
@@ -805,7 +806,7 @@ export default function EditBookingPopup({
       // Validate required fields
       if (!hideCustomerSelection && (!dataToSave.customer_id || dataToSave.customer_id === '')) {
         console.log('=== DEBUG: Customer validation failed ===');
-        toast.error('Please select a valid customer');
+        toast.error(ERROR_MESSAGES.INVALID_CUSTOMER);
         return;
       }
 
@@ -813,7 +814,7 @@ export default function EditBookingPopup({
         console.log('=== DEBUG: Provider validation failed ===');
         console.log('!dataToSave.provider_id:', !dataToSave.provider_id);
         console.log('dataToSave.provider_id === "":', dataToSave.provider_id === '');
-        toast.error('Please select a provider');
+        toast.error(ERROR_MESSAGES.INVALID_PROVIDER);
         return;
       }
       
@@ -1188,15 +1189,15 @@ export default function EditBookingPopup({
               label: "Status",
               type: hideCustomerSelection ? "text" : "select",
               options: hideCustomerSelection ? [] : [
-                { value: "pending", label: "Pending" },
-                { value: "confirmed", label: "Confirmed" },
-                { value: "cancelled", label: "Cancelled" },
-                { value: "completed", label: "Completed" }
+                { value: BOOKING_STATUS.PENDING, label: "Pending" },
+        { value: BOOKING_STATUS.CONFIRMED, label: "Confirmed" },
+        { value: BOOKING_STATUS.CANCELLED, label: "Cancelled" },
+        { value: BOOKING_STATUS.COMPLETED, label: "Completed" }
               ],
               required: true,
               readOnly: hideCustomerSelection,
-              defaultValue: hideCustomerSelection ? "pending" : undefined,
-              value: hideCustomerSelection ? "Pending" : undefined
+              defaultValue: hideCustomerSelection ? BOOKING_STATUS.PENDING : undefined,
+      value: hideCustomerSelection ? "Pending" : undefined
             },
             { 
               key: "notes", 

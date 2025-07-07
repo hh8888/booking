@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { useForm } from 'react-hook-form';
 import DatabaseService from '../../services/DatabaseService';
+import { ERROR_MESSAGES } from '../../constants';
 
 const ServiceForm = ({ initialData, staffUsers, onClose, onSubmit }) => {
   const { register, formState: { errors } } = useForm();
@@ -28,7 +29,7 @@ const ServiceForm = ({ initialData, staffUsers, onClose, onSubmit }) => {
     }));
   } catch (error) {
     console.error('Failed to fetch settings:', error);
-    toast.error('Failed to load default settings');
+    toast.error(ERROR_MESSAGES.FAILED_LOAD_DEFAULT_SETTINGS);
   }
 }, []);
 

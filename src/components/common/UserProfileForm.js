@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import UserService from '../../services/UserService';
+import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '../../constants';
 
 const UserProfileForm = ({ userId, onClose }) => {
   const [loading, setLoading] = useState(false);
@@ -35,7 +36,7 @@ const UserProfileForm = ({ userId, onClose }) => {
       });
     } catch (error) {
       console.error('Error fetching user data:', error);
-      toast.error('Failed to load profile data');
+      toast.error(ERROR_MESSAGES.FAILED_LOAD_PROFILE);
     } finally {
       setLoading(false);
     }
@@ -61,11 +62,11 @@ const UserProfileForm = ({ userId, onClose }) => {
       const result = await userService.updateUserProfile(userId, updateData);
       console.log('Update result:', result);
 
-      toast.success('Profile updated successfully!');
+      toast.success(SUCCESS_MESSAGES.PROFILE_UPDATED);
       setIsEditing(false);
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error('Failed to update profile');
+      toast.error(ERROR_MESSAGES.FAILED_UPDATE_PROFILE);
     } finally {
       setLoading(false);
     }

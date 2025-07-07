@@ -1,11 +1,13 @@
 import React from 'react';
+import { BOOKING_STATUS } from '../../constants';
+import { getBookingStatusClass, isPendingBooking } from '../../utils';
 
 const EventModal = ({ selectedEvent, onClose, onEdit, onConfirm }) => {
   if (!selectedEvent) return null;
 
   const isAvailabilityEvent = selectedEvent.classNames?.includes('availability-event');
   const { extendedProps } = selectedEvent;
-  const isPending = extendedProps?.status === 'pending';
+  const isPending = isPendingBooking({ status: extendedProps?.status });
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -78,13 +80,8 @@ const EventModal = ({ selectedEvent, onClose, onEdit, onConfirm }) => {
               </div>
               <div>
                 <span className="font-medium text-gray-700">Status:</span>
-                <span className={`ml-2 px-2 py-1 rounded text-sm ${
-                  extendedProps?.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                  extendedProps?.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                  extendedProps?.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {extendedProps?.status || 'pending'}
+                <span className={`ml-2 px-2 py-1 rounded text-sm ${getBookingStatusClass(extendedProps?.status)}`}>
+                  {extendedProps?.status || BOOKING_STATUS.PENDING}
                 </span>
               </div>
               <div>

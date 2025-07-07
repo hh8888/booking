@@ -1,5 +1,6 @@
 import { supabase } from '../supabaseClient';
 import { toast } from 'react-toastify';
+import { TABLES } from '../constants';
 
 /**
  * DatabaseService - Singleton database service class
@@ -214,7 +215,7 @@ class DatabaseService {
   async getSettingsByKey(category, key) {
     try {
       const { data, error } = await supabase
-        .from('settings')
+        .from(TABLES.SETTINGS)
         .select('value')
         .eq('category', category)
         .eq('key', key)
@@ -254,7 +255,7 @@ class DatabaseService {
     try {
       // Check if setting exists
       const { data, error: fetchError } = await supabase
-        .from('settings')
+        .from(TABLES.SETTINGS)
         .select('*')
         .eq('category', category)
         .eq('key', key);
@@ -264,7 +265,7 @@ class DatabaseService {
       if (data && data.length > 0) {
         // Update existing setting
         const { error: updateError } = await supabase
-          .from('settings')
+          .from(TABLES.SETTINGS)
           .update({ value })
           .eq('category', category)
           .eq('key', key);
@@ -273,7 +274,7 @@ class DatabaseService {
       } else {
         // Create new setting
         const { error: insertError } = await supabase
-          .from('settings')
+          .from(TABLES.SETTINGS)
           .insert([{ category, key, value }]);
         
         if (insertError) throw insertError;

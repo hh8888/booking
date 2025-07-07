@@ -1,5 +1,6 @@
 import { toast } from 'react-toastify';
 import DatabaseService from './DatabaseService';
+import { TABLES } from '../constants';
 
 class StaffDateAvailabilityService {
   static instance = null;
@@ -179,7 +180,7 @@ class StaffDateAvailabilityService {
       // Get staff details for available staff members
       if (availableStaffIds.length > 0) {
         return await dbService.fetchData(
-          'users',
+          TABLES.USERS,
           'created_at',
           false,
           {

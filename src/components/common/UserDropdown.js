@@ -3,8 +3,9 @@ import { UserCircleIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { supabase } from '../../supabaseClient';
 import StaffDateAvailabilityForm from '../service/StaffDateAvailabilityForm';
 import UserProfileForm from './UserProfileForm';
+import { USER_ROLES, ERROR_MESSAGES } from '../../constants';
 
-const UserDropdown = ({ userEmail, userRole, userName, currentUserId }) => {
+const UserDropdown = ({ userEmail, userRole, userName, currentUserId, onProfileUpdate }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showAvailabilityForm, setShowAvailabilityForm] = useState(false);
   const [showProfileForm, setShowProfileForm] = useState(false);
@@ -31,7 +32,7 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId }) => {
       
       if (error) {
         console.error('Sign out error:', error);
-        alert('Error signing out: ' + error.message);
+        alert(`${ERROR_MESSAGES.SIGN_OUT_ERROR}: ${error.message}`);
       } else {
         console.log('Sign out successful, reloading page...');
         // Clear any local storage if needed
@@ -43,7 +44,7 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId }) => {
       }
     } catch (err) {
       console.error('Unexpected error during sign out:', err);
-      alert('Unexpected error during sign out');
+      alert(ERROR_MESSAGES.UNEXPECTED_SIGN_OUT_ERROR);
     }
   };
 
@@ -55,6 +56,14 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId }) => {
   const handleUpdateProfile = () => {
     setShowProfileForm(true);
     setIsOpen(false);
+  };
+
+  const handleProfileClose = () => {
+    setShowProfileForm(false);
+    // Call the callback to refresh customer data if provided
+    if (onProfileUpdate) {
+      onProfileUpdate();
+    }
   };
 
   const displayName = userName || userEmail?.split('@')[0] || 'User';
@@ -77,7 +86,7 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId }) => {
         {isOpen && (
           <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
             <div className="py-1">
-              {(userRole === 'staff' || userRole === 'admin') && (
+              {(userRole === USER_ROLES.STAFF || userRole === USER_ROLES.ADMIN) && (
                 <button
                   onClick={handleSetAvailability}
                   className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200"
@@ -130,7 +139,7 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId }) => {
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <UserProfileForm
               userId={currentUserId}
-              onClose={() => setShowProfileForm(false)}
+              onClose={handleProfileClose}
             />
           </div>
         </div>
