@@ -399,14 +399,21 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
                   onClick={() => {
                     if (!isPastDate && isCurrentMonth) {
                       toggleDateAvailability(dateStr, isAvailable);
-                      setSelectedDate(selectedDate === dateStr ? null : dateStr);
                     }
                   }}
                   role="button"
                   tabIndex={0}
                 >
                   <div className="font-medium text-gray-900 mb-1">{date.getDate()}</div>
-                  <div className="text-sm text-gray-600">
+                  <div 
+                    className="text-sm text-gray-600 cursor-pointer hover:text-blue-600"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isAvailable) {
+                        setSelectedDate(selectedDate === dateStr ? null : dateStr);
+                      }
+                    }}
+                  >
                     {isAvailable ? `${schedule?.start_time?.substring(0, 5)} - ${schedule?.end_time?.substring(0, 5)}` : 'Not Available'}
                   </div>
                   {selectedDate === dateStr && (
