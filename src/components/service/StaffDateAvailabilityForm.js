@@ -15,6 +15,8 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
   const [originalAvailability, setOriginalAvailability] = useState([]);
   const [forceMarkAll, setForceMarkAll] = useState(false);
   const [currentLocationName, setCurrentLocationName] = useState('');
+  const [showMobileTimeModal, setShowMobileTimeModal] = useState(false);
+  const [mobileEditDate, setMobileEditDate] = useState(null);
 
 
   useEffect(() => {
@@ -274,9 +276,9 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full mx-auto relative max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-2 sm:p-4">
+      <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full mx-auto relative max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+        <div className="p-3 sm:p-6">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
@@ -285,23 +287,23 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        <h2 className="text-2xl font-semibold mb-2">Staff Availability Schedule</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold mb-2 pr-8">Staff Availability Schedule</h2>
         
         {/* Add current location display */}
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-center">
-            <svg className="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            <span className="text-sm font-medium text-blue-800">
+            <span className="text-xs sm:text-sm font-medium text-blue-800">
               Current Location: <span className="font-semibold">{currentLocationName || 'Unknown Location'}</span>
             </span>
           </div>
         </div>
         
         <form onSubmit={handleSubmit}>
-          <div className="mb-4 flex justify-between items-center">
+          <div className="mb-3 sm:mb-4 flex justify-between items-center">
             <button
               type="button"
               onClick={() => {
@@ -310,11 +312,12 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
                 setCurrentMonth(newDate);
                 setForceMarkAll(true); // Force "Mark All" display
               }}
-              className="px-3 py-1 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              className="px-2 py-1 sm:px-3 sm:py-1 border border-gray-300 rounded-md shadow-sm text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 min-h-[44px] flex items-center"
             >
-              Previous Month
+              <span className="hidden sm:inline">Previous Month</span>
+              <span className="sm:hidden">Prev</span>
             </button>
-            <h3 className="text-lg font-medium text-gray-900">
+            <h3 className="text-sm sm:text-lg font-medium text-gray-900 text-center px-2">
               {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
             </h3>
             <button
@@ -325,18 +328,19 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
                 setCurrentMonth(newDate);
                 setForceMarkAll(true); // Force "Mark All" display
               }}
-              className="px-3 py-1 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              className="px-2 py-1 sm:px-3 sm:py-1 border border-gray-300 rounded-md shadow-sm text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 min-h-[44px] flex items-center"
             >
-              Next Month
+              <span className="hidden sm:inline">Next Month</span>
+              <span className="sm:hidden">Next</span>
             </button>
           </div>
           
           {/* Mark/Unmark All Button */}
-          <div className="mb-4 flex justify-end">
+          <div className="mb-3 sm:mb-4 flex justify-end">
             <button
               type="button"
               onClick={handleMarkUnmarkAll}
-              className="px-4 py-2 border border-blue-300 rounded-md shadow-sm text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="px-3 py-2 sm:px-4 sm:py-2 border border-blue-300 rounded-md shadow-sm text-xs sm:text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 min-h-[44px]"
             >
               {(() => {
                 // If forceMarkAll is true, always show "Mark All in 30 days"
@@ -361,14 +365,15 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
           </div>
           
           {/* Day of week headers */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
+          <div className="grid grid-cols-7 gap-1 sm:gap-1 mb-3">
             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-              <div key={day} className="text-center font-medium text-gray-600 py-1">
-                {day}
+              <div key={day} className="text-center font-medium text-gray-600 py-2 text-xs sm:text-sm bg-gray-50 rounded-md">
+                <span className="hidden sm:inline">{day}</span>
+                <span className="sm:hidden">{day.charAt(0)}</span>
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-1 sm:gap-1 mb-4">
             {calendarDates.map(date => {
               // Use local date formatting instead of toISOString()
               const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -389,32 +394,78 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
               return (
                 <div 
                   key={date} 
-                  className={`p-2 rounded-lg transition-colors duration-200 
+                  className={`p-2 sm:p-2 rounded-lg transition-all duration-200 min-h-[70px] sm:min-h-[80px] flex flex-col justify-between cursor-pointer select-none
                     ${!isCurrentMonth ? 'bg-gray-100 text-gray-400' : ''}
-                    ${isPastDate ? 'bg-gray-200 cursor-not-allowed' : ''}
-                    ${isAvailable && !isPastDate ? 'bg-blue-50 border-2 border-blue-200' : 'bg-gray-50 border-2 border-gray-200'}
-                    ${isToday ? 'ring-2 ring-blue-500' : ''}
-                    ${selectedDate === dateStr ? 'ring-2 ring-green-700' : ''}
+                    ${isPastDate ? 'bg-gray-200 cursor-not-allowed opacity-60' : ''}
+                    ${isAvailable && !isPastDate ? 'bg-blue-50 border-2 border-blue-200 hover:bg-blue-100 active:bg-blue-200' : 'bg-gray-50 border-2 border-gray-200 hover:bg-gray-100 active:bg-gray-200'}
+                    ${isToday ? 'ring-2 ring-blue-500 ring-offset-1' : ''}
+                    ${selectedDate === dateStr ? 'ring-2 ring-green-700 ring-offset-1' : ''}
+                    ${!isPastDate && isCurrentMonth ? 'transform hover:scale-105 active:scale-95' : ''}
                   `}
                   onClick={() => {
                     if (!isPastDate && isCurrentMonth) {
                       toggleDateAvailability(dateStr, isAvailable);
+                      // If making the day unavailable, collapse the time input
+                      if (isAvailable && selectedDate === dateStr) {
+                        setSelectedDate(null);
+                      }
                     }
                   }}
                   role="button"
                   tabIndex={0}
+                  onKeyDown={(e) => {
+                    if ((e.key === 'Enter' || e.key === ' ') && !isPastDate && isCurrentMonth) {
+                      e.preventDefault();
+                      toggleDateAvailability(dateStr, isAvailable);
+                      if (isAvailable && selectedDate === dateStr) {
+                        setSelectedDate(null);
+                      }
+                    }
+                  }}
                 >
-                  <div className="font-medium text-gray-900 mb-1">{date.getDate()}</div>
+                  <div className="font-medium text-gray-900 mb-1 text-sm sm:text-base">{date.getDate()}</div>
                   <div 
-                    className="text-sm text-gray-600 cursor-pointer hover:text-blue-600"
+                    className="text-xs sm:text-sm text-gray-600 cursor-pointer hover:text-blue-600 active:text-blue-800 leading-tight p-1 rounded transition-colors duration-150 min-h-[32px] flex items-center justify-center"
                     onClick={(e) => {
                       e.stopPropagation();
                       if (isAvailable) {
-                        setSelectedDate(selectedDate === dateStr ? null : dateStr);
+                        // On mobile, show modal instead of inline editing
+                        if (window.innerWidth < 640) {
+                          setMobileEditDate(dateStr);
+                          setShowMobileTimeModal(true);
+                        } else {
+                          setSelectedDate(selectedDate === dateStr ? null : dateStr);
+                        }
                       }
                     }}
+                    onKeyDown={(e) => {
+                      if ((e.key === 'Enter' || e.key === ' ') && isAvailable) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (window.innerWidth < 640) {
+                          setMobileEditDate(dateStr);
+                          setShowMobileTimeModal(true);
+                        } else {
+                          setSelectedDate(selectedDate === dateStr ? null : dateStr);
+                        }
+                      }
+                    }}
+                    tabIndex={isAvailable ? 0 : -1}
                   >
-                    {isAvailable ? `${schedule?.start_time?.substring(0, 5)} - ${schedule?.end_time?.substring(0, 5)}` : 'Not Available'}
+                    {isAvailable ? (
+                      <div className="text-center">
+                        <div className="hidden sm:block">{schedule?.start_time?.substring(0, 5)} - {schedule?.end_time?.substring(0, 5)}</div>
+                        <div className="sm:hidden">
+                          <div>{schedule?.start_time?.substring(0, 5)}</div>
+                          <div>{schedule?.end_time?.substring(0, 5)}</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <span className="hidden sm:inline">Not Available</span>
+                        <span className="sm:hidden">N/A</span>
+                      </div>
+                    )}
                   </div>
                   {selectedDate === dateStr && (
                     <div className="space-y-1 mt-2">
@@ -429,7 +480,7 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
                             // Always ensure availability is set to true when time is changed
                             handleAvailabilityChange(dateStr, 'is_available', true);
                           }}
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm min-h-[44px]"
                           placeholder="Start Time"
                         />
                       </div>
@@ -444,7 +495,7 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
                             // Always ensure availability is set to true when time is changed
                             handleAvailabilityChange(dateStr, 'is_available', true);
                           }}
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm min-h-[44px]"
                           placeholder="End Time"
                         />
                       </div>
@@ -454,17 +505,17 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
               );
             })}
           </div>
-          <div className="mt-6 flex justify-end space-x-3">
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 mt-4 sm:mt-6">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="w-full sm:w-auto px-4 py-3 sm:py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 min-h-[44px]"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="w-full sm:w-auto px-4 py-3 sm:py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 min-h-[44px]"
             >
               Save Changes
             </button>
@@ -472,6 +523,70 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
         </form>
         </div>
       </div>
+      
+      {/* Mobile Time Edit Modal */}
+      {showMobileTimeModal && mobileEditDate && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-sm mx-auto">
+            <div className="p-4">
+              <h3 className="text-lg font-semibold mb-4 text-center">
+                Edit Time for {new Date(mobileEditDate + 'T00:00:00').toLocaleDateString('default', { month: 'short', day: 'numeric' })}
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+                  <input
+                    type="time"
+                    value={availability.find(s => s.date === mobileEditDate)?.start_time || ''}
+                    onChange={(e) => {
+                      handleAvailabilityChange(mobileEditDate, 'start_time', e.target.value);
+                      handleAvailabilityChange(mobileEditDate, 'is_available', true);
+                    }}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-lg min-h-[48px]"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+                  <input
+                    type="time"
+                    value={availability.find(s => s.date === mobileEditDate)?.end_time || ''}
+                    onChange={(e) => {
+                      handleAvailabilityChange(mobileEditDate, 'end_time', e.target.value);
+                      handleAvailabilityChange(mobileEditDate, 'is_available', true);
+                    }}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-lg min-h-[48px]"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex space-x-2 mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMobileTimeModal(false);
+                    setMobileEditDate(null);
+                  }}
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 min-h-[48px]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMobileTimeModal(false);
+                    setMobileEditDate(null);
+                  }}
+                  className="flex-1 px-4 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 min-h-[48px]"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
