@@ -3,6 +3,7 @@ import DatabaseService from '../../services/DatabaseService';
 import { toast } from 'react-toastify';
 import { TABLES } from '../../constants';
 import { Bar } from 'react-chartjs-2';
+import { useLanguage } from '../../contexts/LanguageContext';
 // Only register what you need
 import {
   Chart as ChartJS,
@@ -26,6 +27,7 @@ ChartJS.register(
 );
 
 export default function ReportsTab() {
+  const { t } = useLanguage();
   const [weeklyBookings, setWeeklyBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]); // Start date
@@ -93,7 +95,7 @@ export default function ReportsTab() {
       });
     } catch (error) {
       console.error('Error fetching bookings:', error);
-      toast.error('Failed to get booking statistics');
+      toast.error(t('reports.failedToGetStatistics'));
     } finally {
       setLoading(false);
     }
@@ -107,7 +109,7 @@ export default function ReportsTab() {
       },
       title: {
         display: true,
-        text: 'Booking Statistics',
+        text: t('reports.bookingStatistics'),
         font: {
           size: 16
         }
@@ -136,7 +138,7 @@ export default function ReportsTab() {
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <div className="mb-4 flex items-center space-x-4">
           <div className="flex items-center">
-            <label htmlFor="startDate" className="mr-2 text-gray-700">Start Date:</label>
+            <label htmlFor="startDate" className="mr-2 text-gray-700">{t('reports.startDate')}</label>
             <input
               type="date"
               id="startDate"
@@ -147,7 +149,7 @@ export default function ReportsTab() {
             />
           </div>
           <div className="flex items-center">
-            <label htmlFor="endDate" className="mr-2 text-gray-700">End Date:</label>
+            <label htmlFor="endDate" className="mr-2 text-gray-700">{t('reports.endDate')}</label>
             <input
               type="date"
               id="endDate"

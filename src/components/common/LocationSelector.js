@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import DatabaseService from '../../services/DatabaseService';
 import LocationService from '../../services/LocationService';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const LocationSelector = () => {
+  const { t } = useLanguage();
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedLocationIndex, setSelectedLocationIndex] = useState(null);
   const [locations, setLocations] = useState([]);
@@ -93,7 +95,7 @@ const LocationSelector = () => {
   return (
     <div className="mt-2">
       <label htmlFor="location-select" className="text-sm font-medium text-gray-700 mr-2">
-        Location:
+        {t('common.location')}
       </label>
       <select
         id="location-select"

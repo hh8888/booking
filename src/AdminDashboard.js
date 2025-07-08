@@ -13,8 +13,11 @@ import LoadingSpinner from './components/common/LoadingSpinner';
 import { useBusinessInfo } from './hooks/useBusinessInfo';
 import { useDashboardUser } from './hooks/useDashboardUser';
 import { useUsersData } from './hooks/useUsersData';
+import { useLanguage } from './contexts/LanguageContext';
+import { USER_ROLES } from './constants';
 
 export default function AdminDashboard() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('dashboard');
   
   const location = useLocation();
@@ -56,44 +59,47 @@ export default function AdminDashboard() {
           onClick={() => setActiveTab('dashboard')}
           className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${activeTab === 'dashboard' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
         >
-          Dashboard
+          {t('nav.dashboard')}
         </button>
         <button
           onClick={() => setActiveTab('bookings')}
           className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${activeTab === 'bookings' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
         >
-          Bookings
+          {t('nav.bookings')}
         </button>
         <button
           onClick={() => setActiveTab('users')}
           className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${activeTab === 'users' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
         >
-          Users
+          {t('nav.users')}
         </button>
         <button
           onClick={() => setActiveTab('Services')}
           className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${activeTab === 'Services' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
         >
-          Services
+          {t('nav.services')}
         </button>
         <button
           onClick={() => setActiveTab('reports')}
           className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${activeTab === 'reports' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
         >
-          Reports
+          {t('nav.reports')}
         </button>
-        <button
-          onClick={() => setActiveTab('settings')}
-          className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${activeTab === 'settings' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          Settings
-        </button>
+        {/* Settings tab only visible to Admin */}
+        {userRole === USER_ROLES.ADMIN && (
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${activeTab === 'settings' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            {t('nav.settings')}
+          </button>
+        )}
       </div>
     
       {/* Tab Content */}
       <div className="bg-white p-4 md:p-6 rounded-lg shadow-md flex-grow mb-16">
         {loading ? (
-          <LoadingSpinner text="Loading users..." />
+          <LoadingSpinner text={t('users.loadingUsers')} />
         ) : networkError ? (
           <div className="text-center py-6 md:py-8">
             <div className="text-red-500 text-base md:text-xl mb-4">
@@ -106,7 +112,7 @@ export default function AdminDashboard() {
               onClick={retryFetch}
               className="mt-4 bg-blue-500 text-white py-2 px-4 md:px-6 rounded-lg hover:bg-blue-600 transition duration-200 text-sm md:text-base"
             >
-              Retry
+              {t('common.retry')}
             </button>
           </div>
         ) : (
@@ -116,7 +122,7 @@ export default function AdminDashboard() {
             {activeTab === 'users' && <UsersTab users={users} setUsers={setUsers} />}
             {activeTab === 'Services' && <ServicesTab users={users} />}
             {activeTab === 'reports' && <ReportsTab />}
-            {activeTab === 'settings' && <SettingsTab />}
+            {activeTab === 'settings' && userRole === USER_ROLES.ADMIN && <SettingsTab />}
           </>
         )}
       </div>

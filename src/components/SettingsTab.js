@@ -4,7 +4,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import ToastMessage from './common/ToastMessage';
 import { supabase } from '../supabaseClient';
 import DatabaseService from '../services/DatabaseService';
-import { USER_ROLES, BOOKING_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES, TABLES } from '../constants';
+import { USER_ROLES, BOOKING_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES, TABLES, DEFAULT_BOOKING_STEPS } from '../constants';
+import { useLanguage } from '../contexts/LanguageContext';
 import {
   DateTimeSettings,
   UserSettings,
@@ -16,29 +17,31 @@ import {
 } from './settings';
 
 export default function SettingsTab() {
+  const { t, language } = useLanguage();
+  
   // DateTime settings
   const [dateTimeSettings, setDateTimeSettings] = useState([
     {
       key: 'timeFormat',
-      label: 'Time Format',
+      label: t('settings.timeFormat'),
       value: '24',
       type: 'select',
       options: [
-        { value: '24', label: '24-hour format' },
-        { value: '12', label: '12-hour format' }
+        { value: '24', label: t('settings.timeFormat24') },
+        { value: '12', label: t('settings.timeFormat12') }
       ],
-      description: 'Choose time display format'
+      description: t('settings.timeFormatDesc')
     },
     {
       key: 'showWeekday',
-      label: 'Show Weekday',
+      label: t('settings.showWeekday'),
       value: 'true',
       type: 'select',
       options: [
-        { value: 'true', label: 'Show' },
-        { value: 'false', label: 'Hide' }
+        { value: 'true', label: t('settings.show') },
+        { value: 'false', label: t('settings.hide') }
       ],
-      description: 'Display weekday information next to the date'
+      description: t('settings.showWeekdayDesc')
     }
   ]);
 
@@ -46,22 +49,22 @@ export default function SettingsTab() {
   const [userSettings, setUserSettings] = useState([
     {
       key: 'defaultUserRole',
-      label: 'Default User Role',
+      label: t('settings.defaultUserRole'),
       value: USER_ROLES.CUSTOMER,
       type: 'select',
       options: [
-        { value: USER_ROLES.CUSTOMER, label: 'Customer' },
-        { value: USER_ROLES.STAFF, label: 'Staff' },
-        { value: USER_ROLES.ADMIN, label: 'Administrator' }
+        { value: USER_ROLES.CUSTOMER, label: t('users.customer') },
+        { value: USER_ROLES.STAFF, label: t('users.staff') },
+        { value: USER_ROLES.ADMIN, label: t('settings.administrator') }
       ],
-      description: 'Default role for newly registered users'
+      description: t('settings.defaultUserRoleDesc')
     },
     {
       key: 'requiredUserFields',
-      label: 'Required User Fields',
+      label: t('settings.requiredUserFields'),
       value: 'email,full_name,post_code',
       type: 'text',
-      description: 'Required fields when creating users, separated by commas'
+      description: t('settings.requiredUserFieldsDesc')
     }
   ]);
 
@@ -69,22 +72,22 @@ export default function SettingsTab() {
   const [serviceSettings, setServiceSettings] = useState([
     {
       key: 'defaultServiceDuration',
-      label: 'Default Service Duration (minutes)',
+      label: t('settings.defaultServiceDuration'),
       value: '60',
       type: 'number',
       min: 5,
       max: 480,
       step: 5,
-      description: 'Default duration when creating a new service'
+      description: t('settings.defaultServiceDurationDesc')
     },
     {
       key: 'defaultServicePrice',
-      label: 'Default Service Price',
+      label: t('settings.defaultServicePrice'),
       value: '100',
       type: 'number',
       min: 0,
       step: 1,
-      description: 'Default price when creating a new service'
+      description: t('settings.defaultServicePriceDesc')
     }
   ]);
 
@@ -92,50 +95,50 @@ export default function SettingsTab() {
   const [bookingSettings, setBookingSettings] = useState([
     {
       key: 'defaultBookingStatus',
-      label: 'Default Booking Status',
+      label: t('settings.defaultBookingStatus'),
       value: BOOKING_STATUS.PENDING,
       type: 'select',
       options: [
-        { value: BOOKING_STATUS.PENDING, label: 'Pending' },
-        { value: BOOKING_STATUS.CONFIRMED, label: 'Confirmed' },
-        { value: BOOKING_STATUS.COMPLETED, label: 'Completed' },
-        { value: BOOKING_STATUS.CANCELLED, label: 'Cancelled' }
+        { value: BOOKING_STATUS.PENDING, label: t('bookings.pending') },
+        { value: BOOKING_STATUS.CONFIRMED, label: t('bookings.confirmed') },
+        { value: BOOKING_STATUS.COMPLETED, label: t('bookings.completed') },
+        { value: BOOKING_STATUS.CANCELLED, label: t('bookings.cancelled') }
       ],
-      description: 'Default status when creating a new booking'
+      description: t('settings.defaultBookingStatusDesc')
     },
     {
       key: 'showStaffName',
-      label: 'Show Staff Name in Calendar',
+      label: t('settings.showStaffName'),
       value: 'true',
       type: 'select',
       options: [
-        { value: 'true', label: 'Show' },
-        { value: 'false', label: 'Hide' }
+        { value: 'true', label: t('settings.show') },
+        { value: 'false', label: t('settings.hide') }
       ],
-      description: 'Display staff name in calendar events'
+      description: t('settings.showStaffNameDesc')
     },
     {
       key: 'bookingTimeSlotInterval',
-      label: 'Booking Time Slot Interval (minutes)',
+      label: t('settings.bookingTimeSlotInterval'),
       value: '30',
       type: 'select',
       options: [
-        { value: '5', label: '5 minutes' },
-        { value: '15', label: '15 minutes' },
-        { value: '30', label: '30 minutes' },
-        { value: '60', label: '1 hour' },
-        { value: '120', label: '2 hours' }
+        { value: '5', label: t('settings.minutes5') },
+        { value: '15', label: t('settings.minutes15') },
+        { value: '30', label: t('settings.minutes30') },
+        { value: '60', label: t('settings.hour1') },
+        { value: '120', label: t('settings.hours2') }
       ],
-      description: 'Minimum interval for booking time selection'
+      description: t('settings.bookingTimeSlotIntervalDesc')
     },
     {
       key: 'advanceBookingDays',
-      label: 'Advance Booking Days',
+      label: t('settings.advanceBookingDays'),
       value: '30',
       type: 'number',
       min: 1,
       max: 365,
-      description: 'Maximum number of days allowed for advance booking'
+      description: t('settings.advanceBookingDaysDesc')
     }
   ]);
 
@@ -143,52 +146,52 @@ export default function SettingsTab() {
   const [workingHoursSettings, setWorkingHoursSettings] = useState([
     {
       key: 'mondayHours',
-      label: 'Monday Hours',
+      label: t('settings.mondayHours'),
       value: '09:00-17:00',
       type: 'text',
-      description: 'Working hours for Monday (format: HH:MM-HH:MM, or "closed" for closed days)'
+      description: t('settings.workingHoursDesc', { day: t('settings.mondayHours') })
     },
     {
       key: 'tuesdayHours',
-      label: 'Tuesday Hours',
+      label: t('settings.tuesdayHours'),
       value: '09:00-17:00',
       type: 'text',
-      description: 'Working hours for Tuesday (format: HH:MM-HH:MM, or "closed" for closed days)'
+      description: t('settings.workingHoursDesc', { day: t('settings.tuesdayHours') })
     },
     {
       key: 'wednesdayHours',
-      label: 'Wednesday Hours',
+      label: t('settings.wednesdayHours'),
       value: '09:00-17:00',
       type: 'text',
-      description: 'Working hours for Wednesday (format: HH:MM-HH:MM, or "closed" for closed days)'
+      description: t('settings.workingHoursDesc', { day: t('settings.wednesdayHours') })
     },
     {
       key: 'thursdayHours',
-      label: 'Thursday Hours',
+      label: t('settings.thursdayHours'),
       value: '09:00-17:00',
       type: 'text',
-      description: 'Working hours for Thursday (format: HH:MM-HH:MM, or "closed" for closed days)'
+      description: t('settings.workingHoursDesc', { day: t('settings.thursdayHours') })
     },
     {
       key: 'fridayHours',
-      label: 'Friday Hours',
+      label: t('settings.fridayHours'),
       value: '09:00-17:00',
       type: 'text',
-      description: 'Working hours for Friday (format: HH:MM-HH:MM, or "closed" for closed days)'
+      description: t('settings.workingHoursDesc', { day: t('settings.fridayHours') })
     },
     {
       key: 'saturdayHours',
-      label: 'Saturday Hours',
+      label: t('settings.saturdayHours'),
       value: '09:00-17:00',
       type: 'text',
-      description: 'Working hours for Saturday (format: HH:MM-HH:MM, or "closed" for closed days)'
+      description: t('settings.workingHoursDesc', { day: t('settings.saturdayHours') })
     },
     {
       key: 'sundayHours',
-      label: 'Sunday Hours',
+      label: t('settings.sundayHours'),
       value: 'closed',
       type: 'text',
-      description: 'Working hours for Sunday (format: HH:MM-HH:MM, or "closed" for closed days)'
+      description: t('settings.workingHoursDesc', { day: t('settings.sundayHours') })
     }
   ]);
 
@@ -196,42 +199,42 @@ export default function SettingsTab() {
   const [systemSettings, setSystemSettings] = useState([
     {
       key: 'businessName',
-      label: 'Business Name',
-      value: 'Booking Management System',
+      label: t('settings.businessName'),
+      value: t('settings.businessNameDefault'),
       type: 'text',
-      description: 'Business name displayed throughout the system'
+      description: t('settings.businessName')
     },
     {
       key: 'businessHours',
-      label: 'Business Hours',
+      label: t('settings.businessHours'),
       value: '09:00-18:00',
       type: 'text',
-      description: 'Business operating hours, format: HH:MM-HH:MM'
+      description: t('settings.businessHoursDesc')
     },
     {
       key: 'businessDays',
-      label: 'Business Days',
+      label: t('settings.businessDays'),
       value: '1,2,3,4,5',
       type: 'text',
-      description: 'Business operating days, 1-7 represents Monday to Sunday, separated by commas'
+      description: t('settings.businessDaysDesc')
     },
     {
       key: 'notificationEmail',
-      label: 'Notification Email',
+      label: t('settings.notificationEmail'),
       value: '',
       type: 'text',
       description: 'Email address for system notifications'
     },
     {
       key: 'locations',
-      label: 'Business Locations',
+      label: t('settings.locations'),
       value: 'Cherrybrook,Chatswood,Eastgardens',
       type: 'text',
       description: 'Available business locations, separated by commas'
     },
     {
       key: 'enableMobileAuth',
-      label: 'Enable Mobile Sign-in/Sign-up',
+      label: t('settings.enableMobileAuth'),
       value: 'false', // Default to off
       type: 'select',
       options: [
@@ -537,45 +540,101 @@ export default function SettingsTab() {
   };
 
   // Customer Dashboard settings
-  // Replace the customerDashboardSettings state (around line 465)
-const [customerDashboardSettings, setCustomerDashboardSettings] = useState([
-  {
-    key: 'bookingSteps',
-    label: 'Booking Steps',
-    value: JSON.stringify([
-      { id: 1, title: 'Customer makes booking online', description: 'Browse services and select your preferred time slot' },
-      { id: 2, title: 'Staff will call customer to confirm details of booking', description: 'Our team will contact you to verify appointment details' }
-    ]),
-    type: 'booking-steps', // Changed from 'textarea' to custom type
-    description: 'Booking steps displayed on customer dashboard'
-  },
-    {
-      key: 'showBookingSteps',
-      label: 'Show Booking Steps',
-      value: 'true',
-      type: 'select',
-      options: [
-        { value: 'true', label: 'Show' },
-        { value: 'false', label: 'Hide' }
-      ],
-      description: 'Display booking steps section on customer dashboard'
+  // Customer Dashboard settings
+  const [customerDashboardSettings, setCustomerDashboardSettings] = useState([]);
+  
+  // Initialize default booking steps for both languages
+  const initializeDefaultBookingSteps = async () => {
+    try {
+      const dbService = DatabaseService.getInstance();
+      
+      // Get default booking steps from constants
+      const defaultEnSteps = DEFAULT_BOOKING_STEPS.en;
+      const defaultZhSteps = DEFAULT_BOOKING_STEPS.zh;
+      
+      // Check and create default English steps if not exist
+      const existingEnSteps = await dbService.getSettingsByKey('customer_dashboard', 'bookingSteps_en');
+      if (existingEnSteps === null) {
+        await dbService.createItem(TABLES.SETTINGS, {
+          category: 'customer_dashboard',
+          key: 'bookingSteps_en',
+          value: JSON.stringify(defaultEnSteps)
+        }, 'Setting');
+      }
+      
+      // Check and create default Chinese steps if not exist
+      const existingZhSteps = await dbService.getSettingsByKey('customer_dashboard', 'bookingSteps_zh');
+      if (existingZhSteps === null) {
+        await dbService.createItem(TABLES.SETTINGS, {
+          category: 'customer_dashboard',
+          key: 'bookingSteps_zh',
+          value: JSON.stringify(defaultZhSteps)
+        }, 'Setting');
+      }
+    } catch (error) {
+      console.error('Error initializing default booking steps:', error);
     }
-  ]);
+  };
+
+  // Initialize customer dashboard settings with translations
+  useEffect(() => {
+    setCustomerDashboardSettings([
+       {
+         key: 'bookingSteps',
+         label: t('settings.bookingSteps'),
+         value: JSON.stringify([
+           { id: 1, title: t('customer.bookingStep1Title'), description: t('customer.bookingStep1Desc') },
+           { id: 2, title: t('customer.bookingStep2Title'), description: t('customer.bookingStep2Desc') }
+         ]),
+         type: 'booking-steps',
+         description: t('settings.bookingStepsDesc')
+       },
+       {
+         key: 'showBookingSteps',
+         label: t('settings.showBookingSteps'),
+         value: 'true',
+         type: 'select',
+         options: [
+           { value: 'true', label: t('settings.show') },
+           { value: 'false', label: t('settings.hide') }
+         ],
+         description: t('settings.showBookingStepsDesc')
+       }
+     ]);
+     
+     // Initialize default booking steps in database
+     initializeDefaultBookingSteps();
+  }, [t]);
 
   // Load customer dashboard settings
   useEffect(() => {
     const loadCustomerDashboardSettings = async () => {
+      if (customerDashboardSettings.length === 0) return; // Wait for initial settings to be set
+      
       try {
         const dbService = DatabaseService.getInstance();
-        const [bookingSteps, showBookingSteps] = await Promise.all([
-          dbService.getSettingsByKey('customer_dashboard', 'bookingSteps'),
+        const [bookingStepsEn, bookingStepsZh, showBookingSteps] = await Promise.all([
+          dbService.getSettingsByKey('customer_dashboard', 'bookingSteps_en'),
+          dbService.getSettingsByKey('customer_dashboard', 'bookingSteps_zh'),
           dbService.getSettingsByKey('customer_dashboard', 'showBookingSteps')
         ]);
 
         setCustomerDashboardSettings(prevSettings => {
           return prevSettings.map(setting => {
-            if (setting.key === 'bookingSteps' && bookingSteps !== null) {
-              return { ...setting, value: bookingSteps };
+            if (setting.key === 'bookingSteps') {
+              // Load language-specific booking steps
+              const currentLanguage = language || 'en';
+              const bookingSteps = currentLanguage === 'zh' ? bookingStepsZh : bookingStepsEn;
+              
+              if (bookingSteps !== null) {
+                try {
+                  const storedSteps = JSON.parse(bookingSteps);
+                  return { ...setting, value: JSON.stringify(storedSteps) };
+                } catch (e) {
+                  // If parsing fails, use the current translated value
+                  return setting;
+                }
+              }
             }
             if (setting.key === 'showBookingSteps' && showBookingSteps !== null) {
               return { ...setting, value: showBookingSteps };
@@ -589,7 +648,7 @@ const [customerDashboardSettings, setCustomerDashboardSettings] = useState([
     };
 
     loadCustomerDashboardSettings();
-  }, []);
+  }, [customerDashboardSettings.length, language]);
 
   // Save customer dashboard settings
   const saveCustomerDashboardSettings = async (formData) => {
@@ -607,11 +666,27 @@ const [customerDashboardSettings, setCustomerDashboardSettings] = useState([
       }
 
       // Prepare data to save
-      const settingsToSave = Object.keys(formData).map(key => ({
-        category: 'customer_dashboard',
-        key,
-        value: formData[key]
-      }));
+      const settingsToSave = [];
+      
+      Object.keys(formData).forEach(key => {
+        if (key === 'bookingSteps') {
+          // Save language-specific booking steps
+          const currentLanguage = language || 'en';
+          const languageKey = currentLanguage === 'zh' ? 'bookingSteps_zh' : 'bookingSteps_en';
+          
+          settingsToSave.push({
+            category: 'customer_dashboard',
+            key: languageKey,
+            value: formData[key]
+          });
+        } else {
+          settingsToSave.push({
+            category: 'customer_dashboard',
+            key,
+            value: formData[key]
+          });
+        }
+      });
 
       // Check if settings exist, update if they do, otherwise create
       for (const setting of settingsToSave) {
@@ -706,8 +781,8 @@ const [customerDashboardSettings, setCustomerDashboardSettings] = useState([
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-semibold text-gray-800 mb-6">System Settings</h2>
-      <p className="text-gray-600 mb-6">Here you can manage the system default settings and configuration options.</p>
+      <h2 className="text-xl font-semibold text-gray-800 mb-6">{t('settings.title')}</h2>
+      <p className="text-gray-600 mb-6">{t('settings.description')}</p>
       
       {/* DateTime Settings Group */}
       <DateTimeSettings 

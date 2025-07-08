@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ToastMessage from '../common/ToastMessage';
 import Table from '../table/Table';
+import { useLanguage } from '../../contexts/LanguageContext';
 import EditBookingPopup from './EditBookingPopup';
 import BookingService from '../../services/BookingService';
 import DatabaseService from '../../services/DatabaseService';
@@ -14,6 +15,7 @@ import { BOOKING_STATUS, USER_ROLES, TABLES, QUERY_FILTERS, SUCCESS_MESSAGES, ER
 import { filterUsersByRole, isUpcomingBooking, isPendingBooking } from '../../utils';
 
 function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
+  const { t } = useLanguage();
   const errorHandler = ErrorHandlingService.getInstance();
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
@@ -31,8 +33,8 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
   const [hourOptions, setHourOptions] = useState([]);
   const [minuteOptions, setMinuteOptions] = useState([]);
   const [recurringOptions] = useState([
-    { value: 'daily', label: 'Repeat Daily' },
-    { value: 'weekly', label: 'Repeat Weekly' }
+    { value: 'daily', label: t('bookings.repeatDaily') },
+    { value: 'weekly', label: t('bookings.repeatWeekly') }
   ]);
 
   useEffect(() => {
@@ -424,14 +426,14 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div>{t('common.loading')}</div>;
   if (error) return <div>Error: {error}</div>;
 
   const stats = getBookingStats();
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">Manage Bookings</h2>
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('bookings.manageBookings')}</h2>
 
       <button
         onClick={async () => {
@@ -466,7 +468,7 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
         }}
         className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 my-4"
       >
-        Create New Booking
+{t('bookings.createNewBooking')}
       </button>
 
 
@@ -517,7 +519,7 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
         }}
         className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 my-4 ml-2"
       >
-        Refresh
+{t('common.refresh')}
       </button>
 
       {/* Delete Selected button */}
@@ -526,53 +528,53 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
         className={`${selectedRows.length === 0 ? 'bg-gray-400 hover:bg-gray-500' : 'bg-red-500 hover:bg-red-600'} text-white px-4 py-2 rounded-lg my-4 ml-2`}
         disabled={selectedRows.length === 0}
       >
-        Cancel Selected
+{t('bookings.cancelSelected')}
       </button>
       {/* Filter Controls */}
       <div className="flex flex-wrap gap-4 mb-4 items-center">
         {/* Status filter */}
         <div>
-          <label className="mr-2 font-medium">Status Filter:</label>
+          <label className="mr-2 font-medium">{t('bookings.statusFilter')}:</label>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           >
-            <option value="all">All Statuses</option>
-            <option value={BOOKING_STATUS.PENDING}>Pending</option>
-            <option value={BOOKING_STATUS.CONFIRMED}>Confirmed</option>
-            <option value={BOOKING_STATUS.CANCELLED}>Cancelled</option>
-            <option value={BOOKING_STATUS.COMPLETED}>Completed</option>
+            <option value="all">{t('bookings.allStatuses')}</option>
+            <option value={BOOKING_STATUS.PENDING}>{t('bookings.pending')}</option>
+            <option value={BOOKING_STATUS.CONFIRMED}>{t('bookings.confirmed')}</option>
+            <option value={BOOKING_STATUS.CANCELLED}>{t('bookings.cancelled')}</option>
+            <option value={BOOKING_STATUS.COMPLETED}>{t('bookings.completed')}</option>
           </select>
         </div>
 
         {/* Time filter */}
         <div>
-          <label className="mr-2 font-medium">Time Filter:</label>
+          <label className="mr-2 font-medium">{t('bookings.timeFilter')}:</label>
           <select
             value={timeFilter}
             onChange={(e) => setTimeFilter(e.target.value)}
             className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           >
-            <option value="all">All Time</option>
-            <option value="today">Today</option>
-            <option value="today+">Today & Future</option>
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-            <option value="past">Past Bookings</option>
+            <option value="all">{t('bookings.allTime')}</option>
+            <option value="today">{t('dashboard.today')}</option>
+            <option value="today+">{t('bookings.todayAndFuture')}</option>
+            <option value="week">{t('bookings.thisWeek')}</option>
+            <option value="month">{t('bookings.thisMonth')}</option>
+            <option value="past">{t('bookings.pastBookings')}</option>
           </select>
         </div>
 
         {/* Only show User Filter for non-staff users */}
         {!staffMode && (
           <div>
-            <label className="mr-2 font-medium">User Filter:</label>
+            <label className="mr-2 font-medium">{t('bookings.userFilter')}:</label>
             <select
               value={userFilter}
               onChange={(e) => setUserFilter(e.target.value)}
               className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="all">All Users</option>
+              <option value="all">{t('bookings.allUsers')}</option>
               {customers.map(customer => (
                 <option key={customer.id} value={customer.id}>{customer.full_name}</option>
               ))}
@@ -584,34 +586,34 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
       {/* Bookings Table */}
       <Table
         columns={[
-          { key: "customer_name", label: "Customer" },
-          { key: "service_name", label: "Service" },
-          { key: "booking_time_formatted", label: "Booking Time" },
-          { key: "duration", label: "Duration (mins)" },
+          { key: "customer_name", label: t('bookings.customer') },
+          { key: "service_name", label: t('bookings.service') },
+          { key: "booking_time_formatted", label: t('bookings.bookingTime') },
+          { key: "duration", label: t('bookings.duration') },
           // This will now work properly
           { 
             key: "location", 
-            label: "Location",
+            label: t('bookings.location'),
             formatter: (locationId) => {
               const locationService = LocationService.getInstance();
               return locationService.getLocationNameById(locationId);
             }
           },
-          { key: "status", label: "Status" },
-          { key: "recurring_type", label: "Recurring Type", 
+          { key: "status", label: t('bookings.status') },
+          { key: "recurring_type", label: t('bookings.recurringType'), 
             formatter: (value) => {
-              if (value === null || value === undefined || value === '') return 'One-time';
+              if (value === null || value === undefined || value === '') return null;
               switch(value) {
-                case 'daily': return 'Daily';
-                case 'weekly': return 'Weekly';
-                case 'monthly': return 'Monthly';
-                default: return '';
+                case 'daily': return t('bookings.daily');
+                case 'weekly': return t('bookings.weekly');
+                case 'monthly': return t('bookings.monthly');
+                default: return null;
               }
             }
           },
-          { key: "recurring_count", label: "Repeat Count" },
-          { key: "notes", label: "Notes" },
-          { key: "created_at_formatted", label: "Created At" },
+          { key: "recurring_count", label: t('bookings.repeatCount') },
+          { key: "notes", label: t('bookings.notes') },
+          { key: "created_at_formatted", label: t('bookings.createdAt') },
         ]}
         data={filteredBookings}
         selectedRows={selectedRows}

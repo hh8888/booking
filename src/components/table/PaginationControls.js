@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const PaginationControls = ({
     pageSize,
@@ -10,6 +11,7 @@ const PaginationControls = ({
     endRecord,
     totalRecords,
   }) => {
+    const { t } = useLanguage();
     const handlePageSizeChange = (e) => {
       const newPageSize = Number(e.target.value);
       setPageSize(newPageSize);
@@ -21,7 +23,7 @@ const PaginationControls = ({
       <div className="flex flex-col md:flex-row justify-between items-center mb-4 space-y-3 md:space-y-0">
         <div className="flex items-center space-x-4">
           <div>
-            <span className="mr-2 text-sm md:text-base">Rows per page:</span>
+            <span className="mr-2 text-sm md:text-base">{t('common.rowsPerPage')}</span>
             <select
               value={pageSize}
               onChange={handlePageSizeChange}
@@ -36,7 +38,7 @@ const PaginationControls = ({
             </select>
           </div>
           <div className="text-sm md:text-base text-gray-600">
-            Row {startRecord}-{endRecord} / {totalRecords} Total
+            {t('common.rowTotal', { start: startRecord, end: endRecord, total: totalRecords })}
           </div>
         </div>
         <div className="flex items-center">
@@ -45,17 +47,17 @@ const PaginationControls = ({
             disabled={currentPage === 1}
             className={`p-2 rounded-lg mr-2 min-w-[80px] md:min-w-[100px] text-sm md:text-base ${currentPage === 1 ? 'bg-gray-200 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 text-white'}`}
           >
-            Previous
+            {t('common.previous')}
           </button>
           <span className="mx-2 md:mx-4 text-sm md:text-base">
-            Page {currentPage} of {totalPages}
+            {t('common.page', { current: currentPage, total: totalPages })}
           </span>
           <button
             onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
             disabled={currentPage === totalPages}
             className={`p-2 rounded-lg min-w-[80px] md:min-w-[100px] text-sm md:text-base ${currentPage === totalPages ? 'bg-gray-200 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 text-white'}`}
           >
-            Next
+            {t('common.next')}
           </button>
         </div>
       </div>

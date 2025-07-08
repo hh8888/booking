@@ -4,8 +4,10 @@ import StaffDateAvailabilityService from '../../services/StaffDateAvailabilitySe
 import DatabaseService from '../../services/DatabaseService';
 import LocationService from '../../services/LocationService';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../constants';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
+  const { t } = useLanguage();
   const [availability, setAvailability] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -287,7 +289,7 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        <h2 className="text-xl sm:text-2xl font-semibold mb-2 pr-8">Staff Availability Schedule</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold mb-2 pr-8">{t('staffAvailability.title')}</h2>
         
         {/* Add current location display */}
         <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -297,7 +299,7 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
             <span className="text-xs sm:text-sm font-medium text-blue-800">
-              Current Location: <span className="font-semibold">{currentLocationName || 'Unknown Location'}</span>
+              {t('staffAvailability.currentLocation')}: <span className="font-semibold">{currentLocationName || t('staffAvailability.unknownLocation')}</span>
             </span>
           </div>
         </div>
@@ -314,8 +316,8 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
               }}
               className="px-2 py-1 sm:px-3 sm:py-1 border border-gray-300 rounded-md shadow-sm text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 min-h-[44px] flex items-center"
             >
-              <span className="hidden sm:inline">Previous Month</span>
-              <span className="sm:hidden">Prev</span>
+              <span className="hidden sm:inline">{t('staffAvailability.previousMonth')}</span>
+              <span className="sm:hidden">{t('staffAvailability.prev')}</span>
             </button>
             <h3 className="text-sm sm:text-lg font-medium text-gray-900 text-center px-2">
               {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
@@ -330,8 +332,8 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
               }}
               className="px-2 py-1 sm:px-3 sm:py-1 border border-gray-300 rounded-md shadow-sm text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 min-h-[44px] flex items-center"
             >
-              <span className="hidden sm:inline">Next Month</span>
-              <span className="sm:hidden">Next</span>
+              <span className="hidden sm:inline">{t('staffAvailability.nextMonth')}</span>
+              <span className="sm:hidden">{t('staffAvailability.next')}</span>
             </button>
           </div>
           
@@ -345,7 +347,7 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
               {(() => {
                 // If forceMarkAll is true, always show "Mark All in 30 days"
                 if (forceMarkAll) {
-                  return 'Mark next 30 days';
+                  return t('staffAvailability.markNext30Days');
                 }
                 
                 const currentMonthDates = calendarDates.filter(date => 
@@ -359,14 +361,14 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
                   currentMonthDateStrs.includes(schedule.date)
                 );
                 const allMarked = currentMonthAvailability.every(schedule => schedule.is_available);
-                return allMarked ? 'Unmark next 30 days' : 'Mark next 30 days';
+                return allMarked ? t('staffAvailability.unmarkNext30Days') : t('staffAvailability.markNext30Days');
               })()} 
             </button>
           </div>
           
           {/* Day of week headers */}
           <div className="grid grid-cols-7 gap-1 sm:gap-1 mb-3">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+            {[t('staffAvailability.monday'), t('staffAvailability.tuesday'), t('staffAvailability.wednesday'), t('staffAvailability.thursday'), t('staffAvailability.friday'), t('staffAvailability.saturday'), t('staffAvailability.sunday')].map(day => (
               <div key={day} className="text-center font-medium text-gray-600 py-2 text-xs sm:text-sm bg-gray-50 rounded-md">
                 <span className="hidden sm:inline">{day}</span>
                 <span className="sm:hidden">{day.charAt(0)}</span>
@@ -462,8 +464,8 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
                       </div>
                     ) : (
                       <div className="text-center">
-                        <span className="hidden sm:inline">Not Available</span>
-                        <span className="sm:hidden">N/A</span>
+                        <span className="hidden sm:inline">{t('staffAvailability.notAvailable')}</span>
+                        <span className="sm:hidden">{t('staffAvailability.na')}</span>
                       </div>
                     )}
                   </div>
@@ -481,7 +483,7 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
                             handleAvailabilityChange(dateStr, 'is_available', true);
                           }}
                           className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm min-h-[44px]"
-                          placeholder="Start Time"
+                          placeholder={t('staffAvailability.startTime')}
                         />
                       </div>
                       <div>
@@ -496,7 +498,7 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
                             handleAvailabilityChange(dateStr, 'is_available', true);
                           }}
                           className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm min-h-[44px]"
-                          placeholder="End Time"
+                          placeholder={t('staffAvailability.endTime')}
                         />
                       </div>
                     </div>
@@ -511,13 +513,13 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
               onClick={onClose}
               className="w-full sm:w-auto px-4 py-3 sm:py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 min-h-[44px]"
             >
-              Cancel
+              {t('staffAvailability.cancel')}
             </button>
             <button
               type="submit"
               className="w-full sm:w-auto px-4 py-3 sm:py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 min-h-[44px]"
             >
-              Save Changes
+              {t('staffAvailability.save')}
             </button>
           </div>
         </form>
@@ -530,12 +532,12 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
           <div className="bg-white rounded-lg shadow-lg w-full max-w-sm mx-auto">
             <div className="p-4">
               <h3 className="text-lg font-semibold mb-4 text-center">
-                Edit Time for {new Date(mobileEditDate + 'T00:00:00').toLocaleDateString('default', { month: 'short', day: 'numeric' })}
+                {t('staffAvailability.editTimeFor')} {new Date(mobileEditDate + 'T00:00:00').toLocaleDateString('default', { month: 'short', day: 'numeric' })}
               </h3>
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('staffAvailability.startTime')}</label>
                   <input
                     type="time"
                     value={availability.find(s => s.date === mobileEditDate)?.start_time || ''}
@@ -548,7 +550,7 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('staffAvailability.endTime')}</label>
                   <input
                     type="time"
                     value={availability.find(s => s.date === mobileEditDate)?.end_time || ''}
@@ -570,7 +572,7 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
                   }}
                   className="flex-1 px-4 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 min-h-[48px]"
                 >
-                  Cancel
+                  {t('staffAvailability.cancel')}
                 </button>
                 <button
                   type="button"
@@ -580,7 +582,7 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
                   }}
                   className="flex-1 px-4 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 min-h-[48px]"
                 >
-                  Done
+                  {t('common.done')}
                 </button>
               </div>
             </div>

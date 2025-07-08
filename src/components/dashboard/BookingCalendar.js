@@ -6,6 +6,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 // Remove if not used:
 import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid';
+import { useLanguage } from '../../contexts/LanguageContext';
 import './BookingCalendar.css';
 
 const BookingCalendar = ({
@@ -23,6 +24,7 @@ const BookingCalendar = ({
   staffColors,
   services // Add services prop
 }) => {
+  const { t } = useLanguage();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [calendarRef, setCalendarRef] = useState(null);
 
@@ -214,19 +216,19 @@ const BookingCalendar = ({
               className="px-4 py-3 text-sm font-medium bg-blue-500 text-white rounded-lg hover:bg-blue-600 active:bg-blue-700 transition-colors min-h-[44px] min-w-[60px] touch-manipulation"
               onClick={() => handleViewChange('timeGridDay')}
             >
-              Day
+              {t('calendar.day')}
             </button>
             <button 
               className="px-4 py-3 text-sm font-medium bg-blue-500 text-white rounded-lg hover:bg-blue-600 active:bg-blue-700 transition-colors min-h-[44px] min-w-[60px] touch-manipulation"
               onClick={() => handleViewChange('timeGridWeek')}
             >
-              Week
+              {t('calendar.week')}
             </button>
             <button 
               className="px-4 py-3 text-sm font-medium bg-blue-500 text-white rounded-lg hover:bg-blue-600 active:bg-blue-700 transition-colors min-h-[44px] min-w-[60px] touch-manipulation"
               onClick={() => handleViewChange('dayGridMonth')}
             >
-              Month
+              {t('calendar.month')}
             </button>
           </div>
         </div>

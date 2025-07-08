@@ -10,8 +10,13 @@ import { showToast } from '../common/ToastMessage';
 import ToastMessage from '../common/ToastMessage';
 import StaffDateAvailabilityForm from './StaffDateAvailabilityForm';
 import { USER_ROLES, TABLES } from '../../constants';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { getAvailableRoleOptions, canUpdateToRole } from '../../utils/userUtils';
+import { useDashboardUser } from '../../hooks/useDashboardUser';
 
 function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = false }) {
+  const { t } = useLanguage();
+  const { userRole } = useDashboardUser();
   const [selectedRows, setSelectedRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -101,7 +106,7 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div>{t('common.loading')}</div>;
   if (error) return <div>Error: {error}</div>;
 
   const filteredUsers = users
@@ -122,7 +127,7 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
       <ToastMessage />
       
 
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">Manage Users</h2>
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('users.manageUsers')}</h2>
       
       {/* Only show Add New User and Delete Selected buttons for non-staff users */}
       {!staffMode && (
@@ -131,7 +136,7 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
             onClick={() => setIsCreating(true)}
             className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 my-4"
           >
-            Add New User
+            {t('users.addNewUser')}
           </button>
 
           <button
@@ -142,7 +147,7 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
             }}
             className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 my-4 ml-2"
           >
-            Refresh
+            {t('common.refresh')}
           </button>
 
           <button
@@ -150,7 +155,7 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
             className={`${selectedRows.length === 0 ? 'bg-gray-400 hover:bg-gray-500' : 'bg-red-500 hover:bg-red-600'} text-white px-4 py-2 rounded-lg my-4 ml-2`}
             disabled={selectedRows.length === 0}
           >
-            Delete Selected
+            {t('users.deleteSelected')}
           </button>
         </>
       )}
@@ -162,7 +167,7 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
             onClick={() => setIsCreating(true)}
             className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 my-4"
           >
-            Add New Customer
+            {t('users.addNewCustomer')}
           </button>
           
           <button
@@ -173,22 +178,23 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
             }}
             className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 my-4 ml-2"
           >
-            Refresh
+            {t('common.refresh')}
           </button>
         </>
       )}
       {/* Role filter dropdown - Add this section */}
       <div className="my-4">
-        <label className="mr-2 font-medium">Filter by Role:</label>
+        <label className="mr-2 font-medium">{t('users.filterByRole')}</label>
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
           className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         >
-          <option value="all">All Users</option>
-          <option value={USER_ROLES.ADMIN}>Admin</option>
-          <option value={USER_ROLES.STAFF}>Staff</option>
-          <option value={USER_ROLES.CUSTOMER}>Customer</option>
+          <option value="all">{t('users.allUsers')}</option>
+          <option value={USER_ROLES.ADMIN}>{t('users.admin')}</option>
+          <option value={USER_ROLES.MANAGER}>{t('users.manager')}</option>
+          <option value={USER_ROLES.STAFF}>{t('users.staff')}</option>
+          <option value={USER_ROLES.CUSTOMER}>{t('users.customer')}</option>
         </select>
       </div>
 
@@ -201,11 +207,11 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
         onResetPassword={!staffMode ? handleResetPassword : null}
         staffMode={staffMode}
         columns={[
-          { key: 'full_name', label: 'Full Name' },
-          { key: 'email', label: 'Email' },
+          { key: 'full_name', label: t('formLabels.fullName') },
+          { key: 'email', label: t('formLabels.email') },
           { 
             key: 'email_verified', 
-            label: 'Email Verified',
+            label: t('formLabels.emailVerified'),
             render: (value, row) => {
               // console.log('Email verified render - value:', value, 'type:', typeof value, 'row:', row.full_name);
               return (
@@ -227,13 +233,13 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
               );
             }
           },
-          { key: 'phone_number', label: 'Phone Number' },
-          { key: 'gender', label: 'Gender' },
-          { key: 'birthday', label: 'Birthday' },
-          { key: 'post_code', label: 'Post Code' },
-          { key: 'role', label: 'Role' },
-          { key: 'last_sign_in', label: 'Last Sign In' },
-          { key: 'created_at', label: 'Created At' }
+          { key: 'phone_number', label: t('formLabels.phoneNumber') },
+          { key: 'gender', label: t('formLabels.gender') },
+          { key: 'birthday', label: t('formLabels.birthday') },
+          { key: 'post_code', label: t('formLabels.postCode') },
+          { key: 'role', label: t('formLabels.role') },
+          { key: 'last_sign_in', label: t('formLabels.lastSignIn') },
+          { key: 'created_at', label: t('formLabels.createdAt') }
         ]}
       />
 
@@ -252,17 +258,21 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
             { key: 'gender', label: 'Gender', type: 'select', options: [{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }, { value: 'other', label: 'Other' }] },
             { key: 'birthday', label: 'Birthday', type: 'date' },
             { key: 'post_code', label: 'Post Code', type: 'text' },
-            // Conditionally show role field based on staffMode
+            // Conditionally show role field based on staffMode and user permissions
             ...(staffMode ? [
               { key: 'role', label: 'Role', type: 'select', options: [
                 { value: USER_ROLES.CUSTOMER, label: 'Customer' }
               ], required: true, defaultValue: USER_ROLES.CUSTOMER, disabled: true }
             ] : [
-              { key: 'role', label: 'Role', type: 'select', options: [
-                { value: USER_ROLES.CUSTOMER, label: 'Customer' },
-                { value: USER_ROLES.STAFF, label: 'Staff' },
-                { value: USER_ROLES.ADMIN, label: 'Admin' },
-              ], required: true, defaultValue: USER_ROLES.CUSTOMER }
+              { 
+                key: 'role', 
+                label: 'Role', 
+                type: 'select', 
+                options: getAvailableRoleOptions(userRole), 
+                required: true, 
+                defaultValue: USER_ROLES.CUSTOMER,
+                disabled: userRole === USER_ROLES.STAFF // Staff cannot update roles
+              }
             ])
           ]}
         />

@@ -4,13 +4,16 @@ import { useNavigate } from 'react-router-dom';
 import AuthForm from './components/auth/AuthForm';
 import AdminDashboard from './AdminDashboard';
 import StaffDashboard from './StaffDashboard';
+import CustomerDashboard from './components/customer/CustomerDashboard';
 import DatabaseService from './services/DatabaseService';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { toast } from 'react-toastify'; // Use the existing toast library
 import { USER_ROLES, ERROR_MESSAGES, SUCCESS_MESSAGES, TABLES } from './constants';
 import { filterUsersByRole } from './utils';
+import { useLanguage } from './contexts/LanguageContext';
 
 export default function Auth() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -255,7 +258,7 @@ export default function Auth() {
       console.error('Error stack:', err.stack);
       console.error('Full error object:', err);
       console.error('=== UNEXPECTED ERROR DEBUG END ===');
-      setError('Error loading user information');
+      setError(t('messages.error.general'));
     }
   };
 
@@ -336,7 +339,7 @@ export default function Auth() {
       toast.success('Registration successful!');
       toast.warning('Please check your email for the confirmation link.');
       
-      setError('Registration successful! Please check your email for the confirmation link.');
+      // setError('Registration successful! Please check your email for the confirmation link.');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -741,7 +744,7 @@ export default function Auth() {
   // For customers, they will be redirected to /booking
   // This component will only show the auth form for non-authenticated users
   if (isLoading) {
-    return <LoadingSpinner fullScreen={true} text="Loading..." />;
+    return <LoadingSpinner fullScreen={true} text={t('common.loading')} />;
   }
 
   return (

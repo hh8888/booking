@@ -14,11 +14,13 @@ import UserDropdown from '../common/UserDropdown';
 import { supabase } from '../../supabaseClient';
 import LoadingSpinner from '../common/LoadingSpinner';
 import { useBusinessInfo } from '../../hooks/useBusinessInfo';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useDashboardUser } from '../../hooks/useDashboardUser';
 import { BOOKING_STATUS, TABLES, SUCCESS_MESSAGES, ERROR_MESSAGES, QUERY_FILTERS } from '../../constants';
 
 const CustomerDashboard = () => {
   const { user } = useUser();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [customerData, setCustomerData] = useState(null);
   const [bookings, setBookings] = useState([]);
@@ -91,7 +93,7 @@ const CustomerDashboard = () => {
             onClick={() => window.location.reload()}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
           >
-            Retry
+            {t('common.retry')}
           </button>
         </div>
       </div>
@@ -210,7 +212,7 @@ const CustomerDashboard = () => {
   };
 
   const handleCancelBooking = async (bookingId) => {
-    if (window.confirm('Are you sure you want to cancel this booking?')) {
+    if (window.confirm(t('bookings.confirmCancelBooking'))) {
       try {
         const dbService = DatabaseService.getInstance();
         await dbService.updateItem(TABLES.BOOKINGS, { id: bookingId, status: BOOKING_STATUS.CANCELLED }, 'Booking');
@@ -263,13 +265,13 @@ const CustomerDashboard = () => {
 
 
   if (loading) {
-    return <LoadingSpinner fullScreen={true} text="Loading dashboard..." />;
+    return <LoadingSpinner fullScreen={true} text={t('common.loading')} />;
   }
 
   if (!customerData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-lg text-red-600">Please log in to access your dashboard</div>
+        <div className="text-lg text-red-600">{t('messages.error.pleaseLogin')}</div>
       </div>
     );
   }
@@ -282,7 +284,7 @@ const CustomerDashboard = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-gray-800">{businessName}</h1>
-              <p className="text-gray-600">Welcome back, {customerData.full_name}! Manage your appointments and book new services</p>
+              <p className="text-gray-600">{t('customer.welcomeMessage', { name: customerData.full_name && !customerData.full_name.includes('@') ? customerData.full_name : (customerData.full_name ? customerData.full_name.split('@')[0] : t('customer.welcome')) })}</p>
               <LocationSelector />
             </div>
             <UserDropdown 

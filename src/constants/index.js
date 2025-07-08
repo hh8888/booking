@@ -1,6 +1,7 @@
 // Main constants file - exports all constants for easy importing
 
 export * from './bookingConstants';
+export * from './bookingStepsConstants';
 export * from './userConstants';
 export * from './messageConstants';
 export * from './tableConstants';

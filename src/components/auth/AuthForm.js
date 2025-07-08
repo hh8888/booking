@@ -3,6 +3,7 @@ import SignInForm from './SignInForm';
 import SignUpForm from './SignUpForm';
 import { useBusinessInfo } from '../../hooks/useBusinessInfo'; // Add this import
 import LoadingSpinner from '../common/LoadingSpinner';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function AuthForm({
   isSignUp,
@@ -43,13 +44,14 @@ export default function AuthForm({
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
+  const { t } = useLanguage();
   const { businessName, loading: businessLoading } = useBusinessInfo(); // Add this hook
   
   return (
     <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
       {/* Title */}
       <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">
-        {businessLoading ? 'Loading...' : (businessName || 'Service Booking')}
+        {businessLoading ? t('common.loading') : (businessName || 'Service Booking')}
       </h1>
 
       {/* Mobile Auth Enable/Disable Toggle - REMOVED FROM HERE */}

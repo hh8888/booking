@@ -11,9 +11,11 @@ import LoadingSpinner from './components/common/LoadingSpinner';
 import { useBusinessInfo } from './hooks/useBusinessInfo';
 import { useDashboardUser } from './hooks/useDashboardUser';
 import { useUsersData } from './hooks/useUsersData';
+import { useLanguage } from './contexts/LanguageContext';
 import { USER_ROLES } from './constants';
 
 export default function StaffDashboard() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('dashboard');
   
   const location = useLocation();
@@ -40,7 +42,7 @@ export default function StaffDashboard() {
     <div className="min-h-screen bg-gray-100 p-4 md:p-6 flex flex-col">
       <div className="flex justify-between items-center mb-4 md:mb-6">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800">{businessName} - Staff Portal</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800">{businessName} - {t('nav.staffPortal')}</h1>
           <LocationSelector />
         </div>
         <UserDropdown 
@@ -61,7 +63,7 @@ export default function StaffDashboard() {
               : 'text-gray-500 hover:text-gray-700'
           }`}
         >
-          Dashboard
+          {t('nav.dashboard')}
         </button>
         <button
           onClick={() => setActiveTab('bookings')}
@@ -71,7 +73,7 @@ export default function StaffDashboard() {
               : 'text-gray-500 hover:text-gray-700'
           }`}
         >
-          My Bookings
+          {t('nav.myBookings')}
         </button>
         <button
           onClick={() => setActiveTab('customers')}
@@ -81,14 +83,14 @@ export default function StaffDashboard() {
               : 'text-gray-500 hover:text-gray-700'
           }`}
         >
-          Customers
+          {t('nav.customers')}
         </button>
       </div>
     
       {/* Tab Content */}
       <div className="bg-white p-4 md:p-6 rounded-lg shadow-md flex-grow mb-16">
         {loading ? (
-          <LoadingSpinner fullScreen={true} text="Loading data..." />
+          <LoadingSpinner fullScreen={true} text={t('common.loading')} />
         ) : networkError ? (
           <div className="text-center py-6 md:py-8">
             <div className="text-red-500 text-base md:text-xl mb-4">
@@ -101,7 +103,7 @@ export default function StaffDashboard() {
               onClick={retryFetch}
               className="mt-4 bg-blue-500 text-white py-2 px-4 md:px-6 rounded-lg hover:bg-blue-600 transition duration-200 text-sm md:text-base"
             >
-              Retry
+              {t('common.retry')}
             </button>
           </div>
         ) : (

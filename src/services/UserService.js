@@ -1,6 +1,6 @@
 import DatabaseService from './DatabaseService';
 import { supabase } from '../supabaseClient';
-import { TABLES } from '../constants';
+import { TABLES, ERROR_MESSAGES } from '../constants';
 
 class UserService {
   static instance = null;
@@ -48,30 +48,46 @@ class UserService {
   }
 
   async createUser(userData) {
-    // First create user in auth table
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: userData.email,
-      password: userData.password,
-      options: {
-        data: {
-          full_name: userData.full_name,
-          role: userData.role
+    try {
+      // First create user in auth table
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: {
+          data: {
+            full_name: userData.full_name,
+            role: userData.role
+          }
         }
-      }
-    });
-    
-    if (authError) {
-      throw new Error(`Auth Error: ${authError.message}`);
-    }
-    
-    // Remove password field from userData
-    const { password, ...userDataWithoutPassword } = userData;
-    
-    // Set user ID to auth user's ID
-    userDataWithoutPassword.id = authData.user.id;
-    
-    // Create new user
-    return await this.dbService.createItem(TABLES.USERS, userDataWithoutPassword, 'User');
+      });
+      
+      if (authError) {
+         // Check for duplicate email in auth
+         if (authError.message && authError.message.includes('already registered')) {
+           throw new Error(ERROR_MESSAGES.DUPLICATE_EMAIL);
+         }
+         throw new Error(`Auth Error: ${authError.message}`);
+       }
+      
+      // Remove password field from userData
+      const { password, ...userDataWithoutPassword } = userData;
+      
+      // Set user ID to auth user's ID
+      userDataWithoutPassword.id = authData.user.id;
+      
+      // Create new user
+      return await this.dbService.createItem(TABLES.USERS, userDataWithoutPassword, 'User');
+    } catch (error) {
+       // Handle duplicate email constraint violation from database
+       if (error.message && (error.message.includes('duplicate key value violates unique constraint') || 
+                            error.message.includes('users_pkey') ||
+                            error.message.includes('already registered'))) {
+         throw new Error(ERROR_MESSAGES.DUPLICATE_EMAIL);
+       }
+       
+       // Re-throw other errors
+       throw error;
+     }
   }
 
   async updateUser(userData) {

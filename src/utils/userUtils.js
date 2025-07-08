@@ -21,6 +21,15 @@ export const isStaff = (role) => {
 };
 
 /**
+ * Check if user has manager role
+ * @param {string} role - User role
+ * @returns {boolean} True if user is manager
+ */
+export const isManager = (role) => {
+  return role === USER_ROLES.MANAGER;
+};
+
+/**
  * Check if user has customer role
  * @param {string} role - User role
  * @returns {boolean} True if user is customer
@@ -39,6 +48,83 @@ export const isStaffOrAdmin = (role) => {
 };
 
 /**
+ * Check if user has manager or admin role
+ * @param {string} role - User role
+ * @returns {boolean} True if user is manager or admin
+ */
+export const isManagerOrAdmin = (role) => {
+  return ROLE_GROUPS.MANAGER_AND_ADMIN.includes(role);
+};
+
+/**
+ * Check if user has staff, manager or admin role
+ * @param {string} role - User role
+ * @returns {boolean} True if user is staff, manager or admin
+ */
+export const isStaffManagerOrAdmin = (role) => {
+  return ROLE_GROUPS.STAFF_MANAGER_ADMIN.includes(role);
+};
+
+/**
+ * Check if user can manage other users (Manager or Admin)
+ * @param {string} role - User role
+ * @returns {boolean} True if user can manage users
+ */
+export const canManageUsers = (role) => {
+  return isManagerOrAdmin(role);
+};
+
+/**
+ * Check if user can update roles (based on their own role)
+ * @param {string} userRole - Current user's role
+ * @param {string} targetRole - Role to be assigned
+ * @returns {boolean} True if user can assign the target role
+ */
+export const canUpdateToRole = (userRole, targetRole) => {
+  // Admin can assign any role
+  if (userRole === USER_ROLES.ADMIN) {
+    return true;
+  }
+  
+  // Manager can assign Customer, Staff, or Manager roles (but not Admin)
+  if (userRole === USER_ROLES.MANAGER) {
+    return [USER_ROLES.CUSTOMER, USER_ROLES.STAFF, USER_ROLES.MANAGER].includes(targetRole);
+  }
+  
+  // Staff cannot update roles
+  return false;
+};
+
+/**
+ * Get available role options for a user based on their role
+ * @param {string} userRole - Current user's role
+ * @returns {Array} Array of role options the user can assign
+ */
+export const getAvailableRoleOptions = (userRole) => {
+  if (userRole === USER_ROLES.ADMIN) {
+    return [
+      { value: USER_ROLES.CUSTOMER, label: 'Customer' },
+      { value: USER_ROLES.STAFF, label: 'Staff' },
+      { value: USER_ROLES.MANAGER, label: 'Manager' },
+      { value: USER_ROLES.ADMIN, label: 'Administrator' }
+    ];
+  }
+  
+  if (userRole === USER_ROLES.MANAGER) {
+    return [
+      { value: USER_ROLES.CUSTOMER, label: 'Customer' },
+      { value: USER_ROLES.STAFF, label: 'Staff' },
+      { value: USER_ROLES.MANAGER, label: 'Manager' }
+    ];
+  }
+  
+  // Staff can only assign Customer role (read-only)
+  return [
+    { value: USER_ROLES.CUSTOMER, label: 'Customer' }
+  ];
+};
+
+/**
  * Filter users by role
  * @param {Array} users - Array of user objects
  * @param {string|Array} roleFilter - Role(s) to filter by
@@ -51,6 +137,10 @@ export const filterUsersByRole = (users, roleFilter) => {
 
   if (roleFilter === 'staff_admin') {
     return users.filter(user => isStaffOrAdmin(user.role));
+  }
+  
+  if (roleFilter === 'staff_manager') {
+    return users.filter(user => ROLE_GROUPS.STAFF_AND_MANAGER.includes(user.role));
   }
 
   if (Array.isArray(roleFilter)) {
@@ -127,6 +217,7 @@ export const getRedirectPathByRole = (role) => {
       return '/customer-dashboard';
     case USER_ROLES.STAFF:
       return '/staff-dashboard';
+    case USER_ROLES.MANAGER:
     case USER_ROLES.ADMIN:
       return '/admin-dashboard';
     default:

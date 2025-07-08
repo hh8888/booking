@@ -49,6 +49,7 @@ export const ERROR_MESSAGES = {
   MOBILE_SIGNIN_DISABLED: 'Mobile sign in is currently disabled.',
   INVALID_RECOVERY_LINK: 'Invalid or expired recovery link.',
   UNKNOWN_USER_ROLE: 'Unknown user role. Please contact support.',
+  DUPLICATE_EMAIL: 'This email address is already registered. Please use a different email or try signing in.',
   SIGN_OUT_ERROR: 'Error signing out',
   UNEXPECTED_SIGN_OUT_ERROR: 'Unexpected error during sign out',
   OPERATION_ERROR: 'Error',

@@ -1,12 +1,15 @@
 import React from 'react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const LoadingSpinner = ({ 
   size = 'md', 
   color = 'blue', 
   className = '',
-  text = null,
+  text,
   fullScreen = false 
 }) => {
+  const { t } = useLanguage();
+  const displayText = text || t('common.loading');
   const sizeClasses = {
     sm: 'h-4 w-4',
     md: 'h-6 w-6', 
@@ -24,7 +27,7 @@ const LoadingSpinner = ({
 
   const spinner = (
     <div className={`inline-block animate-spin rounded-full border-2 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite] ${sizeClasses[size]} ${colorClasses[color]} ${className}`} role="status">
-      <span className="sr-only">Loading...</span>
+      <span className="sr-only">{displayText}</span>
     </div>
   );
 
@@ -33,7 +36,7 @@ const LoadingSpinner = ({
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="flex flex-col items-center space-y-4">
           {spinner}
-          {text && <p className="text-gray-600 text-sm">{text}</p>}
+          {displayText && <p className="text-gray-600 text-sm">{displayText}</p>}
         </div>
       </div>
     );
@@ -43,7 +46,7 @@ const LoadingSpinner = ({
     return (
       <div className="flex items-center space-x-2">
         {spinner}
-        <span className="text-sm text-gray-600">{text}</span>
+        <span className="text-sm text-gray-600">{displayText}</span>
       </div>
     );
   }

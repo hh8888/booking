@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import DashboardStats from './DashboardStats';
 import BookingCalendar from './BookingCalendar';
 import CalendarControls from './CalendarControls';
+import { useLanguage } from '../../contexts/LanguageContext';
 // Remove this import line
 // import StaffLegend from './StaffLegend';
 import EventModal from './EventModal';
@@ -15,6 +16,8 @@ import { BOOKING_STATUS, USER_ROLES, TABLES, SUCCESS_MESSAGES, ERROR_MESSAGES } 
 import '../../styles/calendar.css';
 
 export default function DashboardTab() {
+  const { t } = useLanguage();
+  
   // UI state
   const [showAvailability, setShowAvailability] = useState(true);
   const [showBookings, setShowBookings] = useState(true);
@@ -426,7 +429,7 @@ export default function DashboardTab() {
       
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-gray-700">Booking Calendar</h3>
+          <h3 className="text-lg font-medium text-gray-700">{t('dashboard.bookingCalendar')}</h3>
           <CalendarControls
             showAvailability={showAvailability}
             setShowAvailability={setShowAvailability}

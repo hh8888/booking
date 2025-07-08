@@ -49,8 +49,8 @@ export const SELECT_COLUMNS = {
 
 // Database Query Filters
 export const QUERY_FILTERS = {
-  ROLE_STAFF_ADMIN: { role: { in: ['staff', 'admin'] } },
+  ROLE_STAFF_ADMIN: { role: { in: ['staff', 'manager', 'admin'] } },
   ROLE_CUSTOMER: { role: 'customer' },
-  ROLE_STAFF: { role: 'staff' },
+  ROLE_STAFF: { role: { in: ['staff', 'manager'] } },
   STATUS_NOT_CANCELLED: { status: { neq: BOOKING_STATUS.CANCELLED } }
 };

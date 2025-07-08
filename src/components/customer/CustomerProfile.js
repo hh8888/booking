@@ -1,41 +1,44 @@
 import React from 'react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const CustomerProfile = ({ customerData }) => {
+  const { t } = useLanguage();
+  
   // Add defensive check
   if (!customerData) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="text-center text-gray-500">Loading customer information...</div>
+        <div className="text-center text-gray-500">{t('common.loading')}</div>
       </div>
     );
   }
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">Personal Information</h2>
+      <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('profile.personalInfo')}</h2>
       <div className="space-y-3">
         <div>
-          <label className="text-sm font-medium text-gray-500">Full Name</label>
-          <p className="text-gray-900">{customerData.full_name || 'Not provided'}</p>
+          <label className="text-sm font-medium text-gray-500">{t('profile.fullName')}</label>
+          <p className="text-gray-900">{customerData.full_name || t('common.notProvided')}</p>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-500">Email</label>
-          <p className="text-gray-900">{customerData.email || 'Not provided'}</p>
+          <label className="text-sm font-medium text-gray-500">{t('profile.email')}</label>
+          <p className="text-gray-900">{customerData.email || t('common.notProvided')}</p>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-500">Phone</label>
-          <p className="text-gray-900">{customerData.phone_number || 'Not provided'}</p>
+          <label className="text-sm font-medium text-gray-500">{t('profile.phone')}</label>
+          <p className="text-gray-900">{customerData.phone_number || t('common.notProvided')}</p>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-500">Post Code</label>
-          <p className="text-gray-900">{customerData.post_code || 'Not provided'}</p>
+          <label className="text-sm font-medium text-gray-500">{t('profile.postCode')}</label>
+          <p className="text-gray-900">{customerData.post_code || t('common.notProvided')}</p>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-500">Member Since</label>
+          <label className="text-sm font-medium text-gray-500">{t('profile.memberSince')}</label>
           <p className="text-gray-900">
             {customerData.created_at ? 
               new Date(customerData.created_at).toLocaleDateString() : 
-              'Unknown'
+              t('common.unknown')
             }
           </p>
         </div>

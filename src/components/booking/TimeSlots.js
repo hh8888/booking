@@ -1,7 +1,9 @@
 import React from 'react';
 import DateTimeFormatter from '../../utils/DateTimeFormatter';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function TimeSlots({ selectedHour, selectedMinute, onTimeSelect, bookedSlots = [], duration = 30, availableSlots = [], allSlots = [] }) {
+  const { t } = useLanguage();
   console.log('Available Slots:', availableSlots);
   console.log('Booked Slots:', bookedSlots);
   console.log('All Slots:', allSlots);
@@ -96,8 +98,8 @@ export default function TimeSlots({ selectedHour, selectedMinute, onTimeSelect, 
                   
                   if ((isBooked && !isInCurrentBookingRange) || !isAvailable || wouldOverlap) {
                     const message = wouldOverlap 
-                      ? 'Selecting this time would cause the booking duration to overlap with existing bookings.'
-                      : 'This time slot is not available. Please select another time.';
+                      ? t('timeSlots.overlapWarning')
+                      : t('timeSlots.notAvailable');
                     alert(message);
                     return;
                   }
@@ -124,9 +126,9 @@ export default function TimeSlots({ selectedHour, selectedMinute, onTimeSelect, 
                 `}
                 title={
                   isBooked 
-                    ? 'This time slot is already booked' 
+                    ? t('timeSlots.alreadyBooked') 
                     : wouldCauseOverlap(hour, minute)
-                      ? 'Selecting this time would cause duration overlap with existing bookings'
+                      ? t('timeSlots.durationOverlap')
                       : ''
                 }
               >
@@ -139,7 +141,7 @@ export default function TimeSlots({ selectedHour, selectedMinute, onTimeSelect, 
           }).filter(Boolean) // Remove null entries
         ) : (
           <div className="col-span-4 text-center text-gray-500 py-4">
-            No time slots available for this date
+            {t('timeSlots.noSlotsAvailable')}
           </div>
         )}
       </div>

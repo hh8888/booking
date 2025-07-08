@@ -1,4 +1,5 @@
 import { toast } from 'react-toastify';
+import { ERROR_MESSAGES } from '../constants';
 
 // Error type enumeration
 const ErrorType = {
@@ -77,11 +78,34 @@ class ErrorHandlingService {
 
   // Handle database operation error
   handleDatabaseError(error, operation, resourceName) {
+    // Check for duplicate email constraint specifically
+    if (this.isDuplicateEmailError(error)) {
+      return this.handleDuplicateEmailError(error);
+    }
+    
     const errorCode = this.getErrorCode(error, ErrorType.DATABASE);
     console.error(`Database error [${errorCode}] during ${operation} of ${resourceName}:`, error);
     const errorMessage = this.getErrorMessage(error);
     toast.error(`[${errorCode}] ${operation} ${resourceName} failed: ${errorMessage}`);
     return { code: errorCode, message: errorMessage };
+  }
+
+  // Handle duplicate email constraint error
+  handleDuplicateEmailError(error) {
+    const errorCode = ErrorCodeMap[ErrorType.DATABASE].DUPLICATE_ENTRY;
+    const friendlyMessage = ERROR_MESSAGES.DUPLICATE_EMAIL;
+    console.error(`Duplicate email error [${errorCode}]:`, error);
+    toast.error(`[${errorCode}] ${friendlyMessage}`);
+    return { code: errorCode, message: friendlyMessage };
+  }
+
+  // Check if error is a duplicate email constraint violation
+  isDuplicateEmailError(error) {
+    const errorMessage = this.getErrorMessage(error).toLowerCase();
+    return errorMessage.includes('duplicate key value violates unique constraint') ||
+           errorMessage.includes('users_pkey') ||
+           errorMessage.includes('already registered') ||
+           errorMessage.includes('email already exists');
   }
 
   // Handle network request error

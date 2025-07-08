@@ -9,8 +9,10 @@ import DatabaseService from '../../services/DatabaseService';
 import ServiceStaffService from '../../services/ServiceStaffService';
 import withErrorHandling from '../common/withErrorHandling';
 import { USER_ROLES, TABLES, QUERY_FILTERS } from '../../constants';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 function ServicesTab({ users, handleError }) {
+  const { t } = useLanguage();
   const [services, setServices] = useState([]);
   const [staffUsers, setStaffUsers] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
@@ -96,17 +98,21 @@ function ServicesTab({ users, handleError }) {
   const fetchStaffUsers = async () => {
     try {
       if (users && users.length > 0) {
-        const staffData = users.filter(user => user.role === USER_ROLES.STAFF || user.role === USER_ROLES.ADMIN)
-          .map(user => ({ id: user.id, full_name: user.full_name }));
+        // Filter for providers (Staff and Manager, but not Admin)
+        const staffData = users.filter(user => 
+          user.role === USER_ROLES.STAFF || user.role === USER_ROLES.MANAGER
+        ).map(user => ({ id: user.id, full_name: user.full_name }));
         setStaffUsers(staffData);
         return staffData;
       } else {
-        // Use DatabaseService singleton to get staff data
+        // Use DatabaseService singleton to get provider data (Staff and Manager)
         const dbService = DatabaseService.getInstance();
-        const data = await dbService.fetchSpecificColumns(TABLES.USERS, 'id, full_name', QUERY_FILTERS.ROLE_STAFF);
+        const staffData = await dbService.fetchSpecificColumns(TABLES.USERS, 'id, full_name', QUERY_FILTERS.ROLE_STAFF);
+        const managerData = await dbService.fetchSpecificColumns(TABLES.USERS, 'id, full_name', { role: USER_ROLES.MANAGER });
         
-        setStaffUsers(data);
-        return data;
+        const combinedData = [...staffData, ...managerData];
+        setStaffUsers(combinedData);
+        return combinedData;
       }
     } catch (error) {
       console.error('Error fetching staff users:', error.message);
@@ -180,12 +186,12 @@ function ServicesTab({ users, handleError }) {
         return service.staff_ids && Array.isArray(service.staff_ids) && service.staff_ids.includes(staffFilter);
       });
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div>{t('common.loading')}</div>;
   if (error) return <div>Error: {error}</div>;
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">Manage Services</h2>
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('services.manageServices')}</h2>
       <button
         onClick={() => {
           setEditItem(null); // Reset form data for new service
@@ -193,7 +199,7 @@ function ServicesTab({ users, handleError }) {
         }}
         className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 my-4"
       >
-        Add New Service
+        {t('services.addNewService')}
       </button>
       <button
         onClick={async () => {
@@ -207,26 +213,26 @@ function ServicesTab({ users, handleError }) {
         }}
         className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 my-4 ml-2"
       >
-        Refresh
+        {t('common.refresh')}
       </button>
       <button
         onClick={handleDeleteSelected}
         className={`${selectedRows.length === 0 ? 'bg-gray-400 hover:bg-gray-500' : 'bg-red-500 hover:bg-red-600'} text-white px-4 py-2 rounded-lg my-4 ml-2`}
         disabled={selectedRows.length === 0}
       >
-        Delete Selected
+        {t('users.deleteSelected')}
       </button>
 
       {/* Staff filter */}
       <div className="my-4">
-        <label className="mr-2 font-medium">Filter by Staff:</label>
+        <label className="mr-2 font-medium">{t('services.filterByStaff')}</label>
         <select
           value={staffFilter}
           onChange={(e) => setStaffFilter(e.target.value)}
           className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         >
-          <option value="all">All Services</option>
-          <option value="unassigned">Unassigned</option>
+          <option value="all">{t('services.allStaff')}</option>
+          <option value="unassigned">{t('services.unassigned')}</option>
           {staffUsers.map(staff => (
             <option key={staff.id} value={staff.id}>{staff.full_name}</option>
           ))}
@@ -236,12 +242,12 @@ function ServicesTab({ users, handleError }) {
       <Table
         data={filteredServices}
         columns={[
-          { key: 'name', label: 'Name' },
-          { key: 'description', label: 'Description' },
-          { key: 'price', label: 'Price ($)' },
-          { key: 'duration', label: 'Duration (mins)' }, // Display duration in minutes
-          { key: 'staff_name', label: 'Assigned Staff' },
-          { key: 'created_at', label: 'Created At' },
+          { key: 'name', label: t('formLabels.name') },
+          { key: 'description', label: t('formLabels.description') },
+          { key: 'price', label: t('formLabels.price') },
+          { key: 'duration', label: t('formLabels.duration') }, // Display duration in minutes
+          { key: 'staff_name', label: t('formLabels.assignedStaff') },
+          { key: 'created_at', label: t('formLabels.createdAt') },
         ]}
         selectedRows={selectedRows}
         setSelectedRows={setSelectedRows}

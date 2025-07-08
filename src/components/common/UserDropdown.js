@@ -3,9 +3,12 @@ import { UserCircleIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { supabase } from '../../supabaseClient';
 import StaffDateAvailabilityForm from '../service/StaffDateAvailabilityForm';
 import UserProfileForm from './UserProfileForm';
+import LanguageSwitcher from './LanguageSwitcher';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { USER_ROLES, ERROR_MESSAGES } from '../../constants';
 
 const UserDropdown = ({ userEmail, userRole, userName, currentUserId, onProfileUpdate }) => {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [showAvailabilityForm, setShowAvailabilityForm] = useState(false);
   const [showProfileForm, setShowProfileForm] = useState(false);
@@ -32,7 +35,7 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId, onProfileU
       
       if (error) {
         console.error('Sign out error:', error);
-        alert(`${ERROR_MESSAGES.SIGN_OUT_ERROR}: ${error.message}`);
+        alert(`${t('messages.error.signOutError')}: ${error.message}`);
       } else {
         console.log('Sign out successful, reloading page...');
         // Clear any local storage if needed
@@ -44,7 +47,7 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId, onProfileU
       }
     } catch (err) {
       console.error('Unexpected error during sign out:', err);
-      alert(ERROR_MESSAGES.UNEXPECTED_SIGN_OUT_ERROR);
+      alert(t('messages.error.unexpectedSignOutError'));
     }
   };
 
@@ -78,7 +81,7 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId, onProfileU
           <UserCircleIcon className="h-8 w-8 text-gray-600" />
           <div className="text-left">
             <p className="text-sm font-medium">{displayName}</p>
-            <p className="text-xs text-gray-500 capitalize">({userRole})</p>
+            <p className="text-xs text-gray-500 capitalize">({t(`roles.${userRole}`) || userRole})</p>
           </div>
           <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
         </button>
@@ -94,7 +97,7 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId, onProfileU
                   <svg className="mr-3 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  Set my availability
+                  {t('userDropdown.setAvailability')}
                 </button>
               )}
               <button
@@ -104,8 +107,12 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId, onProfileU
                 <svg className="mr-3 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                My Profile
+                {t('userDropdown.myProfile')}
               </button>
+              
+              {/* Language Switcher */}
+              <LanguageSwitcher isInDropdown={true} />
+              
               <hr className="my-1" />
               <button
                 onClick={handleSignOut}
@@ -114,7 +121,7 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId, onProfileU
                 <svg className="mr-3 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
-                Log out
+                {t('userDropdown.logout')}
               </button>
             </div>
           </div>

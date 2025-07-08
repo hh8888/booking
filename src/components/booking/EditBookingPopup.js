@@ -8,6 +8,7 @@ import StaffAvailabilityService from '../../services/StaffAvailabilityService';
 import LocationService from '../../services/LocationService';
 import TimeSlots from './TimeSlots';
 import { BOOKING_STATUS, USER_ROLES, TABLES, ERROR_MESSAGES } from '../../constants';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 
 export default function EditBookingPopup({ 
@@ -21,6 +22,7 @@ export default function EditBookingPopup({
   hideCustomerSelection = false, // New prop
   hideRecurringOptions = false   // New prop
 }) {
+  const { t } = useLanguage();
   const [editItem, setEditItem] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingAvailability, setLoadingAvailability] = useState(false);
@@ -34,8 +36,8 @@ export default function EditBookingPopup({
   const [businessHours, setBusinessHours] = useState(null);
   const [selectedProviderAvailability, setSelectedProviderAvailability] = useState([]);
   const [recurringOptions] = useState([
-    { value: 'daily', label: 'Repeat Daily' },
-    { value: 'weekly', label: 'Repeat Weekly' }
+    { value: 'daily', label: t('bookings.repeatDaily') },
+    { value: 'weekly', label: t('bookings.repeatWeekly') }
   ]);
 
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
@@ -333,7 +335,7 @@ export default function EditBookingPopup({
     const fetchProviders = async () => {
       try {
         const dbService = DatabaseService.getInstance();
-        const data = await dbService.fetchData(TABLES.USERS, 'created_at', false, { role: { in: [USER_ROLES.STAFF, USER_ROLES.ADMIN] } }, ['id', 'full_name']);
+        const data = await dbService.fetchData(TABLES.USERS, 'created_at', false, { role: { in: [USER_ROLES.STAFF, USER_ROLES.MANAGER] } }, ['id', 'full_name']);
         setProviders(data);
         return data;
       } catch (error) {
@@ -860,20 +862,20 @@ export default function EditBookingPopup({
           data={editItem}
           onSave={handleSave}
           onCancel={onCancel}
-          title={isCreating ? "Create New Booking" : "Edit Booking"}
+          title={isCreating ? t('editBooking.createNewBooking') : t('editBooking.editBooking')}
           loading={loading}
           loadingAvailability={loadingAvailability}
           fields={[
             { 
               key: "customer_id", 
-              label: "Customer", 
+              label: t('editBooking.customer'), 
               type: "select",
               options: customers.map(customer => ({
                 value: customer.id,
                 label: customer.full_name
               })),
               required: !hideCustomerSelection,
-              placeholder: "Select a Customer",
+              placeholder: t('editBooking.selectCustomer'),
               hidden: hideCustomerSelection,
               onChange: (value) => {
                 setEditItem(prev => ({
@@ -884,7 +886,7 @@ export default function EditBookingPopup({
             },
             {
               key: "location",
-              label: "Location",
+              label: t('editBooking.location'),
               type: "select",
               options: (() => {
                 const locationService = LocationService.getInstance();
@@ -895,7 +897,7 @@ export default function EditBookingPopup({
                 }));
               })(),
               required: true,
-              placeholder: "Select a Location",
+              placeholder: t('editBooking.selectLocation'),
               hidden: isCreating, // Hide when creating new bookings
               defaultValue: (() => {
                 // If editing an existing booking and it has a location, use it
@@ -929,7 +931,7 @@ export default function EditBookingPopup({
                     // The useEffect will automatically handle time slot reloading when editItem.location changes
                   } catch (error) {
                     console.error('Error reloading availability:', error);
-                    toast.error('Failed to reload availability for new location');
+                    toast.error(t('editBooking.failedToReloadAvailability'));
                   } finally {
                     setLoadingAvailability(false);
                   }
@@ -938,14 +940,14 @@ export default function EditBookingPopup({
             },
             { 
               key: "provider_id", 
-              label: "Provider", 
+              label: t('editBooking.provider'), 
               type: "select",
               options: providers.map(provider => ({
                 value: provider.id,
                 label: provider.full_name
               })),
               required: true,
-              placeholder: "Select a Provider",
+              placeholder: t('editBooking.selectProvider'),
               onChange: async (value) => {
                 if (value) {
                   setLoadingAvailability(true);
@@ -966,10 +968,10 @@ export default function EditBookingPopup({
               type: "custom",
               renderField: () => (
                 <div className="bg-gray-50 rounded-md">
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Date availability</h3>
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">{t('editBooking.dateAvailability')}</h3>
               {/* Day of week headers */}
               <div className="grid grid-cols-7 gap-2 mb-1">
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                {[t('editBooking.mon'), t('editBooking.tue'), t('editBooking.wed'), t('editBooking.thu'), t('editBooking.fri'), t('editBooking.sat'), t('editBooking.sun')].map(day => (
                   <div key={day} className="text-xs text-gray-500 text-center py-1 font-medium">
                     {day}
                   </div>
@@ -1006,14 +1008,14 @@ export default function EditBookingPopup({
             },
             { 
               key: "service_id", 
-              label: "Service", 
+              label: t('editBooking.service'), 
               type: "select",
               options: services.map(service => ({
                 value: service.id,
                 label: service.name
               })),
               required: isCreating,
-              placeholder: "Select a Service",
+              placeholder: t('editBooking.selectService'),
               onChange: (value) => {
                 if (value) {
                   const selectedService = services.find(service => service.id === value);
@@ -1057,7 +1059,7 @@ export default function EditBookingPopup({
             },
             {
               key: "duration",
-              label: "Duration (minutes)",
+              label: t('editBooking.durationMinutes'),
               type: "number",
               min: 5,
               max: 480,
@@ -1073,7 +1075,7 @@ export default function EditBookingPopup({
             },
             {
               key: "start_date",
-              label: "Date & Time",
+              label: t('editBooking.dateTime'),
               type: "date",
               required: true
             },
@@ -1083,14 +1085,14 @@ export default function EditBookingPopup({
               fields: [
                 { 
                   key: "start_time_hour", 
-                  label: "Hour", 
+                  label: t('editBooking.hour'), 
                   type: "select",
                   required: true,
                   options: hourOptions.map(hour => ({
                     value: hour,
                     label: DateTimeFormatter.getInstance().to12HourFormat(hour)
                   })),
-                  placeholder: "Select Hour",
+                  placeholder: t('editBooking.selectHour'),
                   onChange: (value) => {
                     setEditItem(prev => ({
                       ...prev,
@@ -1100,14 +1102,14 @@ export default function EditBookingPopup({
                 },
                 { 
                   key: "start_time_minute", 
-                  label: "Minute", 
+                  label: t('editBooking.minute'), 
                   type: "select",
                   required: true,
                   options: minuteOptions.map(minute => ({
                     value: minute,
                     label: minute
                   })),
-                  placeholder: "Select Minute",
+                  placeholder: t('editBooking.selectMinute'),
                   onChange: (value) => {
                     setEditItem(prev => ({
                       ...prev,
@@ -1170,7 +1172,7 @@ export default function EditBookingPopup({
                       }
                       
                       if (hasConflict) {
-                        toast.error(`Cannot select this time slot. The booking duration would overlap with existing bookings at: ${conflictSlots.join(', ')}`);
+                        toast.error(t('editBooking.overlapDetected') + `: ${conflictSlots.join(', ')}`);
                         return;
                       }
                       
@@ -1186,34 +1188,34 @@ export default function EditBookingPopup({
             },
             {
               key: "status",
-              label: "Status",
+              label: t('editBooking.status'),
               type: hideCustomerSelection ? "text" : "select",
               options: hideCustomerSelection ? [] : [
-                { value: BOOKING_STATUS.PENDING, label: "Pending" },
-        { value: BOOKING_STATUS.CONFIRMED, label: "Confirmed" },
-        { value: BOOKING_STATUS.CANCELLED, label: "Cancelled" },
-        { value: BOOKING_STATUS.COMPLETED, label: "Completed" }
+                { value: BOOKING_STATUS.PENDING, label: t('editBooking.pending') },
+        { value: BOOKING_STATUS.CONFIRMED, label: t('editBooking.confirmed') },
+        { value: BOOKING_STATUS.CANCELLED, label: t('editBooking.cancelled') },
+        { value: BOOKING_STATUS.COMPLETED, label: t('editBooking.completed') }
               ],
               required: true,
               readOnly: hideCustomerSelection,
               defaultValue: hideCustomerSelection ? BOOKING_STATUS.PENDING : undefined,
-      value: hideCustomerSelection ? "Pending" : undefined
+      value: hideCustomerSelection ? t('editBooking.pending') : undefined
             },
             { 
               key: "notes", 
-              label: "Notes", 
+              label: t('editBooking.notes'), 
               type: "textarea" 
             },
             { 
               key: "show_recurring", 
-              text: "Recurring booking", 
+              text: t('editBooking.recurringBooking'), 
               type: "link",
               hidden: !isCreating || hideRecurringOptions,  // Hide if hideRecurringOptions is true
               onClick: () => setShowRecurringOptions(!showRecurringOptions)
             },
             { 
               key: "recurring_type", 
-              label: "Recurring Type", 
+              label: t('editBooking.recurringType'), 
               type: "select",
               options: recurringOptions,
               hidden: !isCreating || !showRecurringOptions || hideRecurringOptions,  // Hide if hideRecurringOptions is true
@@ -1221,7 +1223,7 @@ export default function EditBookingPopup({
             },
             { 
               key: "recurring_count", 
-              label: "Number of Occurrences", 
+              label: t('editBooking.numberOfOccurrences'), 
               type: "number",
               min: 2,
               max: 52,

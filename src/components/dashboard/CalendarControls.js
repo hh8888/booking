@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const CalendarControls = ({
   showAvailability,
@@ -10,6 +11,7 @@ const CalendarControls = ({
   showNonWorkingHours,
   setShowNonWorkingHours
 }) => {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -17,7 +19,7 @@ const CalendarControls = ({
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="absolute top-0 right-0 p-2 focus:outline-none text-gray-600 hover:text-gray-800 z-10" /* Added text colors and z-index */
-        aria-label={isOpen ? 'Hide controls' : 'Show controls'}
+        aria-label={isOpen ? t('calendar.hideControls') : t('calendar.showControls')}
       >
         <svg
           className={`w-5 h-5 transform transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} /* Increased icon size */
@@ -39,7 +41,7 @@ const CalendarControls = ({
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            {showAvailability ? 'Hide Availability' : 'Show Availability'}
+            {showAvailability ? t('calendar.hideAvailability') : t('calendar.showAvailability')}
           </button>
           <button
             onClick={() => setShowBookings(!showBookings)}
@@ -49,7 +51,7 @@ const CalendarControls = ({
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            {showBookings ? 'Hide Bookings' : 'Show Bookings'}
+            {showBookings ? t('calendar.hideBookings') : t('calendar.showBookings')}
           </button>
           <button
             onClick={() => setShowPast(!showPast)}
@@ -59,7 +61,7 @@ const CalendarControls = ({
                 : 'bg-gray-200 text-gray-800 hover:bg-gray-300' 
             }`}
           >
-            {showPast ? 'Show Past' : 'Hide Past'}
+            {showPast ? t('calendar.showPast') : t('calendar.hidePast')}
           </button>
           <button
             onClick={() => setShowNonWorkingHours(!showNonWorkingHours)}
@@ -69,7 +71,7 @@ const CalendarControls = ({
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            {showNonWorkingHours ? 'Hide Non-Working Hours' : 'Show Non-Working Hours'}
+            {showNonWorkingHours ? t('calendar.hideNonWorkingHours') : t('calendar.showNonWorkingHours')}
           </button>
         </div>
       </div>
