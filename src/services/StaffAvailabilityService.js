@@ -171,7 +171,7 @@ class StaffAvailabilityService {
           false,
           {
             id: { in: availableStaffIds },
-            role: { in: ['staff', 'admin'] }
+            role: { in: ['staff', 'manager'] }
           }
         );
       }

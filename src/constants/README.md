@@ -98,7 +98,7 @@ COLUMNS.ID        // 'id'
 COLUMNS.EMAIL     // 'email'
 
 // Query filters
-QUERY_FILTERS.ROLE_STAFF_ADMIN  // { role: { in: ['staff', 'admin'] } }
+QUERY_FILTERS.ROLE_STAFF_MANAGER  // { role: { in: ['staff', 'admin'] } }
 ```
 
 ## 🛠️ Utilities Reference

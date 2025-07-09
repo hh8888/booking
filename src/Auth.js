@@ -378,16 +378,31 @@ export default function Auth() {
 
       // Try to update last_sign_in but don't fail if it doesn't work
       console.log('Updating last_sign_in timestamp...');
-      const { error: updateError } = await supabase
+      const updateData = {
+        last_sign_in: new Date().toISOString()
+      };
+      
+      console.log('Update data being sent:', updateData);
+      console.log('Updating user with ID:', data.user.id);
+      
+      const { data: updatedData, error: updateError } = await supabase
         .from(TABLES.USERS)
-        .update({ last_sign_in: new Date().toISOString() })
-        .eq('id', data.user.id);
+        .update(updateData)
+        .eq('id', data.user.id)
+        .select('id, last_sign_in, created_at'); // Select to verify what was updated
 
       if (updateError) {
         console.warn('Could not update last_sign_in:', updateError.message);
         // Don't throw the error - just log it
       } else {
         console.log('Successfully updated last_sign_in');
+        console.log('Updated user data returned from database:', updatedData);
+        
+        // Verify that created_at was not modified
+        if (updatedData && updatedData[0]) {
+          console.log('Verification - created_at after update:', updatedData[0].created_at);
+          console.log('Verification - last_sign_in after update:', updatedData[0].last_sign_in);
+        }
       }
 
       // Check role and redirect

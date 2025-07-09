@@ -81,7 +81,20 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId, onProfileU
           <UserCircleIcon className="h-8 w-8 text-gray-600" />
           <div className="text-left">
             <p className="text-sm font-medium">{displayName}</p>
-            <p className="text-xs text-gray-500 capitalize">({t(`roles.${userRole}`) || userRole})</p>
+            <p className="text-xs text-gray-500 capitalize">({(() => {
+              try {
+                const roleTranslation = t(`roles.${userRole}`);
+                // Check if translation was found (not equal to the key itself)
+                if (roleTranslation && roleTranslation !== `roles.${userRole}`) {
+                  return roleTranslation;
+                }
+                // Fallback to capitalized userRole
+                return userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'User';
+              } catch (error) {
+                console.warn('Error translating user role:', error);
+                return userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'User';
+              }
+            })()})</p>
           </div>
           <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
         </button>

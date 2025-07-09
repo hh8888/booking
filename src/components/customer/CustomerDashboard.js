@@ -11,6 +11,7 @@ import BookingSteps from './BookingSteps';
 import ToastMessage from '../common/ToastMessage';
 import LocationSelector from '../common/LocationSelector';
 import UserDropdown from '../common/UserDropdown';
+import SessionIndicator from '../common/SessionIndicator';
 import { supabase } from '../../supabaseClient';
 import LoadingSpinner from '../common/LoadingSpinner';
 import { useBusinessInfo } from '../../hooks/useBusinessInfo';
@@ -287,13 +288,16 @@ const CustomerDashboard = () => {
               <p className="text-gray-600">{t('customer.welcomeMessage', { name: customerData.full_name && !customerData.full_name.includes('@') ? customerData.full_name : (customerData.full_name ? customerData.full_name.split('@')[0] : t('customer.welcome')) })}</p>
               <LocationSelector />
             </div>
-            <UserDropdown 
-              userEmail={userEmail}
-              userRole={userRole}
-              userName={userName}
-              currentUserId={currentUserId}
-              onProfileUpdate={handleProfileUpdate}
-            />
+            <div className="flex items-center space-x-3 mt-4 sm:mt-0">
+              <SessionIndicator />
+              <UserDropdown 
+                userEmail={userEmail}
+                userRole={userRole}
+                userName={userName}
+                currentUserId={currentUserId}
+                onProfileUpdate={handleProfileUpdate}
+              />
+            </div>
           </div>
         </div>
 

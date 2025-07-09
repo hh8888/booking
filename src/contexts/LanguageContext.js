@@ -52,26 +52,34 @@ export const LanguageProvider = ({ children }) => {
       return key;
     }
     
-    const keys = key.split('.');
-    let value = translations;
-    
-    for (const k of keys) {
-      if (value && typeof value === 'object' && k in value) {
-        value = value[k];
-      } else {
-        console.warn(`Translation key not found: ${key}`);
-        return key; // Return the key if translation not found
+    try {
+      const keys = key.split('.');
+      let value = translations;
+      
+      for (const k of keys) {
+        if (value && typeof value === 'object' && k in value) {
+          value = value[k];
+        } else {
+          // Only log warning if not loading and translations are available
+          if (!isLoading && translations && Object.keys(translations).length > 0) {
+            console.warn(`Translation key not found: ${key}. Available keys at this level:`, Object.keys(value || {}));
+          }
+          return key; // Return the key if translation not found
+        }
       }
+      
+      // Replace parameters in the translation
+      if (typeof value === 'string' && Object.keys(params).length > 0) {
+        return value.replace(/\{(\w+)\}/g, (match, paramKey) => {
+          return params[paramKey] || match;
+        });
+      }
+      
+      return value || key;
+    } catch (error) {
+      console.error(`Error in translation function for key '${key}':`, error);
+      return key;
     }
-    
-    // Replace parameters in the translation
-    if (typeof value === 'string' && Object.keys(params).length > 0) {
-      return value.replace(/\{(\w+)\}/g, (match, paramKey) => {
-        return params[paramKey] || match;
-      });
-    }
-    
-    return value || key;
   };
 
   const value = {

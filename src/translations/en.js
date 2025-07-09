@@ -630,8 +630,17 @@ export default {
     birthday: 'Birthday',
     gender: 'Gender',
     memberSince: 'Member Since',
+    editProfile: 'Edit Profile',
     updateProfile: 'Update Profile',
-    profileUpdated: 'Profile updated successfully'
+    profileUpdated: 'Profile updated successfully',
+    notSet: 'Not set',
+    emailCannotChange: 'Email cannot be changed',
+    selectGender: 'Select Gender',
+    male: 'Male',
+    female: 'Female',
+    other: 'Other',
+    saving: 'Saving...',
+    saveChanges: 'Save Changes'
   },
 
   // Customer Dashboard

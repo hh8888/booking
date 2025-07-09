@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import UserService from '../../services/UserService';
 import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '../../constants';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const UserProfileForm = ({ userId, onClose }) => {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [userData, setUserData] = useState({
@@ -89,14 +91,14 @@ const UserProfileForm = ({ userId, onClose }) => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'Not set';
+    if (!dateString) return t('profile.notSet');
     return new Date(dateString).toLocaleDateString();
   };
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">My Profile</h2>
+        <h2 className="text-2xl font-semibold text-gray-800">{t('profile.title')}</h2>
         <button
           onClick={onClose}
           className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
@@ -108,7 +110,7 @@ const UserProfileForm = ({ userId, onClose }) => {
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Full Name {isEditing && '*'}
+            {t('profile.fullName')} {isEditing && '*'}
           </label>
           {isEditing ? (
             <input
@@ -120,26 +122,26 @@ const UserProfileForm = ({ userId, onClose }) => {
             />
           ) : (
             <div className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-              {userData.full_name || 'Not set'}
+              {userData.full_name || t('profile.notSet')}
             </div>
           )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Email
+            {t('profile.email')}
           </label>
           <div className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-            {userData.email || 'Not set'}
+            {userData.email || t('profile.notSet')}
           </div>
           {!isEditing && (
-            <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+            <p className="text-xs text-gray-500 mt-1">{t('profile.emailCannotChange')}</p>
           )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Phone
+            {t('profile.phone')}
           </label>
           {isEditing ? (
             <input
@@ -150,14 +152,14 @@ const UserProfileForm = ({ userId, onClose }) => {
             />
           ) : (
             <div className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-              {userData.phone_number || 'Not set'}
+              {userData.phone_number || t('profile.notSet')}
             </div>
           )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Birthday
+            {t('profile.birthday')}
           </label>
           {isEditing ? (
             <input
@@ -175,7 +177,7 @@ const UserProfileForm = ({ userId, onClose }) => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Post Code
+            {t('profile.postCode')}
           </label>
           {isEditing ? (
             <input
@@ -186,14 +188,14 @@ const UserProfileForm = ({ userId, onClose }) => {
             />
           ) : (
             <div className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-              {userData.post_code || 'Not set'}
+              {userData.post_code || t('profile.notSet')}
             </div>
           )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Gender
+            {t('profile.gender')}
           </label>
           {isEditing ? (
             <select
@@ -201,14 +203,14 @@ const UserProfileForm = ({ userId, onClose }) => {
               onChange={(e) => handleInputChange('gender', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="">Select Gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
+              <option value="">{t('profile.selectGender')}</option>
+              <option value="Male">{t('profile.male')}</option>
+              <option value="Female">{t('profile.female')}</option>
+              <option value="Other">{t('profile.other')}</option>
             </select>
           ) : (
             <div className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
-              {userData.gender || 'Not set'}
+              {userData.gender || t('profile.notSet')}
             </div>
           )}
         </div>
@@ -222,7 +224,7 @@ const UserProfileForm = ({ userId, onClose }) => {
                 className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors duration-200"
                 disabled={loading}
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -230,7 +232,7 @@ const UserProfileForm = ({ userId, onClose }) => {
                 className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50"
                 disabled={loading}
               >
-                {loading ? 'Saving...' : 'Save Changes'}
+                {loading ? t('profile.saving') : t('profile.saveChanges')}
               </button>
             </>
           ) : (
@@ -240,14 +242,14 @@ const UserProfileForm = ({ userId, onClose }) => {
                 onClick={onClose}
                 className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors duration-200"
               >
-                Close
+                {t('common.close')}
               </button>
               <button
                 type="button"
                 onClick={handleEdit}
                 className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200"
               >
-                Edit Profile
+                {t('profile.editProfile')}
               </button>
             </>
           )}

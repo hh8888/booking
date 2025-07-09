@@ -132,7 +132,7 @@ export const useDashboardData = () => {
         currentLocationId 
           ? dbService.fetchData(TABLES.BOOKINGS, 'created_at', false, { location: currentLocationId })
           : dbService.fetchData(TABLES.BOOKINGS),
-        dbService.fetchData(TABLES.USERS, 'created_at', false, { role: { in: ['staff', 'admin'] } }, ['id', 'full_name']),
+        dbService.fetchData(TABLES.USERS, 'created_at', false, { role: { in: ['staff', 'manager'] } }, ['id', 'full_name']),
         dbService.fetchData(TABLES.SERVICES),
         dbService.getSettingsByKey('booking', 'showStaffName'),
         // Fetch customers data if not provided
@@ -171,8 +171,8 @@ export const useDashboardData = () => {
       // Convert booking data to calendar event format
       const calendarEvents = bookingsData.map(booking => {
         const service = booking.service_id ? servicesData.find(s => s.id === booking.service_id) : null;
-        const staff = staffDataResult.find(s => s.id === booking.provider_id);
-        const staffName = staff?.full_name || 'Unknown';
+        const staff = booking.provider_id ? staffDataResult.find(s => s.id === booking.provider_id) : null;
+        const staffName = staff?.full_name || (booking.provider_id ? 'Unknown Staff' : 'No Staff Assigned');
         const customer = actualCustomersData.find(c => c.id === booking.customer_id);
         const customerName = customer?.full_name || 'Unknown';
         
@@ -241,7 +241,7 @@ export const useDashboardData = () => {
       const currentLocationId = locationService.getSelectedLocationId();
       
       const [staffData, availabilityData] = await Promise.all([
-        dbService.fetchData(TABLES.USERS, 'created_at', false, { role: { in: ['staff', 'admin'] } }, ['id', 'full_name']),
+        dbService.fetchData(TABLES.USERS, 'created_at', false, { role: { in: ['staff', 'manager'] } }, ['id', 'full_name']),
         // Filter availability data by current location
         currentLocationId 
           ? dbService.fetchData('staff_availability', 'created_at', false, { location: currentLocationId })

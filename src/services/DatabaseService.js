@@ -130,9 +130,17 @@ class DatabaseService {
 
   async updateItem(table, data, resourceName = 'Item') {
     try {
+      // Create a copy of data and remove created_at to prevent accidental modification
+      const { created_at, ...updateData } = data;
+      
+      // Log warning if created_at was in the data object
+      if (created_at !== undefined) {
+        console.warn(`Warning: Attempted to update created_at field in ${table} table. This field should not be modified. Removing from update.`);
+      }
+      
       const { error } = await supabase
         .from(table)
-        .update(data)
+        .update(updateData)
         .eq('id', data.id);
 
       if (error) throw error;

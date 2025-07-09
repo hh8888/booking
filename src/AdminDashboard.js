@@ -9,6 +9,7 @@ import ReportsTab from './components/reports/ReportsTab';
 import SettingsTab from './components/SettingsTab';
 import LocationSelector from './components/common/LocationSelector';
 import UserDropdown from './components/common/UserDropdown';
+import SessionIndicator from './components/common/SessionIndicator';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { useBusinessInfo } from './hooks/useBusinessInfo';
 import { useDashboardUser } from './hooks/useDashboardUser';
@@ -45,12 +46,15 @@ export default function AdminDashboard() {
           <h1 className="text-xl md:text-2xl font-bold text-gray-800">{businessName}</h1>
           <LocationSelector />
         </div>
-        <UserDropdown 
-          userEmail={userEmail}
-          userRole={userRole}
-          userName={userName}
-          currentUserId={currentUserId}
-        />
+        <div className="flex items-center space-x-3">
+          <SessionIndicator />
+          <UserDropdown 
+            userEmail={userEmail}
+            userRole={userRole}
+            userName={userName}
+            currentUserId={currentUserId}
+          />
+        </div>
       </div>
     
       {/* Tab Navigation */}

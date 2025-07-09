@@ -633,8 +633,17 @@ export default {
     birthday: '生日',
     gender: '性别',
     memberSince: '注册时间',
+    editProfile: '编辑资料',
     updateProfile: '更新资料',
-    profileUpdated: '资料更新成功'
+    profileUpdated: '资料更新成功',
+    notSet: '未设置',
+    emailCannotChange: '邮箱不能修改',
+    selectGender: '选择性别',
+    male: '男',
+    female: '女',
+    other: '其他',
+    saving: '保存中...',
+    saveChanges: '保存更改'
   },
 
   // Customer Dashboard
