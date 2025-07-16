@@ -67,7 +67,7 @@ const TableRow = ({ row, columns, selectedRows, onSelectRow, onEdit, onSetAvaila
           >
             <PencilIcon className="h-5 w-5" />
           </button>
-          {(row.role === USER_ROLES.STAFF || row.role === USER_ROLES.ADMIN) && (
+          {(row.role === USER_ROLES.STAFF || row.role === USER_ROLES.MANAGER) && (
             <button
               onClick={() => onSetAvailability(row)}
               className="text-green-500 hover:text-green-700 p-1 rounded-full hover:bg-green-100 transition-colors duration-200"

@@ -202,10 +202,16 @@ export default function DashboardTab() {
       const staffName = eventInfo.event.extendedProps.staffName || 'Unknown';
       const serviceName = eventInfo.event.extendedProps.serviceName || 'Appointment';
       
+      // Check if booking is cancelled
+      const currentBooking = bookings.find(booking => booking.id === eventInfo.event.id);
+      const currentStatus = currentBooking?.status || eventInfo.event.extendedProps.status;
+      const isCancelled = currentStatus === 'cancelled';
+      
       // Truncate long text to prevent overflow
       const truncateText = (text, maxLength) => {
         return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
       };
+      
       
       // Determine if we should allow full text based on event duration
       const eventDuration = (new Date(eventInfo.event.end) - new Date(eventInfo.event.start)) / (1000 * 60); // duration in minutes
@@ -216,7 +222,7 @@ export default function DashboardTab() {
         `${truncateText(customerName, 15)} - ${truncateText(staffName, 10)} - ${truncateText(serviceName, 20)}`;
       
       return {
-        html: `<div class="booking-event-content" style="
+        html: `<div class="booking-event-content ${isCancelled ? 'cancelled-booking' : ''}" style="
                  color: black; 
                  font-size: 11px; 
                  line-height: 1.2;
@@ -235,20 +241,26 @@ export default function DashboardTab() {
   };
 
   const handleEventDidMount = (info) => {
-    // Set tooltip content using custom tooltips instead of browser's title attribute
-    const { extendedProps } = info.event;
-    
-    let tooltipContent;
-    if (extendedProps.isAvailability) { //time slot hover info
-      tooltipContent = `Staff: ${extendedProps.staffName || 'Unknown'}<br>Time: ${extendedProps.startTime.substr(0, 5)} - ${extendedProps.endTime.substr(0, 5)}<br>Location: ${extendedProps.locationName || 'Unknown'}`;
-    } else {
-      tooltipContent = `Service: ${extendedProps.serviceName || 'Unknown'}<br>Customer: ${extendedProps.customerName || 'Unknown'}<br>Staff: ${extendedProps.staffName || 'Unknown'}<br>Time: ${new Date(info.event.start).toLocaleString()} - ${new Date(info.event.end).toLocaleString()}<br>Location: ${extendedProps.locationName || 'Unknown'}<br>Status: ${extendedProps.status || BOOKING_STATUS.PENDING}${extendedProps.notes ? '<br>Notes: ' + extendedProps.notes : ''}`;
-    }
-    
-    // Create custom tooltip functionality with improved cleanup
+    const extendedProps = info.event.extendedProps;
     let tooltip = null;
     let hideTimeout = null;
-    
+  
+    // Define the cleanup function
+    const cleanup = () => {
+      if (tooltip) {
+        tooltip.remove();
+        tooltip = null;
+      }
+      if (hideTimeout) {
+        clearTimeout(hideTimeout);
+        hideTimeout = null;
+      }
+      // Remove event listeners
+      info.el.removeEventListener('mouseenter', showTooltip);
+      info.el.removeEventListener('mouseleave', hideTooltip);
+      info.el.removeEventListener('mousemove', updateTooltipPosition);
+    };
+  
     const showTooltip = (e) => {
       // Clear any pending hide timeout
       if (hideTimeout) {
@@ -260,26 +272,38 @@ export default function DashboardTab() {
       const existingTooltips = document.querySelectorAll('.custom-tooltip');
       existingTooltips.forEach(tip => tip.remove());
       
+      // Generate tooltip content dynamically each time it's shown
+      let tooltipContent;
+      if (extendedProps.isAvailability) {
+        tooltipContent = `Staff: ${extendedProps.staffName || 'Unknown'}<br>Time: ${extendedProps.startTime.substr(0, 5)} - ${extendedProps.endTime.substr(0, 5)}<br>Location: ${extendedProps.locationName || 'Unknown'}`;
+      } else {
+        // For booking events, get fresh data from the current bookings array
+        const currentBooking = bookings.find(booking => booking.id === info.event.id);
+        const currentStatus = currentBooking?.status || extendedProps.status || BOOKING_STATUS.PENDING;
+        const currentNotes = currentBooking?.notes || extendedProps.notes || '';
+        
+        tooltipContent = `Service: ${extendedProps.serviceName || 'Unknown'}<br>Customer: ${extendedProps.customerName || 'Unknown'}<br>Staff: ${extendedProps.staffName || 'Unknown'}<br>Time: ${new Date(info.event.start).toLocaleString()} - ${new Date(info.event.end).toLocaleString()}<br>Location: ${extendedProps.locationName || 'Unknown'}<br>Status: ${currentStatus}${currentNotes ? '<br>Notes: ' + currentNotes : ''}`;
+      }
+      
       // Create tooltip element
       tooltip = document.createElement('div');
       tooltip.className = 'custom-tooltip';
       tooltip.innerHTML = tooltipContent;
       
       // Position tooltip with boundary checking
-      const x = Math.min(e.pageX + 10, window.innerWidth - 250); // Prevent tooltip from going off-screen
-      const y = Math.max(e.pageY - 10, 10); // Keep tooltip visible
+      const x = Math.min(e.pageX + 10, window.innerWidth - 250);
+      const y = Math.max(e.pageY - 10, 10);
       
       tooltip.style.position = 'absolute';
       tooltip.style.left = x + 'px';
       tooltip.style.top = y + 'px';
       tooltip.style.zIndex = '1000';
-      tooltip.style.pointerEvents = 'none'; // Prevent tooltip from interfering with mouse events
+      tooltip.style.pointerEvents = 'none';
       
       document.body.appendChild(tooltip);
     };
     
     const hideTooltip = () => {
-      // Add a small delay to prevent flickering when moving between elements
       hideTimeout = setTimeout(() => {
         if (tooltip) {
           tooltip.remove();
@@ -294,17 +318,6 @@ export default function DashboardTab() {
         const y = Math.max(e.pageY - 10, 10);
         tooltip.style.left = x + 'px';
         tooltip.style.top = y + 'px';
-      }
-    };
-    
-    // Store cleanup function on the element for later removal
-    const cleanup = () => {
-      if (hideTimeout) {
-        clearTimeout(hideTimeout);
-      }
-      if (tooltip) {
-        tooltip.remove();
-        tooltip = null;
       }
     };
     

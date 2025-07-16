@@ -2,12 +2,18 @@ import React from 'react';
 import { BOOKING_STATUS } from '../../constants';
 import { getBookingStatusClass, isPendingBooking } from '../../utils';
 
-const EventModal = ({ selectedEvent, onClose, onEdit, onConfirm }) => {
+const EventModal = ({ selectedEvent, onClose, onEdit, onConfirm, bookings }) => {
   if (!selectedEvent) return null;
 
   const isAvailabilityEvent = selectedEvent.classNames?.includes('availability-event');
   const { extendedProps } = selectedEvent;
-  const isPending = isPendingBooking({ status: extendedProps?.status });
+  
+  // Get fresh booking data from the bookings array
+  const currentBooking = bookings?.find(booking => booking.id === selectedEvent.id);
+  const currentStatus = currentBooking?.status || extendedProps?.status;
+  const currentNotes = currentBooking?.notes || extendedProps?.notes || '';
+  
+  const isPending = isPendingBooking({ status: currentStatus });
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -80,13 +86,13 @@ const EventModal = ({ selectedEvent, onClose, onEdit, onConfirm }) => {
               </div>
               <div>
                 <span className="font-medium text-gray-700">Status:</span>
-                <span className={`ml-2 px-2 py-1 rounded text-sm ${getBookingStatusClass(extendedProps?.status)}`}>
-                  {extendedProps?.status || BOOKING_STATUS.PENDING}
+                <span className={`ml-2 px-2 py-1 rounded text-sm ${getBookingStatusClass(currentStatus)}`}>
+                  {currentStatus || BOOKING_STATUS.PENDING}
                 </span>
               </div>
               <div>
                 <span className="font-medium text-gray-700">Notes:</span>
-                <span className="ml-2 text-gray-900">{extendedProps?.notes || ''}</span>
+                <span className="ml-2 text-gray-900">{currentNotes}</span>
               </div>
             </>
           )}

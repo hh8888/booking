@@ -68,13 +68,9 @@ export default function Auth() {
         if (mobileAuthSetting !== null && mobileAuthSetting !== undefined) {
           setIsMobileAuthEnabled(mobileAuthSetting === 'true' || mobileAuthSetting === true);
         } else {
-          // Default to false if setting not found, and create it
+          // Default to false if setting not found - don't try to create it here
+          // Settings should be created by admin users through the settings interface
           setIsMobileAuthEnabled(false);
-          await dbService.createItem(TABLES.SETTINGS, {
-            category: 'system',
-            key: 'enableMobileAuth',
-            value: 'false'
-          }, 'Setting');
         }
       } catch (err) {
         console.error('Error fetching mobile auth setting:', err);

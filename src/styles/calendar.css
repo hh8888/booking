@@ -291,3 +291,22 @@
   left: 0% !important;
   width: 100% !important;
 }
+
+/* Cancelled booking styling */
+.cancelled-booking {
+  text-decoration: line-through !important;
+  opacity: 0.6 !important;
+  position: relative;
+}
+
+.cancelled-booking::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+

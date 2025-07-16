@@ -25,6 +25,7 @@ export function useDashboardUser() {
       setError(null);
       
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('Auth user:', user);
       if (user) {
         setUserEmail(user.email);
         
@@ -35,6 +36,9 @@ export function useDashboardUser() {
           .eq('email', user.email)
           .single();
           
+        console.log('Database user data:', userData);
+        console.log('Database user error:', userError);
+          
         if (userError) {
           throw userError;
         }
@@ -43,6 +47,7 @@ export function useDashboardUser() {
           setCurrentUserId(userData.id); // Use the database user ID, not auth ID
           setUserRole(userData.role);
           setUserName(userData.full_name);
+          console.log('Set currentUserId to:', userData.id);
         }
       }
     } catch (err) {

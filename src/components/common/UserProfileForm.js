@@ -19,14 +19,22 @@ const UserProfileForm = ({ userId, onClose }) => {
 
   const userService = UserService.getInstance();
 
+  // Add debugging
   useEffect(() => {
-    fetchUserData();
+    console.log('UserProfileForm - userId received:', userId);
+    if (userId) {
+      fetchUserData();
+    } else {
+      console.error('UserProfileForm - No userId provided');
+    }
   }, [userId]);
 
   const fetchUserData = async () => {
     try {
       setLoading(true);
+      console.log('Fetching user data for userId:', userId);
       const data = await userService.getUserProfile(userId);
+      console.log('Received user data:', data);
       
       setUserData({
         full_name: data.full_name || '',

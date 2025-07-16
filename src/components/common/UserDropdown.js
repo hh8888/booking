@@ -83,13 +83,18 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId, onProfileU
             <p className="text-sm font-medium">{displayName}</p>
             <p className="text-xs text-gray-500 capitalize">({(() => {
               try {
+                // Add check to ensure userRole exists and is not empty
+                if (!userRole || userRole.trim() === '') {
+                  return 'User';
+                }
+                
                 const roleTranslation = t(`roles.${userRole}`);
                 // Check if translation was found (not equal to the key itself)
                 if (roleTranslation && roleTranslation !== `roles.${userRole}`) {
                   return roleTranslation;
                 }
                 // Fallback to capitalized userRole
-                return userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'User';
+                return userRole.charAt(0).toUpperCase() + userRole.slice(1);
               } catch (error) {
                 console.warn('Error translating user role:', error);
                 return userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'User';

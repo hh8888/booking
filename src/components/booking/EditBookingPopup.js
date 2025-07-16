@@ -755,7 +755,7 @@ export default function EditBookingPopup({
           // Ensure recurring_count is a number and handle empty strings
           dataToSave.recurring_count = parseInt(dataToSave.recurring_count) || 0;
           // Set default recurring_type if not selected
-          dataToSave.recurring_type = dataToSave.recurring_type || 'daily';
+          dataToSave.recurring_type = dataToSave.recurring_type || '';
           
           // Create the first booking as parent
           const parentBooking = await onSave(dataToSave);
@@ -1010,10 +1010,27 @@ export default function EditBookingPopup({
               key: "service_id", 
               label: t('editBooking.service'), 
               type: "select",
-              options: services.map(service => ({
-                value: service.id,
-                label: service.name
-              })),
+              options: services
+                .sort((a, b) => {
+                  // Check if service names start with "-" or "_"
+                  const aStartsWithSpecial = a.name.startsWith('-') || a.name.startsWith('_');
+                  const bStartsWithSpecial = b.name.startsWith('-') || b.name.startsWith('_');
+                  
+                  // If one starts with special character and the other doesn't
+                  if (aStartsWithSpecial && !bStartsWithSpecial) {
+                    return 1; // a comes after b
+                  }
+                  if (!aStartsWithSpecial && bStartsWithSpecial) {
+                    return -1; // a comes before b
+                  }
+                  
+                  // Both are special or both are normal, sort alphabetically
+                  return a.name.localeCompare(b.name);
+                })
+                .map(service => ({
+                  value: service.id,
+                  label: service.name
+                })),
               required: isCreating,
               placeholder: t('editBooking.selectService'),
               onChange: (value) => {
