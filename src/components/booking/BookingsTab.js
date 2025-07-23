@@ -215,7 +215,7 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
       // const { service_name, customer_name, booking_time_formatted, created_at_formatted, show_recurring, ...dataToSave } = itemData;
       
       // To this (add provider_name to the destructuring):
-      const { service_name, customer_name, provider_name, booking_time_formatted, created_at_formatted, show_recurring, ...dataToSave } = itemData;
+      const { service_name, customer_name, provider_name, booking_time_formatted, created_at_formatted, show_recurring, start_date,start_time_hour,start_time_minute,created_at, ...dataToSave } = itemData;
     
       console.log('Data after removing display fields:', dataToSave);
     

@@ -6,6 +6,7 @@ import DateTimeFormatter from '../../utils/DateTimeFormatter';
 import BookingService from '../../services/BookingService';
 import StaffAvailabilityService from '../../services/StaffAvailabilityService';
 import LocationService from '../../services/LocationService';
+import ServiceStaffService from '../../services/ServiceStaffService';
 import TimeSlots from './TimeSlots';
 import { BOOKING_STATUS, USER_ROLES, TABLES, ERROR_MESSAGES } from '../../constants';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -27,6 +28,7 @@ export default function EditBookingPopup({
   const [loading, setLoading] = useState(false);
   const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [services, setServices] = useState([]);
+  const [filteredServices, setFilteredServices] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [providers, setProviders] = useState([]);
   const [hourOptions, setHourOptions] = useState([]);
@@ -532,6 +534,7 @@ export default function EditBookingPopup({
       const dbService = DatabaseService.getInstance();
       const data = await dbService.fetchData(TABLES.SERVICES);
       setServices(data);
+      setFilteredServices(data); // Initialize filtered services with all services
       return data;
     } catch (error) {
       console.error('Error fetching services:', error);
@@ -949,68 +952,79 @@ export default function EditBookingPopup({
               required: true,
               placeholder: t('editBooking.selectProvider'),
               onChange: async (value) => {
+                console.log('Provider selected:', value);
                 if (value) {
                   setLoadingAvailability(true);
-                  const availabilityData = await fetchProviderAvailability(value);
-                  setSelectedProviderAvailability(availabilityData);
-                  setEditItem(prev => ({
-                    ...prev,
-                    provider_id: value
-                  }));
-                  setLoadingAvailability(false);
+                  
+                  try {
+                    // Fetch provider availability
+                    const availabilityData = await fetchProviderAvailability(value);
+                    setSelectedProviderAvailability(availabilityData);
+                    
+                    // Fetch services linked to this provider from service_staff table
+                    const serviceStaffService = ServiceStaffService.getInstance();
+                    console.log('Fetching services for provider:', value);
+                    const providerServiceIds = await serviceStaffService.getStaffServices(value);
+                    console.log('Provider service IDs:', providerServiceIds);
+                    console.log('All services:', services.map(s => ({ id: s.id, name: s.name, staff_id: s.staff_id })));
+                    
+                    // Filter services based on:
+                    // 1. Services with no staff_id (null or empty) - available to all providers
+                    // 2. Services specifically linked to this provider via service_staff table
+                    const availableServices = services.filter(service => {
+                      // Include services with no staff_id (general services)
+                      const hasNoStaffId = !service.staff_id || service.staff_id.trim() === '';
+                      // Include services linked to this provider
+                      const isLinkedToProvider = providerServiceIds.includes(service.id);
+                      
+                      return hasNoStaffId || isLinkedToProvider;
+                    });
+                    
+                    console.log('Available services for provider:', availableServices.map(s => ({ id: s.id, name: s.name, staff_id: s.staff_id })));
+                    setFilteredServices(availableServices);
+                    
+                    // Clear service selection if current service is not available for this provider
+                    if (editItem?.service_id) {
+                      const isCurrentServiceAvailable = availableServices.some(service => service.id === editItem.service_id);
+                      if (!isCurrentServiceAvailable) {
+                        console.log('Clearing service selection - current service not available for provider');
+                        setEditItem(prev => ({
+                          ...prev,
+                          provider_id: value,
+                          service_id: null // Clear service selection
+                        }));
+                      } else {
+                        console.log('Keeping current service selection');
+                        setEditItem(prev => ({
+                          ...prev,
+                          provider_id: value
+                        }));
+                      }
+                    } else {
+                      setEditItem(prev => ({
+                        ...prev,
+                        provider_id: value
+                      }));
+                    }
+                  } catch (error) {
+                    console.error('Error fetching provider services:', error);
+                    toast.error('Failed to load services for selected provider');
+                    setFilteredServices([]);
+                  } finally {
+                    setLoadingAvailability(false);
+                  }
                 } else {
+                  console.log('No provider selected - showing all services');
                   setSelectedProviderAvailability([]);
+                  setFilteredServices(services); // Show all services when no provider selected
                 }
               }
-            },
-            {
-              key: "availabledays",
-              type: "custom",
-              renderField: () => (
-                <div className="bg-gray-50 rounded-md">
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">{t('editBooking.dateAvailability')}</h3>
-              {/* Day of week headers */}
-              <div className="grid grid-cols-7 gap-2 mb-1">
-                {[t('editBooking.mon'), t('editBooking.tue'), t('editBooking.wed'), t('editBooking.thu'), t('editBooking.fri'), t('editBooking.sat'), t('editBooking.sun')].map(day => (
-                  <div key={day} className="text-xs text-gray-500 text-center py-1 font-medium">
-                    {day}
-                  </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-2">
-                {selectedProviderAvailability.map((day, index) => (
-                      <div 
-                        key={index}
-                        className={`p-2 text-center rounded cursor-pointer 
-                          ${day.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} 
-                          ${day.date === new Date().toLocaleDateString('en-us', { month:"short", day:"numeric"}) ? 'ring-2 ring-blue-500' : ''} 
-                          ${editItem?.start_date && new Date(editItem.start_date).toLocaleDateString('en-us', { month:"short", day:"numeric"}) === day.date ? 'selected-date' : ''}`} 
-                        onClick={e => {
-                          const dayInfo = day.date.split(' ');
-                          const month = dayInfo[0];
-                          const dayNum = dayInfo[1];
-                          const date = new Date();
-                          date.setMonth(new Date(`${month} 1`).getMonth());
-                          date.setDate(parseInt(dayNum));
-                          const formattedDate = date.toLocaleDateString('en-CA');
-                          setEditItem(prev => ({
-                            ...prev,
-                            start_date: formattedDate
-                          }));
-                        }}
-                      >
-                        <div className="text-xs">{day.date}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )
             },
             { 
               key: "service_id", 
               label: t('editBooking.service'), 
               type: "select",
-              options: services
+              options: (filteredServices.length > 0 ? filteredServices : services)
                 .sort((a, b) => {
                   // Check if service names start with "-" or "_"
                   const aStartsWithSpecial = a.name.startsWith('-') || a.name.startsWith('_');
@@ -1035,7 +1049,9 @@ export default function EditBookingPopup({
               placeholder: t('editBooking.selectService'),
               onChange: (value) => {
                 if (value) {
-                  const selectedService = services.find(service => service.id === value);
+                  // Use filteredServices if available, otherwise fall back to services
+                  const serviceList = filteredServices.length > 0 ? filteredServices : services;
+                  const selectedService = serviceList.find(service => service.id === value);
                   if (selectedService && selectedService.duration) {
                     // Convert duration from "HH:MM:SS" format to minutes
                     let durationInMinutes = 60; // default
@@ -1089,6 +1105,49 @@ export default function EditBookingPopup({
                   duration: value
                 }));
               }
+            },
+            {
+              key: "availabledays",
+              type: "custom",
+              renderField: () => (
+                <div className="bg-gray-50 rounded-md">
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">{t('editBooking.dateAvailability')}</h3>
+              {/* Day of week headers */}
+              <div className="grid grid-cols-7 gap-2 mb-1">
+                {[t('editBooking.mon'), t('editBooking.tue'), t('editBooking.wed'), t('editBooking.thu'), t('editBooking.fri'), t('editBooking.sat'), t('editBooking.sun')].map(day => (
+                  <div key={day} className="text-xs text-gray-500 text-center py-1 font-medium">
+                    {day}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-2">
+                {selectedProviderAvailability.map((day, index) => (
+                      <div 
+                        key={index}
+                        className={`p-2 text-center rounded cursor-pointer 
+                          ${day.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} 
+                          ${day.date === new Date().toLocaleDateString('en-us', { month:"short", day:"numeric"}) ? 'ring-2 ring-blue-500' : ''} 
+                          ${editItem?.start_date && new Date(editItem.start_date).toLocaleDateString('en-us', { month:"short", day:"numeric"}) === day.date ? 'selected-date' : ''}`} 
+                        onClick={e => {
+                          const dayInfo = day.date.split(' ');
+                          const month = dayInfo[0];
+                          const dayNum = dayInfo[1];
+                          const date = new Date();
+                          date.setMonth(new Date(`${month} 1`).getMonth());
+                          date.setDate(parseInt(dayNum));
+                          const formattedDate = date.toLocaleDateString('en-CA');
+                          setEditItem(prev => ({
+                            ...prev,
+                            start_date: formattedDate
+                          }));
+                        }}
+                      >
+                        <div className="text-xs">{day.date}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
             },
             {
               key: "start_date",
@@ -1206,17 +1265,16 @@ export default function EditBookingPopup({
             {
               key: "status",
               label: t('editBooking.status'),
-              type: hideCustomerSelection ? "text" : "select",
-              options: hideCustomerSelection ? [] : [
+              type: "select",
+              options: [
                 { value: BOOKING_STATUS.PENDING, label: t('editBooking.pending') },
-        { value: BOOKING_STATUS.CONFIRMED, label: t('editBooking.confirmed') },
-        { value: BOOKING_STATUS.CANCELLED, label: t('editBooking.cancelled') },
-        { value: BOOKING_STATUS.COMPLETED, label: t('editBooking.completed') }
+                { value: BOOKING_STATUS.CONFIRMED, label: t('editBooking.confirmed') },
+                { value: BOOKING_STATUS.CANCELLED, label: t('editBooking.cancelled') },
+                { value: BOOKING_STATUS.COMPLETED, label: t('editBooking.completed') }
               ],
               required: true,
-              readOnly: hideCustomerSelection,
-              defaultValue: hideCustomerSelection ? BOOKING_STATUS.PENDING : undefined,
-      value: hideCustomerSelection ? t('editBooking.pending') : undefined
+              hidden: hideCustomerSelection,
+              defaultValue: hideCustomerSelection ? BOOKING_STATUS.PENDING : undefined
             },
             { 
               key: "notes", 
