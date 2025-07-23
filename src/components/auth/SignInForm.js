@@ -10,12 +10,32 @@ export default function SignInForm({
   authMethod, 
   onResetPassword, 
   isLoading,
-  isMobileAuthEnabled // New prop
+  isMobileAuthEnabled,
+  confirmationMessage,
+  setConfirmationMessage
 }) {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
     <>
+      {/* Confirmation Message Display */}
+      {confirmationMessage && (
+        <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-lg relative">
+          <div className="flex justify-between items-center">
+            <span className="text-sm">{confirmationMessage}</span>
+            <button
+              type="button"
+              onClick={() => setConfirmationMessage('')}
+              className="text-green-500 hover:text-green-700 ml-2"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+      
       {/* Email or Phone Input */}
       {authMethod === 'email' || (authMethod === 'phone' && isMobileAuthEnabled) ? (
         <div className="mb-4">

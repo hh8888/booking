@@ -37,6 +37,8 @@ export default function AuthForm({
   isLoading,
   isMobileAuthEnabled, // Keep prop for conditional rendering
   // setIsMobileAuthEnabled // Remove setter prop, toggle is moved
+  confirmationMessage,
+  setConfirmationMessage,
 }) {
   // Format timer display
   const formatTimer = (seconds) => {
@@ -58,7 +60,7 @@ export default function AuthForm({
 
       {/* Auth Method Toggle */}
       {!otpSent && (
-        <div className="flex space-x-2 border border-gray-200 rounded-lg p-1 mb-4">
+        <div className="hidden flex space-x-2 border border-gray-200 rounded-lg p-1 mb-4">
           <button
             onClick={() => !isLoading && setAuthMethod('email')}
             disabled={isLoading}
@@ -194,6 +196,8 @@ export default function AuthForm({
               onResetPassword={onResetPassword}
               isLoading={isLoading}
               isMobileAuthEnabled={isMobileAuthEnabled} // Pass down prop
+              confirmationMessage={confirmationMessage}
+              setConfirmationMessage={setConfirmationMessage}
             />
           )}
 
