@@ -1,6 +1,9 @@
 import React from 'react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const TableHeader = ({ columns, sortConfig, onSort, selectedRows, data, onSelectAll }) => {
+  const { t } = useLanguage();
+  
   return (
     <thead>
       <tr>
@@ -28,7 +31,7 @@ const TableHeader = ({ columns, sortConfig, onSort, selectedRows, data, onSelect
             </div>
           </th>
         ))}
-        <th className="px-2 md:px-4 py-2 border-b border-gray-200 text-sm md:text-base">Actions</th>
+        <th className="px-2 md:px-4 py-2 border-b border-gray-200 text-sm md:text-base">{t('common.actions')}</th>
       </tr>
     </thead>
   );

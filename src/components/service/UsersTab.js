@@ -57,24 +57,34 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
         itemData.location = null;
       }
       
+      // Remove created_at field to prevent the warning
+      const { created_at, ...updateData } = itemData;
+      
       // For staff mode, restrict role to customer only
-      if (staffMode && itemData.role !== 'customer') {
-        itemData.role = 'customer';
+      if (staffMode && updateData.role !== 'customer') {
+        updateData.role = 'customer';
       }
+      
       if (isCreating) {
-        const newUser = await dbService.createItem(TABLES.USERS, itemData, 'User');
+        const newUser = await dbService.createItem(TABLES.USERS, updateData, 'User');
         setUsers([newUser, ...users]);
         setIsCreating(false);
         showToast.success('User created successfully');
       } else {
-        await dbService.updateItem(TABLES.USERS, itemData, 'User');
+        // updateItem doesn't return data, so we need to update local state manually
+        await dbService.updateItem(TABLES.USERS, updateData, 'User');
+        
+        // Update the local state with the updated data
         setUsers(users.map((item) => 
-          item.id === itemData.id ? { ...item, ...itemData } : item
+          item.id === updateData.id ? { ...item, ...updateData, created_at: item.created_at } : item
         ));
+        
+        // Close the form
         setEditItem(null);
         showToast.success('User updated successfully');
       }
     } catch (error) {
+      console.error('Error in handleSave:', error);
       handleError('saving', () => Promise.reject(error));
     }
   };

@@ -665,6 +665,6 @@ export default {
     bookingStep1Desc: 'Browse services and select your preferred time slot',
     bookingStep2Title: 'Staff will call customer to confirm details of booking',
     bookingStep2Desc: 'Our team will contact you to verify appointment details',
-    welcomeMessage: 'Welcome back, {{name}}! Manage your appointments and book new services'
+    welcomeMessage: 'Welcome back, {name}! Manage your appointments and book new services'
   }
 };

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useUser } from '../../hooks/useUser';
 import { useNavigate } from 'react-router-dom';
 import DatabaseService from '../../services/DatabaseService';
+import LocationService from '../../services/LocationService';
 import BookingService from '../../services/BookingService';
 import { toast } from 'react-toastify';
 import CustomerProfile from './CustomerProfile';
@@ -34,6 +35,83 @@ const CustomerDashboard = () => {
   // Use custom hooks for shared logic
   const { businessName } = useBusinessInfo();
   const { userEmail, userRole, userName, currentUserId } = useDashboardUser();
+
+  // Define fetchCustomerBookings function
+  const fetchCustomerBookings = async () => {
+    if (customerData) {
+      try {
+        const dbService = DatabaseService.getInstance();
+        const locationService = LocationService.getInstance();
+        const bookingService = new BookingService();
+        
+        // Get current selected location
+        const currentLocationId = locationService.getSelectedLocationId();
+        
+        // Build filter object with customer_id and optionally location
+        const filter = { customer_id: customerData.id };
+        if (currentLocationId) {
+          filter.location = currentLocationId;
+        }
+        
+        // Fetch customer's bookings filtered by location
+        const customerBookings = await dbService.fetchData(TABLES.BOOKINGS, 'start_time', false, filter);
+        
+        // Get services and staff data for booking details
+        const [servicesData, staffData] = await Promise.all([
+          dbService.fetchData(TABLES.SERVICES, 'name'),
+          dbService.fetchData(TABLES.USERS, 'full_name', false, QUERY_FILTERS.ROLE_STAFF)
+        ]);
+        
+        // Process bookings with additional details
+        const processedBookings = bookingService.processBookingsData(
+          customerBookings, 
+          servicesData, 
+          [customerData],
+          staffData
+        );
+        
+        setBookings(processedBookings);
+      } catch (error) {
+        console.error('Error fetching bookings:', error);
+        toast.error(ERROR_MESSAGES.FAILED_LOAD_BOOKINGS);
+      }
+    }
+  };
+
+  // Define refreshBookings function
+  const refreshBookings = async () => {
+    if (customerData) {
+      try {
+        const dbService = DatabaseService.getInstance();
+        const locationService = LocationService.getInstance();
+        const bookingService = new BookingService();
+        
+        const currentLocationId = locationService.getSelectedLocationId();
+        const filter = { customer_id: customerData.id };
+        if (currentLocationId) {
+          filter.location = currentLocationId;
+        }
+        
+        const customerBookings = await dbService.fetchData(TABLES.BOOKINGS, 'start_time', false, filter);
+        
+        const [servicesData, staffData] = await Promise.all([
+          dbService.fetchData(TABLES.SERVICES, 'name'),
+          dbService.fetchData(TABLES.USERS, 'full_name', false, QUERY_FILTERS.ROLE_STAFF)
+        ]);
+        
+        const processedBookings = bookingService.processBookingsData(
+          customerBookings, 
+          servicesData, 
+          [customerData],
+          staffData
+        );
+        setBookings(processedBookings);
+      } catch (error) {
+        console.error('Error refreshing bookings:', error);
+        toast.error(ERROR_MESSAGES.FAILED_REFRESH_BOOKINGS);
+      }
+    }
+  };
 
   useEffect(() => {
     const initCustomerData = async () => {
@@ -101,68 +179,26 @@ const CustomerDashboard = () => {
     );
   }
 
+  // Fetch customer bookings when customerData changes
   useEffect(() => {
-    const fetchCustomerBookings = async () => {
-      if (customerData) {
-        try {
-          const dbService = DatabaseService.getInstance();
-          const bookingService = new BookingService();
-          
-          // Fetch customer's bookings
-          const customerBookings = await dbService.fetchData(TABLES.BOOKINGS, 'start_time', false, {
-            customer_id: customerData.id
-          });
-          
-          // Get services and staff data for booking details
-          const [servicesData, staffData] = await Promise.all([
-            dbService.fetchData(TABLES.SERVICES, 'name'),
-            dbService.fetchData(TABLES.USERS, 'full_name', false, QUERY_FILTERS.ROLE_STAFF)
-          ]);
-          
-          // Process bookings with additional details
-          const processedBookings = bookingService.processBookingsData(
-            customerBookings, 
-            servicesData, 
-            [customerData],
-            staffData
-          );
-          
-          setBookings(processedBookings);
-        } catch (error) {
-          console.error('Error fetching bookings:', error);
-          toast.error(ERROR_MESSAGES.FAILED_LOAD_BOOKINGS);
-        }
-      }
-    };
-
     fetchCustomerBookings();
   }, [customerData]);
 
-  const refreshBookings = async () => {
-    if (customerData) {
-      try {
-        const dbService = DatabaseService.getInstance();
-        const bookingService = new BookingService();
-        const customerBookings = await dbService.fetchData(TABLES.BOOKINGS, 'start_time', false, {
-          customer_id: customerData.id
-        });
-        const [servicesData, staffData] = await Promise.all([
-          dbService.fetchData(TABLES.SERVICES, 'name'),
-          dbService.fetchData(TABLES.USERS, 'full_name', false, QUERY_FILTERS.ROLE_STAFF)
-        ]);
-        const processedBookings = bookingService.processBookingsData(
-          customerBookings, 
-          servicesData, 
-          [customerData],
-          staffData
-        );
-        setBookings(processedBookings);
-      } catch (error) {
-        console.error('Error refreshing bookings:', error);
-        toast.error(ERROR_MESSAGES.FAILED_REFRESH_BOOKINGS);
-      }
-    }
-  };
+  // Add location change listener
+  useEffect(() => {
+    const locationService = LocationService.getInstance();
+    
+    // Add listener for location changes
+    const removeListener = locationService.addLocationChangeListener(() => {
+      console.log('Location changed, refetching bookings...');
+      fetchCustomerBookings();
+    });
+    
+    // Cleanup listener on unmount
+    return () => {
+      removeListener();
+    };
+  }, [customerData]);
 
   const handleBookingSave = async (bookingData) => {
     console.log('=== CustomerDashboard handleBookingSave CALLED ===');
