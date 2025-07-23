@@ -34,6 +34,7 @@ export default function Auth() {
   const [resendTimer, setResendTimer] = useState(0);
   const [canResend, setCanResend] = useState(false);
   const [isMobileAuthEnabled, setIsMobileAuthEnabled] = useState(false); // Default to false, will be updated from DB
+  const [confirmationMessage, setConfirmationMessage] = useState(''); // Add this line
   const navigate = useNavigate();
 
   // Timer effect for resend functionality
@@ -238,6 +239,9 @@ export default function Auth() {
       } else if (userData.role === USER_ROLES.STAFF) {
         console.log('Redirecting to /staff');
         navigate('/staff');
+      } else if (userData.role === USER_ROLES.MANAGER) {
+        console.log('Redirecting to /admin');
+        navigate('/admin');
       } else if (userData.role === USER_ROLES.ADMIN) {
         console.log('Redirecting to /admin');
         navigate('/admin');
@@ -331,11 +335,22 @@ export default function Auth() {
 
       if (userError) throw userError;
       
-      // Replace the single error message with two separate toasts
-      toast.success('Registration successful!');
-      toast.warning('Please check your email for the confirmation link.');
+      // Set confirmation message and redirect to sign-in form
+      setConfirmationMessage('Please check your email for the confirmation link.');
+      setIsSignUp(false); // This redirects to sign-in form
       
-      // setError('Registration successful! Please check your email for the confirmation link.');
+      // Clear the form fields
+      setEmail('');
+      setPassword('');
+      setName('');
+      setPostCode('');
+      setBirthday('');
+      setGender('');
+      setMobile('');
+      
+      // Show success toast
+      toast.success('Registration successful!');
+      
     } catch (err) {
       setError(err.message);
     } finally {
@@ -801,6 +816,8 @@ export default function Auth() {
         isLoading={isLoading}
         isMobileAuthEnabled={isMobileAuthEnabled} // Pass state to AuthForm
         // setIsMobileAuthEnabled={setIsMobileAuthEnabled} // REMOVE setter, controlled by settings tab
+        confirmationMessage={confirmationMessage}
+        setConfirmationMessage={setConfirmationMessage}
       />
     </div>
   );

@@ -721,7 +721,7 @@ export default function EditBookingPopup({
       }
       
       // Remove extra display fields
-      const { service_name, customer_name, booking_time_formatted, created_at_formatted, show_recurring, start_datetime, availabledays, timeslots, ...restDataToSave } = updatedData;
+      const { service_name, customer_name, provider_name,start_date,start_time_hour,start_time_minute, booking_time_formatted, created_at_formatted, show_recurring, start_datetime, availabledays, timeslots, ...restDataToSave } = updatedData;
       
       // Create a copy of the data to save
       const dataToSave = { ...restDataToSave };
