@@ -48,7 +48,7 @@ useEffect(() => {
         id: initialData.id,
         name: initialData.name || '',
         description: initialData.description || '',
-        price: initialData.price || '',
+        price: initialData.price !== undefined && initialData.price !== null ? initialData.price : 0,
         duration: initialData.duration || '',
         staff_ids: initialData.staff_ids && initialData.staff_ids.length > 0
           ? initialData.staff_ids
