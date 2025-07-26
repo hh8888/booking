@@ -37,7 +37,7 @@ class LocationService {
       
       this.locations = locations || [];
 
-      console.log('Locations fetched:', this.locations);
+      // console.log('Locations fetched:', this.locations);
       
       // Set initial selected location if not already set
       if (!this.selectedLocation && this.locations.length > 0) {

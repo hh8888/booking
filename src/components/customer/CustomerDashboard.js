@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useUser } from '../../hooks/useUser';
 import { useNavigate } from 'react-router-dom';
 import DatabaseService from '../../services/DatabaseService';
@@ -24,7 +24,7 @@ import useDashboardUser from '../../hooks/useDashboardUser';
 import { BOOKING_STATUS, TABLES, SUCCESS_MESSAGES, ERROR_MESSAGES, QUERY_FILTERS } from '../../constants';
 
 const CustomerDashboard = () => {
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [customerData, setCustomerData] = useState(null);
@@ -34,6 +34,11 @@ const CustomerDashboard = () => {
   const [activeView, setActiveView] = useState('profile');
   const [editingBooking, setEditingBooking] = useState(null);
   const [showBookingForm, setShowBookingForm] = useState(false);
+  
+  // Add this line to declare the ref
+  const initializationRef = useRef(false);
+  // Add a new ref to track location restoration
+  const locationRestorationRef = useRef(false);
   
   // Use custom hooks for shared logic
   const { businessName } = useBusinessInfo();
@@ -116,55 +121,139 @@ const CustomerDashboard = () => {
     }
   };
 
+  // MOVE ALL useEffect HOOKS HERE - BEFORE ANY CONDITIONAL RETURNS
   useEffect(() => {
     const initCustomerData = async () => {
+      // Prevent multiple initializations
+      if (initializationRef.current || !user || !user.id) {
+        return;
+      }
+      
+      initializationRef.current = true;
+      
       console.log('=== CustomerDashboard initCustomerData START ===');
       console.log('User:', user);
       
-      if (user) {
-        try {
-          const dbService = DatabaseService.getInstance();
-          console.log('DatabaseService instance:', dbService);
-          
-          // Get or create customer record for current user
-          let customer = await dbService.fetchData(TABLES.USERS, 'created_at', false, { 
-            id: user.id  // Use user ID instead of email
-          });
-          
-          console.log('Fetched customer:', customer);
-          
-          if (customer.length === 0) {
-            // Create customer record if doesn't exist
-            const newCustomer = {
-              id: user.id,
-              email: user.email || null,
-              phone_number: user.phone || null,  // Add phone number from auth user
-              full_name: user.user_metadata?.full_name || user.email || user.phone,
-              post_code: user.user_metadata?.post_code || null,
-              birthday: user.user_metadata?.birthday || null,
-              gender: user.user_metadata?.gender || null,
-              role: 'customer'
-            };
-            console.log('Creating new customer:', newCustomer);
-            const created = await dbService.createItem(TABLES.USERS, newCustomer);
-            console.log('Created customer:', created);
-            setCustomerData(created[0]);
-          } else {
-            setCustomerData(customer[0]);
+      try {
+        const dbService = DatabaseService.getInstance();
+        console.log('DatabaseService instance:', dbService);
+        
+        // Get or create customer record for current user
+        let customer = await dbService.fetchData(TABLES.USERS, 'created_at', false, { 
+          id: user.id
+        });
+        
+        console.log('Fetched customer:', customer);
+        
+        if (customer.length === 0) {
+          // Create customer record if doesn't exist
+          const newCustomer = {
+            id: user.id,
+            email: user.email || null,
+            phone_number: user.phone || null,
+            full_name: user.user_metadata?.full_name || user.email || user.phone,
+            post_code: user.user_metadata?.post_code || null,
+            birthday: user.user_metadata?.birthday || null,
+            gender: user.user_metadata?.gender || null,
+            role: 'customer'
+          };
+          console.log('Creating new customer:', newCustomer);
+          const created = await dbService.createItem(TABLES.USERS, newCustomer);
+          console.log('Created customer:', created);
+          setCustomerData(created[0]);
+        } else {
+          const existingCustomer = customer[0];
+          setCustomerData(existingCustomer);
+
+          // Restore last selected location if available
+          if (existingCustomer.last_location) {
+            locationRestorationRef.current = true; // Set flag before restoration
+            const locationService = LocationService.getInstance();
+            // Initialize locations first, then set the selected location
+            await locationService.initializeLocations(dbService);
+            
+            // Find the location object by ID
+            const locations = locationService.getLocations();
+            const savedLocation = locations.find(loc => loc.id === existingCustomer.last_location);
+            
+            if (savedLocation) {
+              locationService.setSelectedLocation(savedLocation);
+              console.log('Restored last location:', savedLocation);
+            }
+            
+            // Reset flag after a short delay to allow for any pending location changes
+            setTimeout(() => {
+              locationRestorationRef.current = false;
+            }, 100);
           }
-        } catch (error) {
-          console.error('Error initializing customer data:', error);
-          setError(`${ERROR_MESSAGES.FAILED_LOAD_CUSTOMER_INFO}: ${error.message}`);
-          toast.error(ERROR_MESSAGES.FAILED_LOAD_CUSTOMER_INFO);
         }
+      } catch (error) {
+        console.error('Error initializing customer data:', error);
+        setError(`${ERROR_MESSAGES.FAILED_LOAD_CUSTOMER_INFO}: ${error.message}`);
+        toast.error(ERROR_MESSAGES.FAILED_LOAD_CUSTOMER_INFO);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
+      
       console.log('=== CustomerDashboard initCustomerData END ===');
     };
 
     initCustomerData();
-  }, [user]);
+  }, [user?.id]);
 
+  // Fetch customer bookings when customerData changes
+  useEffect(() => {
+    fetchCustomerBookings();
+  }, [customerData]);
+
+  // Add location change listener to save location
+  useEffect(() => {
+    const locationService = LocationService.getInstance();
+    
+    // Add listener for location changes
+    const removeListener = locationService.addLocationChangeListener(async (newLocation) => {
+      console.log('Location changed, refetching bookings...');
+      fetchCustomerBookings();
+      
+      // Save the new location to user's last_location field only if:
+      // 1. Loading is finished
+      // 2. Not during location restoration
+      // 3. This is a user-initiated change
+      if (customerData && newLocation && !userLoading && !loading && 
+          initializationRef.current && !locationRestorationRef.current) {
+        // Additional check: only save if the location is actually different from current
+        if (customerData.last_location !== newLocation.id) {
+          try {
+            const dbService = DatabaseService.getInstance();
+            await dbService.updateItem(TABLES.USERS, {
+              id: customerData.id,
+              last_location: newLocation.id
+            }, 'User');
+            console.log('Saved user last_location:', newLocation.id);
+            
+            // Update local customerData state
+            setCustomerData(prev => ({
+              ...prev,
+              last_location: newLocation.id
+            }));
+          } catch (error) {
+            console.error('Error saving user location:', error);
+          }
+        } else {
+          console.log('Location unchanged, skipping save');
+        }
+      } else {
+        console.log('Skipping location save - loading in progress, initialization not complete, or during restoration');
+      }
+    });
+    
+    // Cleanup listener on unmount
+    return () => {
+      removeListener();
+    };
+  }, [customerData, userLoading, loading]);
+
+  // NOW CONDITIONAL RETURNS CAN HAPPEN AFTER ALL HOOKS
   // Add error state handling
   if (error) {
     return (
@@ -182,26 +271,18 @@ const CustomerDashboard = () => {
     );
   }
 
-  // Fetch customer bookings when customerData changes
-  useEffect(() => {
-    fetchCustomerBookings();
-  }, [customerData]);
+  // Update the loading condition to include userLoading
+  if (userLoading || loading) {
+    return <LoadingSpinner fullScreen={true} text={t('common.loading')} />;
+  }
 
-  // Add location change listener
-  useEffect(() => {
-    const locationService = LocationService.getInstance();
-    
-    // Add listener for location changes
-    const removeListener = locationService.addLocationChangeListener(() => {
-      console.log('Location changed, refetching bookings...');
-      fetchCustomerBookings();
-    });
-    
-    // Cleanup listener on unmount
-    return () => {
-      removeListener();
-    };
-  }, [customerData]);
+  if (!customerData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-lg text-red-600">{t('messages.error.pleaseLogin')}</div>
+      </div>
+    );
+  }
 
   const handleBookingSave = async (bookingData) => {
     console.log('=== CustomerDashboard handleBookingSave CALLED ===');
@@ -304,7 +385,8 @@ const CustomerDashboard = () => {
 
 
 
-  if (loading) {
+  // Update the loading condition to include userLoading
+  if (userLoading || loading) {
     return <LoadingSpinner fullScreen={true} text={t('common.loading')} />;
   }
 

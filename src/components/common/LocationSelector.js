@@ -30,19 +30,43 @@ const LocationSelector = () => {
         if (data && data.length > 0) {
           setLocations(data);
           
-          // Check URL for location parameter
-          const searchParams = new URLSearchParams(location.search);
-          const locationParam = searchParams.get('location');
+          // Check if LocationService already has a selected location (from CustomerDashboard restoration)
+          const currentSelectedLocation = locationService.getSelectedLocation();
           
-          // Find location by name from URL parameter
-          if (locationParam) {
-            const locationMatch = data.find(loc => loc.name === locationParam);
-            if (locationMatch) {
-              setSelectedLocation(locationMatch.name);
-              setSelectedLocationIndex(locationMatch.id);
-              locationService.setSelectedLocation(locationMatch);
+          if (currentSelectedLocation) {
+            // Use the already selected location (restored from CustomerDashboard)
+            setSelectedLocation(currentSelectedLocation.name);
+            setSelectedLocationIndex(currentSelectedLocation.id);
+            
+            // Update URL to match the selected location
+            const newSearchParams = new URLSearchParams(location.search);
+            newSearchParams.set('location', currentSelectedLocation.name);
+            navigate({ search: newSearchParams.toString() }, { replace: true });
+          } else {
+            // Check URL for location parameter
+            const searchParams = new URLSearchParams(location.search);
+            const locationParam = searchParams.get('location');
+            
+            // Find location by name from URL parameter
+            if (locationParam) {
+              const locationMatch = data.find(loc => loc.name === locationParam);
+              if (locationMatch) {
+                setSelectedLocation(locationMatch.name);
+                setSelectedLocationIndex(locationMatch.id);
+                locationService.setSelectedLocation(locationMatch);
+              } else {
+                // If location from URL not found, use first location
+                setSelectedLocation(data[0].name);
+                setSelectedLocationIndex(data[0].id);
+                locationService.setSelectedLocation(data[0]);
+                
+                // Update URL with default location
+                const newSearchParams = new URLSearchParams(location.search);
+                newSearchParams.set('location', data[0].name);
+                navigate({ search: newSearchParams.toString() }, { replace: true });
+              }
             } else {
-              // If location from URL not found, use first location
+              // No location in URL and no selected location, use first location
               setSelectedLocation(data[0].name);
               setSelectedLocationIndex(data[0].id);
               locationService.setSelectedLocation(data[0]);
@@ -52,16 +76,6 @@ const LocationSelector = () => {
               newSearchParams.set('location', data[0].name);
               navigate({ search: newSearchParams.toString() }, { replace: true });
             }
-          } else {
-            // No location in URL, use first location
-            setSelectedLocation(data[0].name);
-            setSelectedLocationIndex(data[0].id);
-            locationService.setSelectedLocation(data[0]);
-            
-            // Update URL with default location
-            const newSearchParams = new URLSearchParams(location.search);
-            newSearchParams.set('location', data[0].name);
-            navigate({ search: newSearchParams.toString() }, { replace: true });
           }
         }
       } catch (error) {
@@ -70,6 +84,31 @@ const LocationSelector = () => {
     };
 
     fetchLocations();
+  }, [location.search, navigate]);
+
+  // Add listener for location changes from LocationService
+  useEffect(() => {
+    const locationService = LocationService.getInstance();
+    
+    const handleLocationChange = (newLocation) => {
+      if (newLocation) {
+        setSelectedLocation(newLocation.name);
+        setSelectedLocationIndex(newLocation.id);
+        
+        // Update URL to match the new location
+        const newSearchParams = new URLSearchParams(location.search);
+        newSearchParams.set('location', newLocation.name);
+        navigate({ search: newSearchParams.toString() }, { replace: true });
+      }
+    };
+    
+    // Add listener
+    const removeListener = locationService.addLocationChangeListener(handleLocationChange);
+    
+    // Cleanup listener on unmount
+    return () => {
+      removeListener();
+    };
   }, [location.search, navigate]);
 
   // Handle location change

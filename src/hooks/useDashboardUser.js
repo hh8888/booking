@@ -8,6 +8,7 @@ const useDashboardUser = () => {
   const [userRole, setUserRole] = useState('');
   const [userName, setUserName] = useState('');
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [lastLocation, setLastLocation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -43,7 +44,7 @@ const useDashboardUser = () => {
         
         const { data: userData, error: userError } = await supabase
           .from(TABLES.USERS)
-          .select('id, role, full_name')
+          .select('id, role, full_name, last_location')
           .eq('email', user.email)
           .single();
           
@@ -58,6 +59,7 @@ const useDashboardUser = () => {
           setCurrentUserId(userData.id);
           setUserRole(userData.role);
           setUserName(userData.full_name);
+          setLastLocation(userData.last_location);
           console.log('Set currentUserId to:', userData.id);
         }
       }
@@ -89,7 +91,7 @@ const useDashboardUser = () => {
           
           const { data: userData, error: userError } = await supabase
             .from(TABLES.USERS)
-            .select('id, role, full_name')
+            .select('id, role, full_name, last_location')
             .eq('email', user.email)
             .single();
             
@@ -104,6 +106,7 @@ const useDashboardUser = () => {
             setCurrentUserId(userData.id);
             setUserRole(userData.role);
             setUserName(userData.full_name);
+            setLastLocation(userData.last_location);
             console.log('Set currentUserId to:', userData.id);
           }
         }
@@ -125,6 +128,7 @@ const useDashboardUser = () => {
     userRole,
     userName,
     currentUserId,
+    lastLocation,
     loading,
     error,
     refetch: fetchUserInfo
