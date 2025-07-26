@@ -17,7 +17,10 @@ import { supabase } from '../../supabaseClient';
 import LoadingSpinner from '../common/LoadingSpinner';
 import { useBusinessInfo } from '../../hooks/useBusinessInfo';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { useDashboardUser } from '../../hooks/useDashboardUser';
+// Change this line:
+// import { useDashboardUser } from '../../hooks/useDashboardUser';
+// To:
+import useDashboardUser from '../../hooks/useDashboardUser';
 import { BOOKING_STATUS, TABLES, SUCCESS_MESSAGES, ERROR_MESSAGES, QUERY_FILTERS } from '../../constants';
 
 const CustomerDashboard = () => {

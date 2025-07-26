@@ -104,7 +104,7 @@ export default function Auth() {
       setIsLoading(false);
     };
     checkSessionAndSettings();
-  }, [navigate]); // Add dispatch if used
+  }, []); // Remove 'navigate' from dependencies
 
   // Add auth state change listener for email verification
   useEffect(() => {
@@ -822,4 +822,19 @@ export default function Auth() {
     </div>
   );
 }
+
+// Add this function at the top of the component
+// Remove these lines completely:
+// const clearAllStorage = () => {
+//   localStorage.clear();
+//   sessionStorage.clear();
+//   // Clear Supabase session
+//   supabase.auth.signOut();
+// };
+
+// const handleAuthError = (error) => {
+//   console.error('Auth error:', error);
+//   clearAllStorage();
+//   setError(error.message);
+// };
 

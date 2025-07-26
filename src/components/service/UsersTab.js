@@ -12,7 +12,10 @@ import StaffDateAvailabilityForm from './StaffDateAvailabilityForm';
 import { USER_ROLES, TABLES } from '../../constants';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getAvailableRoleOptions, canUpdateToRole } from '../../utils/userUtils';
-import { useDashboardUser } from '../../hooks/useDashboardUser';
+// Change this line:
+// import { useDashboardUser } from '../../hooks/useDashboardUser';
+// To:
+import useDashboardUser from '../../hooks/useDashboardUser';
 
 function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = false }) {
   const { t } = useLanguage();

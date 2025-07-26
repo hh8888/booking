@@ -10,7 +10,7 @@ import UserDropdown from './components/common/UserDropdown';
 import SessionIndicator from './components/common/SessionIndicator';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { useBusinessInfo } from './hooks/useBusinessInfo';
-import { useDashboardUser } from './hooks/useDashboardUser';
+import useDashboardUser from './hooks/useDashboardUser'; // Changed from named to default import
 import { useUsersData } from './hooks/useUsersData';
 import { useLanguage } from './contexts/LanguageContext';
 import { USER_ROLES } from './constants';
@@ -24,7 +24,7 @@ export default function StaffDashboard() {
   
   // Use custom hooks for shared logic
   const { businessName } = useBusinessInfo();
-  const { userEmail, userRole, userName, currentUserId } = useDashboardUser();
+  const { userEmail, userRole, userName, currentUserId } = useDashboardUser(); // Now using default import
   const { users, setUsers, loading, networkError, retryFetch } = useUsersData({
     roleFilter: ['customer', 'staff'] // Staff dashboard only shows customers and staff
   });
