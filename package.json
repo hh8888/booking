@@ -31,7 +31,8 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "REACT_APP_VERSION=$(date +%s) react-scripts build",
+    "build": "REACT_APP_VERSION=0.1.0 react-scripts build",
+    "build:prod": "REACT_APP_VERSION=$(date +%s) react-scripts build",
     "test": "react-scripts test --watchAll=false --coverage",
     "eject": "react-scripts eject"
   },

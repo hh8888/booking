@@ -29,11 +29,38 @@ const APP_VERSION = process.env.REACT_APP_VERSION || '1.0.0';
 function App() {
   useEffect(() => {
     const storedVersion = localStorage.getItem('app_version');
-    if (storedVersion !== APP_VERSION) {
-      localStorage.clear();
-      sessionStorage.clear();
-      localStorage.setItem('app_version', APP_VERSION);
-      window.location.reload();
+    const currentVersion = APP_VERSION;
+    
+    // Only clear cache if there's a significant version change
+    // Not on every build (timestamp-based versions)
+    if (storedVersion && storedVersion !== currentVersion) {
+      // Check if it's a meaningful version change (not just timestamp)
+      const versionDiff = Math.abs(parseInt(currentVersion) - parseInt(storedVersion));
+      
+      // Only clear if version difference is more than 1 hour (3600 seconds)
+      if (versionDiff > 3600) {
+        console.log('Significant version change detected, clearing cache...');
+        localStorage.clear();
+        sessionStorage.clear();
+        localStorage.setItem('app_version', currentVersion);
+        
+        // Unregister service worker before reload
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+              registration.unregister();
+            }
+            window.location.reload();
+          });
+        } else {
+          window.location.reload();
+        }
+      } else {
+        // Just update version without clearing cache
+        localStorage.setItem('app_version', currentVersion);
+      }
+    } else if (!storedVersion) {
+      localStorage.setItem('app_version', currentVersion);
     }
   }, []);
 
