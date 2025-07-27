@@ -20,8 +20,8 @@ class UserService {
     try {
       // Fetch users from the users table (email_verified column now exists in database)
       const users = await this.dbService.fetchData(TABLES.USERS, 'created_at', false);
-      console.log('UserService.fetchUsers - Raw data from database:', users);
-      console.log('UserService.fetchUsers - First user email_verified:', users[0]?.email_verified, 'type:', typeof users[0]?.email_verified);
+      //console.log('UserService.fetchUsers - Raw data from database:', users);
+      //console.log('UserService.fetchUsers - First user email_verified:', users[0]?.email_verified, 'type:', typeof users[0]?.email_verified);
       return users;
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -90,8 +90,21 @@ class UserService {
      }
   }
 
-  async updateUser(userData) {
-    await this.dbService.updateItem(TABLES.USERS, userData, 'User');
+  async updateUser(userId, updateData) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.USERS)
+        .update(updateData)
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      throw new Error('Failed to update user');
+    }
   }
 
   async deleteUsers(userIds) {
@@ -204,6 +217,22 @@ class UserService {
     } catch (error) {
       console.error('Error updating user profile:', error);
       throw new Error(`Failed to update user profile: ${error.message}`);
+    }
+  }
+
+  async getUser(userId) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.USERS)
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      throw new Error('Failed to fetch user');
     }
   }
 }

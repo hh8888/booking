@@ -242,10 +242,15 @@ export const useDashboardData = () => {
       
       const [staffData, availabilityData] = await Promise.all([
         dbService.fetchData(TABLES.USERS, 'created_at', false, { role: { in: ['staff', 'manager'] } }, ['id', 'full_name']),
-        // Filter availability data by current location
+        // Filter availability data by current location AND is_available=true
         currentLocationId 
-          ? dbService.fetchData('staff_availability', 'created_at', false, { location: currentLocationId })
-          : dbService.fetchData('staff_availability')
+          ? dbService.fetchData('staff_availability', 'created_at', false, { 
+              location: currentLocationId,
+              is_available: true  // Add this filter
+            })
+          : dbService.fetchData('staff_availability', 'created_at', false, {
+              is_available: true  // Add this filter
+            })
       ]);
   
       console.log('Staff data:', staffData);

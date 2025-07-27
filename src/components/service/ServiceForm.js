@@ -3,8 +3,10 @@ import { toast } from 'react-toastify';
 import { useForm } from 'react-hook-form';
 import DatabaseService from '../../services/DatabaseService';
 import { ERROR_MESSAGES } from '../../constants';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const ServiceForm = ({ initialData, staffUsers, onClose, onSubmit }) => {
+  const { t } = useLanguage();
   const { register, formState: { errors } } = useForm();
   const [formData, setFormData] = useState({
     name: '',
@@ -104,7 +106,7 @@ useEffect(() => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700">Service Name <span className="text-red-500">*</span></label>
+        <label className="block text-sm font-medium text-gray-700">{t('formLabels.serviceName')} <span className="text-red-500">*</span></label>
         <input
           type="text"
           name="name"
@@ -116,7 +118,7 @@ useEffect(() => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Description</label>
+        <label className="block text-sm font-medium text-gray-700">{t('formLabels.description')}</label>
         <textarea
           name="description"
           value={formData.description}
@@ -126,7 +128,7 @@ useEffect(() => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Price ($)<span className="text-red-500">*</span></label>
+        <label className="block text-sm font-medium text-gray-700">{t('formLabels.price')}<span className="text-red-500">*</span></label>
         <input
           type="number"
           name="price"
@@ -138,7 +140,7 @@ useEffect(() => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Duration (mins) <span className="text-red-500">*</span></label>
+        <label className="block text-sm font-medium text-gray-700">{t('formLabels.duration')} <span className="text-red-500">*</span></label>
         <input
           type="number"
           name="duration"
@@ -152,7 +154,7 @@ useEffect(() => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Staff (Multiple Selection)</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">{t('formLabels.assignedStaff')}</label>
         <div className="mt-1 space-y-2 max-h-60 overflow-y-auto border border-gray-300 rounded-md p-3">
           {staffUsers.map((staff) => (
             <div key={staff.id} className="flex items-center">
@@ -169,7 +171,7 @@ useEffect(() => {
             </div>
           ))}
           {staffUsers.length === 0 && (
-            <p className="text-sm text-gray-500">No staff available</p>
+            <p className="text-sm text-gray-500">{t('services.noStaffAvailable')}</p>
           )}
         </div>
       </div>
@@ -180,13 +182,13 @@ useEffect(() => {
           onClick={onClose}
           className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
         >
-          Cancel
+          {t('common.cancel')}
         </button>
         <button
           type="submit"
           className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
         >
-          Save
+          {t('common.save')}
         </button>
       </div>
     </form>

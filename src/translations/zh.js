@@ -511,6 +511,7 @@ export default {
     saturday: '周六',
     sunday: '周日',
     notAvailable: '不可用',
+    notSet: '未设置',
     na: '不可用',
     startTime: '开始时间',
     endTime: '结束时间',
@@ -546,7 +547,9 @@ export default {
     serviceName: '服务名称',
     createNewService: '创建新服务',
     editService: '编辑服务',
-    editUser: '编辑用户'
+    editUser: '编辑用户',
+    editItem: '编辑项目',
+    createNewUser: '创建新用户'
   },
 
   // Forms
@@ -668,6 +671,7 @@ export default {
     bookingStep1Desc: '浏览服务并选择您偏好的时间段',
     bookingStep2Title: '工作人员将致电客户确认预约详情',
     bookingStep2Desc: '我们的团队将联系您以验证预约详情',
-    welcomeMessage: '欢迎回来，{name}！管理您的预约并预订新服务'
+    welcomeMessage: '欢迎回来，{name}！管理您的预约并预订新服务',
+    noStaffAvailable: '无可用员工'
   }
 };

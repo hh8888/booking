@@ -329,7 +329,8 @@ export default {
     assignedStaff: 'Assigned Staff',
     availability: 'Availability',
     noServices: 'No services found',
-    loadingServices: 'Loading services...'
+    loadingServices: 'Loading services...',
+    noStaffAvailable: 'No staff available'
   },
 
   // Reports
@@ -508,6 +509,7 @@ export default {
     saturday: 'Sat',
     sunday: 'Sun',
     notAvailable: 'Not Available',
+    notSet: 'Not Set',
     na: 'N/A',
     startTime: 'Start Time',
     endTime: 'End Time',
@@ -543,7 +545,9 @@ export default {
     serviceName: 'Service Name',
     createNewService: 'Create New Service',
     editService: 'Edit Service',
-    editUser: 'Edit User'
+    editUser: 'Edit User',
+    editItem: 'Edit Item',
+    createNewUser: 'Create New User'
   },
 
   // Forms

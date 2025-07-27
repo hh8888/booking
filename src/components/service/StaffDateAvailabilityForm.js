@@ -405,7 +405,8 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
                     ${!isPastDate && isCurrentMonth ? 'transform hover:scale-105 active:scale-95' : ''}
                   `}
                   onClick={() => {
-                    if (!isPastDate && isCurrentMonth) {
+                    // Allow clicking on future dates, regardless of which month they're in
+                    if (!isPastDate) {
                       toggleDateAvailability(dateStr, isAvailable);
                       // If making the day unavailable, collapse the time input
                       if (isAvailable && selectedDate === dateStr) {
@@ -416,7 +417,8 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
-                    if ((e.key === 'Enter' || e.key === ' ') && !isPastDate && isCurrentMonth) {
+                    // Allow keyboard interaction on future dates, regardless of which month they're in
+                    if ((e.key === 'Enter' || e.key === ' ') && !isPastDate) {
                       e.preventDefault();
                       toggleDateAvailability(dateStr, isAvailable);
                       if (isAvailable && selectedDate === dateStr) {
@@ -464,8 +466,19 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
                       </div>
                     ) : (
                       <div className="text-center">
-                        <span className="hidden sm:inline">{t('staffAvailability.notAvailable')}</span>
-                        <span className="sm:hidden">{t('staffAvailability.na')}</span>
+                        {schedule ? (
+                          // Record exists but is_available is false
+                          <>
+                            <span className="hidden sm:inline">{t('staffAvailability.notAvailable')}</span>
+                            <span className="sm:hidden">{t('staffAvailability.na')}</span>
+                          </>
+                        ) : (
+                          // No record exists for this date
+                          <>
+                            <span className="hidden sm:inline">{t('staffAvailability.notSet')}</span>
+                            <span className="sm:hidden">{t('staffAvailability.na')}</span>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

@@ -135,6 +135,28 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
         user.email?.toLowerCase().includes(searchTerm);
     });
 
+// Update the getAvailableRoleOptions function to use translations
+const getAvailableRoleOptions = (currentUserRole) => {
+  const baseOptions = [
+    { value: USER_ROLES.CUSTOMER, label: t('formLabels.customer') }
+  ];
+  
+  if (currentUserRole === USER_ROLES.ADMIN) {
+    return [
+      ...baseOptions,
+      { value: USER_ROLES.STAFF, label: t('formLabels.staff') },
+      { value: USER_ROLES.MANAGER, label: t('formLabels.manager') },
+      { value: USER_ROLES.ADMIN, label: t('formLabels.admin') }
+    ];
+  } else if (currentUserRole === USER_ROLES.MANAGER) {
+    return [
+      ...baseOptions,
+      { value: USER_ROLES.STAFF, label: t('formLabels.staff') }
+    ];
+  }
+  
+  return baseOptions;
+};
   return (
     <div>
       <ToastMessage />
@@ -258,6 +280,7 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
 
       {(editItem || isCreating) && (
         <GenericForm
+          title={isCreating ? t('formLabels.createNewUser') : t('formLabels.editUser')}
           data={editItem}
           onSave={handleSave}
           onCancel={() => {
@@ -265,21 +288,25 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
             setIsCreating(false);
           }}
           fields={[
-            { key: 'full_name', label: 'Full Name', type: 'text', required: true },
-            { key: 'email', label: 'Email', type: 'email', required: true },
-            { key: 'phone_number', label: 'Phone Number', type: 'text' },
-            { key: 'gender', label: 'Gender', type: 'select', options: [{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }, { value: 'other', label: 'Other' }] },
-            { key: 'birthday', label: 'Birthday', type: 'date' },
-            { key: 'post_code', label: 'Post Code', type: 'text' },
+            { key: 'full_name', label: t('formLabels.fullName'), type: 'text', required: true },
+            { key: 'email', label: t('formLabels.email'), type: 'email', required: true },
+            { key: 'phone_number', label: t('formLabels.phoneNumber'), type: 'text' },
+            { key: 'gender', label: t('formLabels.gender'), type: 'select', options: [
+              { value: 'male', label: t('formLabels.male') }, 
+              { value: 'female', label: t('formLabels.female') }, 
+              { value: 'other', label: t('formLabels.other') }
+            ] },
+            { key: 'birthday', label: t('formLabels.birthday'), type: 'date' },
+            { key: 'post_code', label: t('formLabels.postCode'), type: 'text' },
             // Conditionally show role field based on staffMode and user permissions
             ...(staffMode ? [
-              { key: 'role', label: 'Role', type: 'select', options: [
-                { value: USER_ROLES.CUSTOMER, label: 'Customer' }
+              { key: 'role', label: t('formLabels.role'), type: 'select', options: [
+                { value: USER_ROLES.CUSTOMER, label: t('formLabels.customer') }
               ], required: true, defaultValue: USER_ROLES.CUSTOMER, disabled: true }
             ] : [
               { 
                 key: 'role', 
-                label: 'Role', 
+                label: t('formLabels.role'), 
                 type: 'select', 
                 options: getAvailableRoleOptions(userRole), 
                 required: true, 

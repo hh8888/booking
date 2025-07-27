@@ -260,7 +260,7 @@ function ServicesTab({ users, handleError }) {
       {(editItem || isCreating) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4">{isCreating ? "Create New Service" : "Edit Service"}</h2>
+            <h2 className="text-xl font-semibold mb-4">{isCreating ? t('formLabels.createNewService') : t('formLabels.editService')}</h2>
             
             <ServiceForm
               initialData={editItem}

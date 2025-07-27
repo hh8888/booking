@@ -186,16 +186,16 @@ export default function Auth() {
 
   const checkUserRoleAndRedirect = async (user) => {
     try {
-      console.log('=== CHECKING USER ROLE DEBUG START ===');
-      console.log('User object:', {
-        id: user.id,
-        email: user.email,
-        confirmed_at: user.confirmed_at,
-        created_at: user.created_at,
-        user_metadata: user.user_metadata
-      });
+      // console.log('=== CHECKING USER ROLE DEBUG START ===');
+      // console.log('User object:', {
+      //   id: user.id,
+      //   email: user.email,
+      //   confirmed_at: user.confirmed_at,
+      //   created_at: user.created_at,
+      //   user_metadata: user.user_metadata
+      // });
       
-      console.log('Querying users table for user ID:', user.id);
+      //console.log('Querying users table for user ID:', user.id);
       const { data: userData, error } = await supabase
         .from(TABLES.USERS)
         .select('role')

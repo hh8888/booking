@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { showToast } from './ToastMessage';
 import LoadingSpinner from './LoadingSpinner';
 import { ERROR_MESSAGES } from '../../constants';
+import { useLanguage } from '../../contexts/LanguageContext'; // Add this import
 
 const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, loadingAvailability = false }) => {
+  const { t } = useLanguage(); // Add this line
   const [formData, setFormData] = useState({});
 
   // Initialize form data when component mounts or data changes
@@ -334,7 +336,7 @@ const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, l
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-6 shadow-lg w-full max-w-3xl relative long-popup-scroll">
-        <h2 className="text-xl font-semibold mb-4">{title || 'Edit Item'}</h2>
+        <h2 className="text-xl font-semibold mb-4">{title || t('formLabels.editItem')}</h2>
         {loadingAvailability && (
           <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
             <LoadingSpinner size="lg" text="Loading availability..." />
@@ -389,7 +391,7 @@ const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, l
               disabled={loading}
               className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 disabled:opacity-50"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -398,13 +400,13 @@ const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, l
             >
               {loading ? (
                 <>
-                  <span className="opacity-0">Save</span>
+                  <span className="opacity-0">{t('common.save')}</span>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="animate-spin h-6 w-6 border-4 border-blue-500 border-t-transparent rounded-full"></div>
                   </div>
                 </>
               ) : (
-                'Save'
+                t('common.save')
               )}
             </button>
           </div>

@@ -15,43 +15,35 @@ const useDashboardUser = () => {
   // Monitor auth state changes
   useAuthStateMonitor(currentUserId);
   
-  // Add token refresh function
-  const refreshSession = async () => {
-    try {
-      const { data, error } = await supabase.auth.refreshSession();
-      if (error) {
-        console.log('Session refresh failed:', error);
-        localStorage.clear();
-        sessionStorage.clear();
-        window.location.href = '/auth';
-      }
-      return data;
-    } catch (err) {
-      console.error('Session refresh error:', err);
-      return null;
-    }
-  };
-  
   const fetchUserInfo = async () => {
     try {
+      console.log('=== useDashboardUser fetchUserInfo START ===');
       setLoading(true);
       setError(null);
       
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
       console.log('Auth user:', user);
+      console.log('Auth error:', authError);
+      
+      if (authError) {
+        throw authError;
+      }
+      
       if (user) {
         setUserEmail(user.email);
+        console.log('Set userEmail to:', user.email);
         
         const { data: userData, error: userError } = await supabase
           .from(TABLES.USERS)
           .select('id, role, full_name, last_location')
-          .eq('email', user.email)
+          .eq('id', user.id)
           .single();
           
         console.log('Database user data:', userData);
         console.log('Database user error:', userError);
           
         if (userError) {
+          console.error('Database error:', userError);
           throw userError;
         }
           
@@ -61,8 +53,20 @@ const useDashboardUser = () => {
           setUserName(userData.full_name);
           setLastLocation(userData.last_location);
           console.log('Set currentUserId to:', userData.id);
+          console.log('Set userRole to:', userData.role);
+        } else {
+          console.warn('No user data found in database');
         }
+      } else {
+        console.log('No authenticated user found');
+        // Clear all user data if no user is authenticated
+        setUserEmail('');
+        setUserRole('');
+        setUserName('');
+        setCurrentUserId(null);
+        setLastLocation(null);
       }
+      console.log('=== useDashboardUser fetchUserInfo END ===');
     } catch (err) {
       console.error('Error fetching user info:', err);
       setError(err.message || 'Failed to fetch user information');
@@ -72,55 +76,34 @@ const useDashboardUser = () => {
   };
   
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        setLoading(true);
-        
-        // Refresh session first
-        await refreshSession();
-        
-        const { data: { user } } = await Promise.race([
-          supabase.auth.getUser(),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Timeout')), 10000)
-          )
-        ]);
-        
-        if (user) {
-          setUserEmail(user.email);
-          
-          const { data: userData, error: userError } = await supabase
-            .from(TABLES.USERS)
-            .select('id, role, full_name, last_location')
-            .eq('email', user.email)
-            .single();
-            
-          console.log('Database user data:', userData);
-          console.log('Database user error:', userError);
-            
-          if (userError) {
-            throw userError;
-          }
-            
-          if (userData) {
-            setCurrentUserId(userData.id);
-            setUserRole(userData.role);
-            setUserName(userData.full_name);
-            setLastLocation(userData.last_location);
-            console.log('Set currentUserId to:', userData.id);
-          }
-        }
-      } catch (error) {
-        console.error('User fetch error:', error);
-        localStorage.clear();
-        sessionStorage.clear();
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+    console.log('=== useDashboardUser useEffect triggered ===');
     
-    fetchUser();
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('useDashboardUser - Auth state change:', event);
+      console.log('useDashboardUser - Session:', session?.user ? 'User present' : 'No user');
+      
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        console.log('useDashboardUser - Fetching user info due to auth state change');
+        await fetchUserInfo();
+      } else if (event === 'SIGNED_OUT') {
+        console.log('useDashboardUser - Clearing user data due to sign out');
+        setUserEmail('');
+        setUserRole('');
+        setUserName('');
+        setCurrentUserId(null);
+        setLastLocation(null);
+        setLoading(false);
+        setError(null);
+      }
+    });
+    
+    // Also fetch user info immediately on mount
+    fetchUserInfo();
+    
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, []);
   
   return {
