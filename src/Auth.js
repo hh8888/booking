@@ -101,6 +101,9 @@ export default function Auth() {
         setIsSignUp(false);
         toast.error('This email verification link has expired or is invalid. Please sign in with your account.');
         setIsLoading(false);
+        
+        // Navigate to the auth page to ensure proper redirect
+        navigate('/auth', { replace: true });
         return;
       }
 
