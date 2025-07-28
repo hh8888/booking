@@ -27,16 +27,21 @@ export default function Auth() {
   const [userRole, setUserRole] = useState(null);
   const [error, setError] = useState('');
   const [resetPasswordSent, setResetPasswordSent] = useState(false);
-  const [authMethod, setAuthMethod] = useState('email'); // 'email' or 'phone'
+  const [authMethod, setAuthMethod] = useState('email');
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
-  // Add resend timer state
   const [resendTimer, setResendTimer] = useState(0);
   const [canResend, setCanResend] = useState(false);
-  const [isMobileAuthEnabled, setIsMobileAuthEnabled] = useState(false); // Default to false, will be updated from DB
-  const [confirmationMessage, setConfirmationMessage] = useState(''); // Add this line
+  const [isMobileAuthEnabled, setIsMobileAuthEnabled] = useState(false);
+  const [confirmationMessage, setConfirmationMessage] = useState('');
+  
+  // Add the missing state variables for verification timeout
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationTimeout, setVerificationTimeout] = useState(null);
+  const [showTimeoutPrompt, setShowTimeoutPrompt] = useState(false);
+  
   const navigate = useNavigate();
-
+  
   // Timer effect for resend functionality
   useEffect(() => {
     let interval = null;
@@ -106,47 +111,75 @@ export default function Auth() {
     checkSessionAndSettings();
   }, []); // Remove 'navigate' from dependencies
 
-  // Add auth state change listener for email verification
+  // Add auth state change listener for email verification with timeout
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state change event:', event);
       console.log('Session:', session?.user ? 'User present' : 'No user');
       
+      // Check if this is a verification link click
+      const hash = window.location.hash;
+      const isVerificationLink = hash.includes('access_token') && hash.includes('type=signup');
+      
+      if (isVerificationLink && !isVerifying) {
+        console.log('Email verification link detected, starting timeout');
+        setIsVerifying(true);
+        setIsLoading(true);
+        
+        // Set 30-second timeout
+        const timeoutId = setTimeout(() => {
+          console.log('Verification timeout reached');
+          setIsLoading(false);
+          setIsVerifying(false);
+          setShowTimeoutPrompt(true);
+        }, 30000); // 30 seconds
+        
+        setVerificationTimeout(timeoutId);
+      }
+      
       if (event === 'SIGNED_IN' && session?.user) {
-         console.log('User signed in, checking email verification status');
-         
-         // Check if user's email is confirmed and update email_verified field
-         if (session.user.confirmed_at) {
-           console.log('User email is confirmed, updating email_verified field');
-           try {
-             // First check if email_verified is already true to avoid unnecessary updates
-             const { data: currentUser, error: fetchError } = await supabase
-               .from(TABLES.USERS)
-               .select('email_verified')
-               .eq('id', session.user.id)
-               .single();
-             
-             if (!fetchError && !currentUser.email_verified) {
-               const { error: updateError } = await supabase
-                 .from(TABLES.USERS)
-                 .update({ email_verified: true })
-                 .eq('id', session.user.id);
-               
-               if (updateError) {
-                 console.error('Error updating email_verified field:', updateError);
-               } else {
-                 console.log('Successfully updated email_verified to true');
-                 // Show success message for email verification
-                 toast.success('Email verified successfully! Welcome to the platform.');
-               }
-             }
-           } catch (err) {
-             console.error('Error updating email verification status:', err);
-           }
-         }
-         
-         // Handle redirect after email verification
-         await checkUserRoleAndRedirect(session.user);
+        console.log('User signed in, checking email verification status');
+        
+        // Clear timeout if verification succeeds
+        if (verificationTimeout) {
+          clearTimeout(verificationTimeout);
+          setVerificationTimeout(null);
+        }
+        setIsVerifying(false);
+        setShowTimeoutPrompt(false);
+        
+        // Check if user's email is confirmed and update email_verified field
+        if (session.user.confirmed_at) {
+          console.log('User email is confirmed, updating email_verified field');
+          try {
+            // First check if email_verified is already true to avoid unnecessary updates
+            const { data: currentUser, error: fetchError } = await supabase
+              .from(TABLES.USERS)
+              .select('email_verified')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (!fetchError && !currentUser.email_verified) {
+              const { error: updateError } = await supabase
+                .from(TABLES.USERS)
+                .update({ email_verified: true })
+                .eq('id', session.user.id);
+              
+              if (updateError) {
+                console.error('Error updating email_verified field:', updateError);
+              } else {
+                console.log('Successfully updated email_verified to true');
+                // Show success message for email verification
+                toast.success('Email verified successfully! Welcome to the platform.');
+              }
+            }
+          } catch (err) {
+            console.error('Error updating email verification status:', err);
+          }
+        }
+        
+        // Handle redirect after email verification
+        await checkUserRoleAndRedirect(session.user);
       } else if (event === 'TOKEN_REFRESHED' && session?.user) {
         console.log('Token refreshed, checking if email verification status changed');
         
@@ -181,21 +214,30 @@ export default function Auth() {
 
     return () => {
       subscription?.unsubscribe();
+      // Clean up timeout on unmount
+      if (verificationTimeout) {
+        clearTimeout(verificationTimeout);
+      }
     };
-  }, []);
+  }, [isVerifying, verificationTimeout]);
 
   const checkUserRoleAndRedirect = async (user) => {
     try {
-      // console.log('=== CHECKING USER ROLE DEBUG START ===');
-      // console.log('User object:', {
-      //   id: user.id,
-      //   email: user.email,
-      //   confirmed_at: user.confirmed_at,
-      //   created_at: user.created_at,
-      //   user_metadata: user.user_metadata
-      // });
+      // Check if this is a repeated click on verification link for already verified user
+      const hash = window.location.hash;
+      const isVerificationLink = hash.includes('access_token') && hash.includes('type=signup');
       
-      //console.log('Querying users table for user ID:', user.id);
+      if (isVerificationLink && user.confirmed_at) {
+        // User is already verified but clicked the link again
+        console.log('User already verified, clearing hash and redirecting to sign-in');
+        window.location.hash = '';
+        setIsSignedIn(false);
+        setUserRole(null);
+        setIsSignUp(false);
+        toast.info('Your email is already verified. Please sign in to continue.');
+        return;
+      }
+      
       const { data: userData, error } = await supabase
         .from(TABLES.USERS)
         .select('role')
@@ -212,7 +254,6 @@ export default function Auth() {
         console.error('Error hint:', error.hint);
         console.error('Full error object:', error);
         
-        // Specific error handling
         if (error.code === 'PGRST116') {
           console.error('USER NOT FOUND: User exists in auth.users but not in users table');
           setError('Account setup incomplete. User record not found in database. Please contact support.');
@@ -755,22 +796,72 @@ export default function Auth() {
     }
   };
 
-  // Show appropriate dashboard based on user role
-  // Only show dashboards when we're on the root path and user is signed in
-  // Other paths should be handled by their respective route components
-  if (isSignedIn && window.location.pathname === '/') {
-    if (userRole === USER_ROLES.ADMIN) {
-      return <AdminDashboard />;
-    }
-    if (userRole === USER_ROLES.STAFF) {
-      return <StaffDashboard />;
-    }
+  // Add these timeout handler functions
+  const handleTimeoutRefresh = () => {
+    setShowTimeoutPrompt(false);
+    setIsLoading(true);
+    
+    // Clear URL hash and redirect to sign-in
+    window.location.hash = '';
+    
+    // Show message and redirect to sign-in
+    setTimeout(() => {
+      setIsLoading(false);
+      setIsSignUp(false); // Ensure we're on sign-in form
+      toast.info('Please sign in with your verified account.');
+    }, 1000);
+  };
+  
+  const handleTimeoutCancel = () => {
+    setShowTimeoutPrompt(false);
+    // Clear URL hash and stay on current page
+    window.location.hash = '';
+  };
+
+  // Show timeout prompt
+  if (showTimeoutPrompt) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full mx-4">
+          <div className="text-center">
+            <div className="mb-4">
+              <svg className="mx-auto h-12 w-12 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Verification Timeout
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">
+              The email verification process is taking longer than expected (30 seconds). 
+              This might be due to network issues or the verification link may have expired.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={handleTimeoutRefresh}
+                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                Go to Sign In
+              </button>
+              <button
+                onClick={handleTimeoutCancel}
+                className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              >
+                Stay Here
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  // For customers, they will be redirected to /booking
-  // This component will only show the auth form for non-authenticated users
+  // Show loading spinner during verification or normal loading
   if (isLoading) {
-    return <LoadingSpinner fullScreen={true} text={t('common.loading')} />;
+    const loadingText = isVerifying 
+      ? 'Verifying your email... This may take up to 30 seconds.' 
+      : t('common.loading');
+    return <LoadingSpinner fullScreen={true} text={loadingText} />;
   }
 
   return (
@@ -822,19 +913,4 @@ export default function Auth() {
     </div>
   );
 }
-
-// Add this function at the top of the component
-// Remove these lines completely:
-// const clearAllStorage = () => {
-//   localStorage.clear();
-//   sessionStorage.clear();
-//   // Clear Supabase session
-//   supabase.auth.signOut();
-// };
-
-// const handleAuthError = (error) => {
-//   console.error('Auth error:', error);
-//   clearAllStorage();
-//   setError(error.message);
-// };
 
