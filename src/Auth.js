@@ -87,10 +87,27 @@ export default function Auth() {
       console.log('Auth.js useEffect - Pathname:', window.location.pathname);
       console.log('Auth.js useEffect - Hash:', window.location.hash);
 
-      // UPDATED CHECK for reset password flow (success or error)
+      // Check for expired email verification link
+      const hash = window.location.hash;
+      const isExpiredEmailLink = hash.includes('error=access_denied') && 
+                                 hash.includes('error_code=otp_expired') && 
+                                 hash.includes('error_description=Email+link+is+invalid+or+has+expired');
+      
+      if (isExpiredEmailLink) {
+        console.log('Expired email verification link detected, redirecting to sign-in');
+        // Clear the hash
+        window.location.hash = '';
+        // Show message and ensure we're on sign-in form
+        setIsSignUp(false);
+        toast.error('This email verification link has expired or is invalid. Please sign in with your account.');
+        setIsLoading(false);
+        return;
+      }
+
+      // UPDATED CHECK for reset password flow (success or error) - exclude email verification errors
       const isResetPasswordFlow = 
         window.location.hash.startsWith('#/reset-password') || 
-        window.location.hash.includes('error_description='); // Supabase often includes this for recovery errors
+        (window.location.hash.includes('error_description=') && !isExpiredEmailLink); // Exclude email verification errors
 
       if (isResetPasswordFlow) {
         console.log('Auth.js: On reset-password flow (or error), skipping initial session redirect logic.');
