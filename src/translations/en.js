@@ -670,5 +670,16 @@ export default {
     bookingStep2Title: 'Staff will call customer to confirm details of booking',
     bookingStep2Desc: 'Our team will contact you to verify appointment details',
     welcomeMessage: 'Welcome back, {name}! Manage your appointments and book new services'
+  },
+
+  // In the auth section
+  auth: {
+    // ... existing translations ...
+    expiredLink: {
+      title: 'Email Link Expired',
+      message: 'This email verification link has expired or is invalid. Please sign in with your account to continue.',
+      goToLogin: 'Go to Sign In',
+      createAccount: 'Create New Account'
+    }
   }
 };

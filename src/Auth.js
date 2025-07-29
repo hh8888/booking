@@ -40,6 +40,9 @@ export default function Auth() {
   const [verificationTimeout, setVerificationTimeout] = useState(null);
   const [showTimeoutPrompt, setShowTimeoutPrompt] = useState(false);
   
+  // Add new state for expired email link
+  const [showExpiredLinkError, setShowExpiredLinkError] = useState(false);
+  
   const navigate = useNavigate();
   
   // Timer effect for resend functionality
@@ -94,25 +97,13 @@ export default function Auth() {
                                  hash.includes('error_description=Email+link+is+invalid+or+has+expired');
       
       if (isExpiredEmailLink) {
-        console.log('Expired email verification link detected, redirecting to sign-in');
-        // Clear the hash first
+        console.log('Expired email verification link detected');
+        // Clear the hash
         window.location.hash = '';
         
-        // Force a clean state reset
-        setIsSignUp(false);
-        setError('');
+        // Set expired link error state instead of navigating
+        setShowExpiredLinkError(true);
         setIsLoading(false);
-        
-        // Show the error message
-        toast.error('This email verification link has expired or is invalid. Please sign in with your account.');
-        
-        // Force navigation to root and then back to auth to ensure clean state
-        if (window.location.pathname === '/auth' || window.location.pathname === '/') {
-          // If already on auth page, force a reload to clear any cached state
-          window.location.href = window.location.origin + '/#/auth';
-        } else {
-          navigate('/auth', { replace: true });
-        }
         return;
       }
 
@@ -891,6 +882,53 @@ export default function Auth() {
       ? 'Verifying your email... This may take up to 30 seconds.' 
       : t('common.loading');
     return <LoadingSpinner fullScreen={true} text={loadingText} />;
+  }
+
+  // Show expired email link error page
+  if (showExpiredLinkError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
+          <div className="mb-6">
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+              <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 19.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              {t('auth.expiredLink.title') || 'Email Link Expired'}
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {t('auth.expiredLink.message') || 'This email verification link has expired or is invalid. Please sign in with your account to continue.'}
+            </p>
+          </div>
+          
+          <div className="space-y-4">
+            <button
+              onClick={() => {
+                setShowExpiredLinkError(false);
+                setIsSignUp(false);
+                setError('');
+              }}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200"
+            >
+              {t('auth.expiredLink.goToLogin') || 'Go to Sign In'}
+            </button>
+
+            <button
+              onClick={() => {
+                setShowExpiredLinkError(false);
+                setIsSignUp(true);
+                setError('');
+              }}
+              className="w-full bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-200"
+            >
+              {t('auth.expiredLink.createAccount') || 'Create New Account'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
