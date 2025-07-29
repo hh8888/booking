@@ -431,8 +431,9 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
                   <div 
                     className="text-xs sm:text-sm text-gray-600 cursor-pointer hover:text-blue-600 active:text-blue-800 leading-tight p-1 rounded transition-colors duration-150 min-h-[32px] flex items-center justify-center"
                     onClick={(e) => {
-                      e.stopPropagation();
+                      // Only stop propagation if the date is available (has times to edit)
                       if (isAvailable) {
+                        e.stopPropagation();
                         // On mobile, show modal instead of inline editing
                         if (window.innerWidth < 640) {
                           setMobileEditDate(dateStr);
@@ -441,6 +442,7 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
                           setSelectedDate(selectedDate === dateStr ? null : dateStr);
                         }
                       }
+                      // If not available, let the click bubble up to the parent calendar box
                     }}
                     onKeyDown={(e) => {
                       if ((e.key === 'Enter' || e.key === ' ') && isAvailable) {
