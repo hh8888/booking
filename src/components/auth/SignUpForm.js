@@ -127,18 +127,6 @@ export default function SignUpForm({
           />
         </div>
       </div>
-      <input
-          type="date"
-          value={birthday}
-          onChange={(e) => setBirthday(e.target.value)}
-          placeholder="YYYY-MM-DD"
-          pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          style={{
-            WebkitAppearance: 'none',
-            MozAppearance: 'textfield'
-          }}
-        />
 
       {/* Gender Input */}
       <div className="mb-6">
