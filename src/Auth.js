@@ -95,15 +95,24 @@ export default function Auth() {
       
       if (isExpiredEmailLink) {
         console.log('Expired email verification link detected, redirecting to sign-in');
-        // Clear the hash
+        // Clear the hash first
         window.location.hash = '';
-        // Show message and ensure we're on sign-in form
+        
+        // Force a clean state reset
         setIsSignUp(false);
-        toast.error('This email verification link has expired or is invalid. Please sign in with your account.');
+        setError('');
         setIsLoading(false);
         
-        // Navigate to the auth page to ensure proper redirect
-        navigate('/auth', { replace: true });
+        // Show the error message
+        toast.error('This email verification link has expired or is invalid. Please sign in with your account.');
+        
+        // Force navigation to root and then back to auth to ensure clean state
+        if (window.location.pathname === '/auth' || window.location.pathname === '/') {
+          // If already on auth page, force a reload to clear any cached state
+          window.location.href = window.location.origin + '/#/auth';
+        } else {
+          navigate('/auth', { replace: true });
+        }
         return;
       }
 
