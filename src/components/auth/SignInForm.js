@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function SignInForm({ 
   email, 
@@ -15,6 +16,7 @@ export default function SignInForm({
   setConfirmationMessage
 }) {
   const [showPassword, setShowPassword] = useState(false);
+  const { t } = useLanguage();
 
   return (
     <>
@@ -40,11 +42,11 @@ export default function SignInForm({
       {authMethod === 'email' || (authMethod === 'phone' && isMobileAuthEnabled) ? (
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            {authMethod === 'email' ? 'Email' : 'Phone Number'}
+            {authMethod === 'email' ? t('auth.signIn.email') : t('auth.signIn.phoneNumber')}
           </label>
           <input
             type={authMethod === 'email' ? 'email' : 'tel'}
-            placeholder={authMethod === 'email' ? 'Enter your email' : 'Enter your phone number (e.g. +1234567890)'}
+            placeholder={authMethod === 'email' ? t('auth.signIn.enterEmail') : t('auth.signIn.enterPhone')}
             value={authMethod === 'email' ? email : mobile}
             onChange={(e) => authMethod === 'email' ? setEmail(e.target.value) : setMobile(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -56,11 +58,13 @@ export default function SignInForm({
       {authMethod === 'email' && (
         <>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('auth.signIn.password')}
+            </label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Enter your password"
+                placeholder={t('auth.signIn.enterPassword')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -94,7 +98,7 @@ export default function SignInForm({
                 isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
               }`}
             >
-              Forgot Password?
+              {t('auth.signIn.forgotPassword')}
             </button>
           </div>
         </>

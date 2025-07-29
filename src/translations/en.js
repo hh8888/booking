@@ -672,14 +672,62 @@ export default {
     welcomeMessage: 'Welcome back, {name}! Manage your appointments and book new services'
   },
 
-  // In the auth section
   auth: {
-    // ... existing translations ...
+    email: 'Email',
+    signUp: {
+      name: 'Name',
+      email: 'Email',
+      mobile: 'Mobile',
+      password: 'Password',
+      phoneNumber: 'Phone Number',
+      postCode: 'Post Code',
+      birthday: 'Birthday',
+      gender: 'Gender',
+      enterName: 'Enter your name',
+      enterEmail: 'Enter your email',
+      enterMobile: 'Enter your mobile number (e.g. +1234567890)',
+      enterPassword: 'Enter your password',
+      enterPhone: 'Enter your phone number',
+      enterPostCode: 'Enter your post code',
+      selectGender: 'Select Gender',
+      male: 'Male',
+      female: 'Female',
+      other: 'Other',
+      birthdayPlaceholder: 'YYYY-MM-DD',
+      title: 'Sign Up',
+      signingUp: 'Signing Up...'
+    },
+    signIn: {
+      email: 'Email',
+      phoneNumber: 'Phone Number',
+      password: 'Password',
+      enterEmail: 'Enter your email',
+      enterPhone: 'Enter your phone number (e.g. +1234567890)',
+      enterPassword: 'Enter your password',
+      forgotPassword: 'Forgot Password?',
+      title: 'Sign In',
+      signingIn: 'Signing In...'
+    },
     expiredLink: {
       title: 'Email Link Expired',
       message: 'This email verification link has expired or is invalid. Please sign in with your account to continue.',
       goToLogin: 'Go to Sign In',
       createAccount: 'Create New Account'
+    },
+    
+    // Add OTP translations
+    otp: {
+      enterCode: 'Enter Verification Code',
+      sentTo: 'We sent a verification code to {contact}',
+      verificationCode: 'Verification Code',
+      enterSixDigit: 'Enter 6-digit code',
+      verifying: 'Verifying...',
+      verifyCode: 'Verify Code',
+      resendIn: 'Resend code in {time}',
+      sending: 'Sending...',
+      resendCode: 'Resend Code',
+      sendingOtp: 'Sending OTP...',
+      sendOtpTo: 'Send OTP to {action}'
     }
   }
 };

@@ -1,9 +1,10 @@
 import React from 'react';
 import SignInForm from './SignInForm';
 import SignUpForm from './SignUpForm';
-import { useBusinessInfo } from '../../hooks/useBusinessInfo'; // Add this import
+import { useBusinessInfo } from '../../hooks/useBusinessInfo';
 import LoadingSpinner from '../common/LoadingSpinner';
 import { useLanguage } from '../../contexts/LanguageContext';
+import LanguageSwitcher from '../common/LanguageSwitcher'; // Add this import
 
 export default function AuthForm({
   isSignUp,
@@ -35,8 +36,7 @@ export default function AuthForm({
   onResendOtp,
   onResetPassword,
   isLoading,
-  isMobileAuthEnabled, // Keep prop for conditional rendering
-  // setIsMobileAuthEnabled // Remove setter prop, toggle is moved
+  isMobileAuthEnabled,
   confirmationMessage,
   setConfirmationMessage,
 }) {
@@ -47,16 +47,19 @@ export default function AuthForm({
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
   const { t } = useLanguage();
-  const { businessName, loading: businessLoading } = useBusinessInfo(); // Add this hook
+  const { businessName, loading: businessLoading } = useBusinessInfo();
   
   return (
-    <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+    <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md relative">
+      {/* Language Switcher - positioned at top right */}
+      <div className="absolute top-3 right-3">
+        <LanguageSwitcher />
+      </div>
+
       {/* Title */}
-      <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">
+      <h1 className="text-3xl font-bold text-center mb-6 text-gray-800 pr-16 pt-2">
         {businessLoading ? t('common.loading') : (businessName || 'Service Booking')}
       </h1>
-
-      {/* Mobile Auth Enable/Disable Toggle - REMOVED FROM HERE */}
 
       {/* Auth Method Toggle */}
       {!otpSent && (
@@ -72,7 +75,7 @@ export default function AuthForm({
           >
             Email
           </button>
-          {isMobileAuthEnabled && ( // Conditionally render Phone button
+          {isMobileAuthEnabled && (
             <button
               onClick={() => !isLoading && setAuthMethod('phone')}
               disabled={isLoading}
@@ -96,14 +99,14 @@ export default function AuthForm({
             disabled={isLoading}
             className={`py-2 px-4 ${!isSignUp ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500 hover:text-gray-700'} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            Sign In
+            {t('auth.signIn.title')}
           </button>
           <button
             onClick={() => !isLoading && setIsSignUp(true)}
             disabled={isLoading}
             className={`py-2 px-4 ${isSignUp ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500 hover:text-gray-700'} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            Sign Up
+            {t('auth.signUp.title')}
           </button>
         </div>
       )}
@@ -112,18 +115,18 @@ export default function AuthForm({
       {otpSent ? (
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-4 text-center">
-            Enter Verification Code
+            {t('auth.otp.enterCode')}
           </h2>
           <p className="text-sm text-gray-600 mb-4 text-center">
-            We sent a verification code to {authMethod === 'email' ? email : mobile}
+            {t('auth.otp.sentTo', { contact: authMethod === 'email' ? email : mobile })}
           </p>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Verification Code
+              {t('auth.otp.verificationCode')}
             </label>
             <input
               type="text"
-              placeholder="Enter 6-digit code"
+              placeholder={t('auth.otp.enterSixDigit')}
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -139,14 +142,14 @@ export default function AuthForm({
               isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'
             }`}
           >
-            {isLoading ? 'Verifying...' : 'Verify Code'}
+            {isLoading ? t('auth.otp.verifying') : t('auth.otp.verifyCode')}
           </button>
 
           {/* Resend Code Section */}
           <div className="text-center">
             {resendTimer > 0 ? (
               <p className="text-sm text-gray-600">
-                Resend code in {formatTimer(resendTimer)}
+                {t('auth.otp.resendIn', { time: formatTimer(resendTimer) })}
               </p>
             ) : (
               <button
@@ -156,7 +159,7 @@ export default function AuthForm({
                   !canResend || isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:underline'
                 }`}
               >
-                {isLoading ? 'Sending...' : 'Resend Code'}
+                {isLoading ? t('auth.otp.sending') : t('auth.otp.resendCode')}
               </button>
             )}
           </div>
@@ -182,7 +185,7 @@ export default function AuthForm({
               setMobile={setMobile}
               authMethod={authMethod}
               isLoading={isLoading}
-              isMobileAuthEnabled={isMobileAuthEnabled} // Pass down prop
+              isMobileAuthEnabled={isMobileAuthEnabled}
             />
           ) : (
             <SignInForm
@@ -195,7 +198,7 @@ export default function AuthForm({
               authMethod={authMethod}
               onResetPassword={onResetPassword}
               isLoading={isLoading}
-              isMobileAuthEnabled={isMobileAuthEnabled} // Pass down prop
+              isMobileAuthEnabled={isMobileAuthEnabled}
               confirmationMessage={confirmationMessage}
               setConfirmationMessage={setConfirmationMessage}
             />
@@ -224,17 +227,17 @@ export default function AuthForm({
               <div className="flex items-center justify-center">
                 <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
                 {authMethod === 'phone'
-                  ? 'Sending OTP...'
+                  ? t('auth.otp.sendingOtp')
                   : isSignUp
-                  ? 'Signing Up...'
-                  : 'Signing In...'}
+                  ? t('auth.signUp.signingUp')
+                  : t('auth.signIn.signingIn')}
               </div>
             ) : (
               authMethod === 'phone'
-                ? `Send OTP to ${isSignUp ? 'Sign Up' : 'Sign In'}`
+                ? t('auth.otp.sendOtpTo', { action: isSignUp ? t('auth.signUp.title') : t('auth.signIn.title') })
                 : isSignUp
-                ? 'Sign Up'
-                : 'Sign In'
+                ? t('auth.signUp.title')
+                : t('auth.signIn.title')
             )}
           </button>
         </>

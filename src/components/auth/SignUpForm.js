@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function SignUpForm({
   email,
@@ -13,19 +14,23 @@ export default function SignUpForm({
   setBirthday,
   gender,
   setGender,
-  mobile, // Add mobile prop
-  setMobile, // Add setMobile prop
-  authMethod, // New prop
-  isMobileAuthEnabled // New prop
+  mobile,
+  setMobile,
+  authMethod,
+  isMobileAuthEnabled
 }) {
+  const { t } = useLanguage();
+
   return (
     <>
       {/* Name Input */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Name<span className="text-red-500">*</span></label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {t('auth.signUp.name')}<span className="text-red-500">*</span>
+        </label>
         <input
           type="text"
-          placeholder="Enter your name"
+          placeholder={t('auth.signUp.enterName')}
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
@@ -36,10 +41,12 @@ export default function SignUpForm({
       {/* Email Input - Conditionally render based on authMethod */}
       {authMethod === 'email' && (
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Email<span className="text-red-500">*</span></label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('auth.signUp.email')}<span className="text-red-500">*</span>
+          </label>
           <input
             type="email"
-            placeholder="Enter your email"
+            placeholder={t('auth.signUp.enterEmail')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -51,10 +58,12 @@ export default function SignUpForm({
       {/* Mobile Input for Phone Authentication - Conditionally render based on authMethod and isMobileAuthEnabled */}
       {authMethod === 'phone' && isMobileAuthEnabled && (
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Mobile<span className="text-red-500">*</span></label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('auth.signUp.mobile')}<span className="text-red-500">*</span>
+          </label>
           <input
             type="tel"
-            placeholder="Enter your mobile number (e.g. +1234567890)"
+            placeholder={t('auth.signUp.enterMobile')}
             value={mobile}
             onChange={(e) => setMobile(e.target.value)}
             required
@@ -65,10 +74,12 @@ export default function SignUpForm({
 
       {/* Password Input */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Password<span className="text-red-500">*</span></label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {t('auth.signUp.password')}<span className="text-red-500">*</span>
+        </label>
         <input
           type="password"
-          placeholder="Enter your password"
+          placeholder={t('auth.signUp.enterPassword')}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -77,10 +88,12 @@ export default function SignUpForm({
 
       {/* Phone Number Input - Always visible and required for profile data */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number<span className="text-red-500">*</span></label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {t('auth.signUp.phoneNumber')}<span className="text-red-500">*</span>
+        </label>
         <input
           type="tel"
-          placeholder="Enter your phone number"
+          placeholder={t('auth.signUp.enterPhone')}
           value={mobile}
           onChange={(e) => setMobile(e.target.value)}
           required
@@ -90,10 +103,12 @@ export default function SignUpForm({
 
       {/* Post Code Input */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Post Code</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {t('auth.signUp.postCode')}
+        </label>
         <input
           type="text"
-          placeholder="Enter your post code"
+          placeholder={t('auth.signUp.enterPostCode')}
           value={postCode}
           onChange={(e) => setPostCode(e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -102,19 +117,21 @@ export default function SignUpForm({
 
       {/* Birthday Input */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Birthday</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {t('auth.signUp.birthday')}
+        </label>
         <div className="relative">
           <input
             type="date"
             value={birthday}
             onChange={(e) => setBirthday(e.target.value)}
-            placeholder="YYYY-MM-DD"
+            placeholder={t('auth.signUp.birthdayPlaceholder')}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             onFocus={(e) => {
               // On mobile devices, temporarily change to text input for manual entry
               if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
                 e.target.type = 'text';
-                e.target.placeholder = 'YYYY-MM-DD';
+                e.target.placeholder = t('auth.signUp.birthdayPlaceholder');
               }
             }}
             onBlur={(e) => {
@@ -130,16 +147,18 @@ export default function SignUpForm({
 
       {/* Gender Input */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {t('auth.signUp.gender')}
+        </label>
         <select
           value={gender}
           onChange={(e) => setGender(e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="">Select Gender</option>
-          <option value="Male">Male</option>
-          <option value="Female">Female</option>
-          <option value="Other">Other</option>
+          <option value="">{t('auth.signUp.selectGender')}</option>
+          <option value="Male">{t('auth.signUp.male')}</option>
+          <option value="Female">{t('auth.signUp.female')}</option>
+          <option value="Other">{t('auth.signUp.other')}</option>
         </select>
       </div>
     </>

@@ -673,5 +673,62 @@ export default {
     bookingStep2Desc: '我们的团队将联系您以验证预约详情',
     welcomeMessage: '欢迎回来，{name}！管理您的预约并预订新服务',
     noStaffAvailable: '无可用员工'
+  },
+  
+  auth: {
+    email: '邮箱',
+    signUp: {
+      name: '姓名',
+      email: '邮箱',
+      mobile: '手机号',
+      password: '密码',
+      phoneNumber: '电话号码',
+      postCode: '邮政编码',
+      birthday: '生日',
+      gender: '性别',
+      enterName: '请输入您的姓名',
+      enterEmail: '请输入您的邮箱',
+      enterMobile: '请输入您的手机号码 (例如: +1234567890)',
+      enterPassword: '请输入您的密码',
+      enterPhone: '请输入您的电话号码',
+      enterPostCode: '请输入您的邮政编码',
+      selectGender: '选择性别',
+      male: '男',
+      female: '女',
+      other: '其他',
+      birthdayPlaceholder: 'YYYY-MM-DD',
+      title: '注册',
+      signingUp: '注册中...'
+    },
+    signIn: {
+      email: '邮箱',
+      phoneNumber: '电话号码',
+      password: '密码',
+      enterEmail: '请输入您的邮箱',
+      enterPhone: '请输入您的电话号码 (例如: +1234567890)',
+      enterPassword: '请输入您的密码',
+      forgotPassword: '忘记密码？',
+      title: '登录',
+      signingIn: '登录中...'
+    },
+    expiredLink: {
+      title: '邮箱链接已过期',
+      message: '此邮箱验证链接已过期或无效。请使用您的账户登录以继续。',
+      goToLogin: '前往登录',
+      createAccount: '创建新账户'
+    },
+    otp: {
+      enterCode: '输入验证码',
+      sentTo: '我们已向 {contact} 发送验证码',
+      verificationCode: '验证码',
+      enterSixDigit: '输入6位验证码',
+      verifying: '验证中...',
+      verifyCode: '验证码',
+      resendIn: '{time} 后重新发送',
+      sending: '发送中...',
+      resendCode: '重新发送验证码',
+      sendingOtp: '发送验证码中...',
+      sendOtpTo: '发送验证码到 {action}'
+    }
   }
 };
