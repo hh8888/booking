@@ -29,7 +29,7 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!service-worker\.js|manifest\.json|favicon\.|robots\.txt).*)",
+      "source": "/((?!service-worker\\.js|manifest\\.json|favicon\\.|robots\\.txt).*)",
       "destination": "/index.html"
     }
   ]
