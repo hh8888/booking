@@ -103,13 +103,42 @@ export default function SignUpForm({
       {/* Birthday Input */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-1">Birthday</label>
-        <input
+        <div className="relative">
+          <input
+            type="date"
+            value={birthday}
+            onChange={(e) => setBirthday(e.target.value)}
+            placeholder="YYYY-MM-DD"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onFocus={(e) => {
+              // On mobile devices, temporarily change to text input for manual entry
+              if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                e.target.type = 'text';
+                e.target.placeholder = 'YYYY-MM-DD';
+              }
+            }}
+            onBlur={(e) => {
+              // Change back to date type when focus is lost
+              if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                e.target.type = 'date';
+                e.target.placeholder = '';
+              }
+            }}
+          />
+        </div>
+      </div>
+      <input
           type="date"
           value={birthday}
           onChange={(e) => setBirthday(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-2 focus:ring-blue-500"
+          placeholder="YYYY-MM-DD"
+          pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          style={{
+            WebkitAppearance: 'none',
+            MozAppearance: 'textfield'
+          }}
         />
-      </div>
 
       {/* Gender Input */}
       <div className="mb-6">
