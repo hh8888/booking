@@ -452,7 +452,7 @@ export const useDashboardData = () => {
       };
     };
     initData();
-  }, [fetchTableStats, fetchCustomers, fetchServices, fetchBookingsWithStaff, fetchStaffAvailability]);
+  }, []); // ← Empty dependency array since all functions are stable
 
   // Return staffData in the hook
   return {

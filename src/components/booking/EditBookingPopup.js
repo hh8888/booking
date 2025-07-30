@@ -798,8 +798,8 @@ export default function EditBookingPopup({
               
               await onSave(recurringBooking);
             }
-            return;
           }
+          return; // This prevents the final onSave call
         } else {
           dataToSave.recurring_type = null;
           dataToSave.recurring_count = 0;
@@ -837,9 +837,9 @@ export default function EditBookingPopup({
       const durationInMinutes = parseInt(dataToSave.duration) || 60;
       const endTime2 = new Date(startDate.getTime() + durationInMinutes * 60000);
       dataToSave.end_time = endTime2.toISOString();
-      dataToSave.duration = durationInMinutes; // 确保duration字段为数字类型
+      dataToSave.duration = durationInMinutes;
 
-      // Call the parent onSave handler
+      // Call the parent onSave handler (this should only execute for non-recurring bookings or edits)
       console.log('Calling parent onSave with:', dataToSave);
       const result = await onSave(dataToSave);
       console.log('Parent onSave result:', result);

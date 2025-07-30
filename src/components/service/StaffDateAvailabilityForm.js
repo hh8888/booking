@@ -84,10 +84,10 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
       const locationService = LocationService.getInstance();
       const locationId = locationService.getSelectedLocationId();
       
-      // 获取未来30天的日期
+      // 获取未来365天的日期 (changed from 30 to 365)
       const today = new Date();
       const dates = [];
-      for (let i = 0; i < 30; i++) {
+      for (let i = 0; i < 365; i++) {
         const date = new Date(today);
         date.setDate(today.getDate() + i);
         const localDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
