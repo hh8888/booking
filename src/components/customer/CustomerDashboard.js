@@ -230,11 +230,69 @@ const CustomerDashboard = () => {
   }
 
   const handleBookingSave = async (bookingData) => {
-    // ... existing implementation
+    console.log('=== CustomerDashboard handleBookingSave CALLED ===');
+    console.log('Received bookingData:', bookingData);
+    console.log('Customer data:', customerData);
+    console.log('Editing booking:', editingBooking);
+    
+    try {
+      const bookingService = BookingService.getInstance();
+      
+      const bookingWithCustomer = {
+        ...bookingData,
+        customer_id: customerData.id
+      };
+      
+      console.log('Final booking data to save:', bookingWithCustomer);
+      
+      // Actually save the booking to the database
+      if (editingBooking) {
+        console.log('Updating existing booking with ID:', editingBooking.id);
+        const bookingWithId = {
+          ...bookingWithCustomer,
+          id: editingBooking.id
+        };
+        await bookingService.updateBooking(bookingWithId);
+        console.log('Update completed');
+        toast.success(SUCCESS_MESSAGES.BOOKING_UPDATED);
+      } else {
+        console.log('Creating new booking...');
+        const result = await bookingService.createBooking(bookingWithCustomer);
+        console.log('Create result:', result);
+        toast.success(SUCCESS_MESSAGES.BOOKING_CREATED);
+      }
+      
+      console.log('Closing booking form and refreshing...');
+      setShowBookingForm(false);
+      setEditingBooking(null);
+      
+      // Refresh bookings list
+      await refreshBookings();
+      console.log('=== CustomerDashboard handleBookingSave SUCCESS ===');
+    } catch (error) {
+      console.error('=== CustomerDashboard handleBookingSave ERROR ===');
+      console.error('Error saving booking:', error);
+      console.error('Error stack:', error.stack);
+      toast.error(`${ERROR_MESSAGES.BOOKING_SAVE_ERROR}: ${error.message}`);
+    }
   };
 
   const handleCancelBooking = async (bookingId) => {
-    // ... existing implementation
+    if (window.confirm(t('bookings.confirmCancelBooking'))) {
+      try {
+        const dbService = DatabaseService.getInstance();
+        await dbService.updateItem(TABLES.BOOKINGS, { id: bookingId, status: BOOKING_STATUS.CANCELLED }, 'Booking');
+        toast.success(SUCCESS_MESSAGES.BOOKING_CANCELLED);
+        
+        // Refresh bookings
+        setBookings(prev => prev.map(booking => 
+          booking.id === bookingId ? { ...booking, status: BOOKING_STATUS.CANCELLED } : booking
+        ));
+      } catch (error) {
+        console.error('Error cancelling booking:', error);
+        toast.error(ERROR_MESSAGES.FAILED_CANCEL_BOOKING);
+      }
+    }
   };
 
   const handleNewBooking = () => {

@@ -165,20 +165,38 @@ export default function Auth() {
         </div>
       ) : (
         <AuthForm
-          authState={authState}
-          validateForm={validateForm}
-          validateSignInForm={validateSignInForm}
-          validateEmail={validateEmail}
-          validatePhoneNumber={validatePhoneNumber}
-          handleSignUp={handleSignUp}
-          handleSignIn={handleSignIn}
-          handleForgotPassword={handleForgotPassword}
-          handleResetPassword={handleResetPassword}
-          handlePhoneSignUp={handlePhoneSignUp}
-          handlePhoneSignIn={handlePhoneSignIn}
-          handleOtpVerification={handleOtpVerification}
-          handleResendOtp={handleResendOtp}
-          formatTimer={formatTimer}
+          isSignUp={authState.isSignUp}
+          setIsSignUp={authState.setIsSignUp}
+          email={authState.email}
+          setEmail={authState.setEmail}
+          password={authState.password}
+          setPassword={authState.setPassword}
+          name={authState.name}
+          setName={authState.setName}
+          postCode={authState.postCode}
+          setPostCode={authState.setPostCode}
+          birthday={authState.birthday}
+          setBirthday={authState.setBirthday}
+          gender={authState.gender}
+          setGender={authState.setGender}
+          mobile={authState.mobile}
+          setMobile={authState.setMobile}
+          authMethod={authState.authMethod}
+          setAuthMethod={authState.setAuthMethod}
+          otpSent={authState.otpSent}
+          otp={authState.otp}
+          setOtp={authState.setOtp}
+          resendTimer={authState.resendTimer}
+          canResend={authState.canResend}
+          onSignIn={handleSignIn}
+          onSignUp={handleSignUp}
+          onOtpVerification={handleOtpVerification}
+          onResendOtp={handleResendOtp}
+          onResetPassword={handleResetPassword}
+          isLoading={authState.isLoading}
+          isMobileAuthEnabled={authState.isMobileAuthEnabled}
+          confirmationMessage={authState.confirmationMessage}
+          setConfirmationMessage={authState.setConfirmationMessage}
         />
       )}
     </div>

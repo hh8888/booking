@@ -102,6 +102,9 @@ export default function EditBookingPopup({
             bookingFilters.location = locationId;
           }
           
+          // Also try fetching ALL bookings for this provider without date/location filters for comparison
+          const allProviderBookings = await dbService.fetchData(TABLES.BOOKINGS, 'start_time', false, { provider_id: editItem.provider_id });
+          
           const existingBookings = await dbService.fetchData(TABLES.BOOKINGS, 'start_time', false, bookingFilters);
 
           // Filter out the current booking being edited
@@ -629,11 +632,18 @@ export default function EditBookingPopup({
       }
       
       // Check for conflicts with existing bookings
-      const existingBookings = await dbService.fetchData(TABLES.BOOKINGS, 'start_time', false, {
+      const bookingFilters = {
         provider_id: bookingDataWithLocation.provider_id,
         start_time: { gte: startDate.toISOString().split('T')[0] + 'T00:00:00.000Z', 
                      lte: startDate.toISOString().split('T')[0] + 'T23:59:59.999Z' }
-      });
+      };
+      
+      // Add location filter if available
+      if (bookingDataWithLocation.location !== null && bookingDataWithLocation.location !== undefined) {
+        bookingFilters.location = bookingDataWithLocation.location;
+      }
+      
+      const existingBookings = await dbService.fetchData(TABLES.BOOKINGS, 'start_time', false, bookingFilters);
       
       // Get the selected service to check if it has assigned staff
       const selectedService = services.find(service => service.id === bookingDataWithLocation.service_id);
