@@ -277,6 +277,41 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
     setForceMarkAll(false);
   };
 
+  // Add this new function for handling column toggle
+  const handleColumnToggle = (dayIndex) => {
+    // Get all dates for the specific day of week in the current calendar view
+    const columnDates = calendarDates.filter(date => {
+      const dayOfWeek = date.getDay();
+      const adjustedDayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert Sunday=0 to Sunday=6
+      return adjustedDayIndex === dayIndex && date >= new Date(new Date().setHours(0, 0, 0, 0)); // Only future dates
+    });
+    
+    const columnDateStrs = columnDates.map(date => 
+      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    );
+    
+    const columnAvailability = availability.filter(schedule => 
+      columnDateStrs.includes(schedule.date)
+    );
+    
+    // Check if all dates in this column are marked as available
+    const allMarked = columnAvailability.every(schedule => schedule.is_available);
+    const newAvailabilityState = !allMarked;
+    
+    setAvailability(prev => prev.map(schedule => {
+      if (columnDateStrs.includes(schedule.date)) {
+        return {
+          ...schedule,
+          is_available: newAvailabilityState,
+          // Set default times if marking as available and times are missing
+          start_time: newAvailabilityState && !schedule.start_time ? '09:00' : schedule.start_time,
+          end_time: newAvailabilityState && !schedule.end_time ? '17:00' : schedule.end_time
+        };
+      }
+      return schedule;
+    }));
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-2 sm:p-4">
       <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full mx-auto relative max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
@@ -368,12 +403,41 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
           
           {/* Day of week headers */}
           <div className="grid grid-cols-7 gap-1 sm:gap-1 mb-3">
-            {[t('staffAvailability.monday'), t('staffAvailability.tuesday'), t('staffAvailability.wednesday'), t('staffAvailability.thursday'), t('staffAvailability.friday'), t('staffAvailability.saturday'), t('staffAvailability.sunday')].map(day => (
-              <div key={day} className="text-center font-medium text-gray-600 py-2 text-xs sm:text-sm bg-gray-50 rounded-md">
-                <span className="hidden sm:inline">{day}</span>
-                <span className="sm:hidden">{day.charAt(0)}</span>
-              </div>
-            ))}
+            {[t('staffAvailability.monday'), t('staffAvailability.tuesday'), t('staffAvailability.wednesday'), t('staffAvailability.thursday'), t('staffAvailability.friday'), t('staffAvailability.saturday'), t('staffAvailability.sunday')].map((day, index) => {
+              // Calculate if all dates in this column are available
+              const columnDates = calendarDates.filter(date => {
+                const dayOfWeek = date.getDay();
+                const adjustedDayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                return adjustedDayIndex === index && date >= new Date(new Date().setHours(0, 0, 0, 0));
+              });
+              
+              const columnDateStrs = columnDates.map(date => 
+                `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+              );
+              
+              const columnAvailability = availability.filter(schedule => 
+                columnDateStrs.includes(schedule.date)
+              );
+              
+              const allMarked = columnAvailability.length > 0 && columnAvailability.every(schedule => schedule.is_available);
+              
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => handleColumnToggle(index)}
+                  className={`text-center font-medium py-2 text-xs sm:text-sm rounded-md transition-all duration-200 hover:shadow-md transform hover:scale-105 active:scale-95 ${
+                    allMarked 
+                      ? 'bg-blue-100 text-blue-800 border-2 border-blue-300 hover:bg-blue-200' 
+                      : 'bg-gray-50 text-gray-600 border-2 border-gray-200 hover:bg-gray-100'
+                  }`}
+                  title={`Click to ${allMarked ? 'unmark' : 'mark'} all ${day}s`}
+                >
+                  <span className="hidden sm:inline">{day}</span>
+                  <span className="sm:hidden">{day.charAt(0)}</span>
+                </button>
+              );
+            })}
           </div>
           <div className="grid grid-cols-7 gap-1 sm:gap-1 mb-4">
             {calendarDates.map(date => {
