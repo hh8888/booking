@@ -217,12 +217,16 @@ export default {
     editBooking: 'Edit Booking',
     deleteBooking: 'Delete Booking',
     bookingDetails: 'Booking Details',
+    bookingId: 'Booking ID',
     customerName: 'Customer Name',
     serviceName: 'Service Name',
     dateTime: 'Date & Time',
     status: 'Status',
     notes: 'Notes',
+    comments: 'Comments',
+    staffComments: 'Staff Comments',
     todaysBookings: 'Today\'s Bookings',
+    upcoming: 'Upcoming',
     upcomingBookings: 'Upcoming Bookings',
     pastBookings: 'Past Bookings',
     showPastBookings: 'Show Past Bookings',
@@ -272,7 +276,10 @@ export default {
     cancelNotAvailable: 'Cancel not available',
     manageBookings: 'Manage Bookings',
     repeatDaily: 'Repeat Daily',
-    repeatWeekly: 'Repeat Weekly'
+    repeatWeekly: 'Repeat Weekly',
+    bookingHistory: 'Customer History',
+    customerNotes: 'Notes',
+    customerNotesPlaceholder: 'Enter notes',
   },
 
   // Users
@@ -384,25 +391,21 @@ export default {
     showBookingStepsDesc: 'Display booking steps section on customer dashboard',
     show: 'Show',
     hide: 'Hide',
-    // DateTime Settings
     timeFormat: 'Time Format',
     timeFormat24: '24-hour format',
     timeFormat12: '12-hour format',
     timeFormatDesc: 'Choose time display format',
     showWeekday: 'Show Weekday',
     showWeekdayDesc: 'Display weekday information next to the date',
-    // User Settings
     defaultUserRole: 'Default User Role',
     defaultUserRoleDesc: 'Default role for newly registered users',
     requiredUserFields: 'Required User Fields',
     requiredUserFieldsDesc: 'Required fields when creating users, separated by commas',
     administrator: 'Administrator',
-    // Service Settings
     defaultServiceDuration: 'Default Service Duration (minutes)',
     defaultServiceDurationDesc: 'Default duration when creating a new service',
     defaultServicePrice: 'Default Service Price',
     defaultServicePriceDesc: 'Default price when creating a new service',
-    // Booking Settings
     defaultBookingStatus: 'Default Booking Status',
     defaultBookingStatusDesc: 'Default status when creating a new booking',
     showStaffName: 'Show Staff Name in Calendar',
@@ -416,7 +419,6 @@ export default {
     minutes30: '30 minutes',
     hour1: '1 hour',
     hours2: '2 hours',
-    // Working Hours
     mondayHours: 'Monday Hours',
     tuesdayHours: 'Tuesday Hours',
     wednesdayHours: 'Wednesday Hours',
@@ -425,7 +427,6 @@ export default {
     saturdayHours: 'Saturday Hours',
     sundayHours: 'Sunday Hours',
     workingHoursDesc: 'Working hours for {{day}} (format: HH:MM-HH:MM, or "closed" for closed days)',
-    // System Settings
     businessNameDefault: 'Booking Management System',
     businessHoursDesc: 'Business operating hours, format: HH:MM-HH:MM',
     businessDays: 'Business Days',
@@ -714,8 +715,6 @@ export default {
       goToLogin: 'Go to Sign In',
       createAccount: 'Create New Account'
     },
-    
-    // Add OTP translations
     otp: {
       enterCode: 'Enter Verification Code',
       sentTo: 'We sent a verification code to {contact}',

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import GenericForm from '../common/GenericForm';
+import CustomerSearchSelect from '../common/CustomerSearchSelect';
 import DatabaseService from '../../services/DatabaseService';
 import DateTimeFormatter from '../../utils/DateTimeFormatter';
 import BookingService from '../../services/BookingService';
@@ -10,6 +11,7 @@ import ServiceStaffService from '../../services/ServiceStaffService';
 import TimeSlots from './TimeSlots';
 import { BOOKING_STATUS, USER_ROLES, TABLES, ERROR_MESSAGES } from '../../constants';
 import { useLanguage } from '../../contexts/LanguageContext';
+import useDashboardUser from '../../hooks/useDashboardUser';
 
 
 export default function EditBookingPopup({ 
@@ -24,6 +26,7 @@ export default function EditBookingPopup({
   hideRecurringOptions = false   // New prop
 }) {
   const { t } = useLanguage();
+  const { user: currentUser } = useDashboardUser();
   const [editItem, setEditItem] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingAvailability, setLoadingAvailability] = useState(false);
@@ -45,6 +48,13 @@ export default function EditBookingPopup({
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
   const [bookedSlots, setBookedSlots] = useState([]);
   const [allTimeSlots, setAllTimeSlots] = useState([]);
+
+  // Check if current user can edit staff comments
+  const canEditStaffComments = currentUser && (
+    currentUser.role === USER_ROLES.STAFF || 
+    currentUser.role === USER_ROLES.MANAGER || 
+    currentUser.role === USER_ROLES.ADMIN
+  );
 
   // Initialize time options only once
   useEffect(() => {
@@ -882,20 +892,23 @@ export default function EditBookingPopup({
             { 
               key: "customer_id", 
               label: t('editBooking.customer'), 
-              type: "select",
-              options: customers.map(customer => ({
-                value: customer.id,
-                label: customer.full_name
-              })),
+              type: "custom",
               required: !hideCustomerSelection,
-              placeholder: t('editBooking.selectCustomer'),
               hidden: hideCustomerSelection,
-              onChange: (value) => {
-                setEditItem(prev => ({
-                  ...prev,
-                  customer_id: value
-                }));
-              }
+              renderField: () => !hideCustomerSelection ? (
+                <CustomerSearchSelect
+                  customers={customers}
+                  value={editItem?.customer_id}
+                  onChange={(value) => {
+                    setEditItem(prev => ({
+                      ...prev,
+                      customer_id: value
+                    }));
+                  }}
+                  placeholder={t('editBooking.selectCustomer')}
+                  required={!hideCustomerSelection}
+                />
+              ) : null
             },
             {
               key: "location",
@@ -1288,9 +1301,27 @@ export default function EditBookingPopup({
             },
             { 
               key: "notes", 
-              label: t('editBooking.notes'), 
-              type: "textarea" 
+              label: t('bookings.customerNotes'), 
+              type: "textarea",
+              placeholder: t('bookings.customerNotesPlaceholder'),
+              rows: 3
             },
+            ...(canEditStaffComments ? [{
+              key: "staff_comments",
+              label: t('bookings.staffComments'),
+              type: "textarea",
+              placeholder: t('bookings.staffCommentsPlaceholder'),
+              rows: 3,
+              helpText: t('bookings.staffCommentsHelp')
+            }] : []),
+            ...(canEditStaffComments ? [{
+              key: "staff_comments",
+              label: t('bookings.staffComments'),
+              type: "textarea",
+              placeholder: t('bookings.staffCommentsPlaceholder'),
+              rows: 3,
+              helpText: t('bookings.staffCommentsHelp')
+            }] : []),
             { 
               key: "show_recurring", 
               text: t('editBooking.recurringBooking'), 

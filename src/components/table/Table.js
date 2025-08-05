@@ -11,6 +11,7 @@ const Table = ({
   onEdit = () => {},
   onSetAvailability = () => {},
   onResetPassword, // Remove the default empty function
+  onViewHistory, // Add this prop
 }) => {
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -103,6 +104,7 @@ const Table = ({
             onEdit={onEdit}
             onSetAvailability={onSetAvailability}
             onResetPassword={onResetPassword}
+            onViewHistory={onViewHistory}
           />
         </table>
       </div>

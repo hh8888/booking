@@ -15,12 +15,8 @@ import Footer from './components/common/Footer';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { LanguageProvider } from './contexts/LanguageContext';
 
-// import AdminDashboard from './AdminDashboard';
-// import StaffDashboard from './StaffDashboard'; // Add this import
-// import CustomerDashboard from './components/customer/CustomerDashboard';
-
-const AdminDashboard = lazy(() => import('./AdminDashboard'));
-const StaffDashboard = lazy(() => import('./StaffDashboard'));
+// Use the new combined Dashboard component
+const Dashboard = lazy(() => import('./Dashboard'));
 const CustomerDashboard = lazy(() => import('./components/customer/CustomerDashboard'));
 
 // Add at the top
@@ -70,8 +66,8 @@ function App() {
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>
             <Route path="/" element={<Auth />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/staff" element={<StaffDashboard />} /> {/* Add this route */}
+            <Route path="/admin" element={<Dashboard />} />
+            <Route path="/staff" element={<Dashboard />} />
             <Route path="/booking" element={<CustomerDashboard />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/auth" element={<Auth />} />

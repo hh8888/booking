@@ -1,3 +1,16 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Add scroll-based header compacting */
+@media (min-width: 768px) {
+  .scroll-compact {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+  
+  .scroll-compact:has(~ *) {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+}

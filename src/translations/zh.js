@@ -162,7 +162,7 @@ export default {
     unassigned: '未分配',
     loadingCalendar: '加载日历中...',
     noEventsToday: '今天没有事件',
-    // showAvailability: '显示可用性',
+    showAvailability: '显示可用性',
     showBookings: '显示预订',
     showPastEvents: '显示过往事件',
     showNonWorkingHours: '显示非工作时间',
@@ -206,7 +206,6 @@ export default {
     hideControls: '隐藏控制',
     showControls: '显示控制',
     hideAvailability: '隐藏可用性',
-    showAvailability: '显示可用性',
     hideBookings: '隐藏预订',
     showPast: '显示过去',
     hidePast: '隐藏过去',
@@ -214,20 +213,25 @@ export default {
   },
 
   // Bookings
+  // 预订管理
   bookings: {
-    title: '预约',
-    newBooking: '新预约',
-    editBooking: '编辑预约',
-    deleteBooking: '删除预约',
-    bookingDetails: '预约详情',
+    title: '预订管理',
+    newBooking: '新预订',
+    editBooking: '编辑预订',
+    deleteBooking: '删除预订',
+    bookingDetails: '预订详情',
+    bookingId: '预订编号',
     customerName: '客户姓名',
     serviceName: '服务名称',
     dateTime: '日期和时间',
     status: '状态',
     notes: '备注',
-    todaysBookings: '今日预约',
-    upcomingBookings: '即将到来的预约',
-    pastBookings: '过往预约',
+    comments: '评论',
+    staffComments: '员工备注',
+    todaysBookings: '今日预订',
+    upcoming: '即将到来',
+    upcomingBookings: '即将到来的预订',
+    pastBookings: '过往预订',
     showPastBookings: '显示过往预约',
     hidePastBookings: '隐藏过往预约',
     loadingBookings: '加载预约中...',
@@ -275,7 +279,10 @@ export default {
     cancelNotAvailable: '无法取消',
     manageBookings: '管理预订',
     repeatDaily: '每日重复',
-    repeatWeekly: '每周重复'
+    repeatWeekly: '每周重复',
+    bookingHistory: '客户历史',
+    customerNotes: '备注',
+    customerNotesPlaceholder: '输入备注',
   },
 
   // Users
@@ -332,7 +339,8 @@ export default {
     assignedStaff: '分配员工',
     availability: '可用性',
     noServices: '未找到服务',
-    loadingServices: '加载服务中...'
+    loadingServices: '加载服务中...',
+    noStaffAvailable: '无可用员工'
   },
 
   // Reports

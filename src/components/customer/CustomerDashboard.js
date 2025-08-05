@@ -344,40 +344,49 @@ const CustomerDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-            <div>
-              <h1 className="text-xl md:text-2xl font-bold text-gray-800">{businessName}</h1>
-              <p className="text-gray-600">{t('customer.welcomeMessage', { name: customerData.full_name && !customerData.full_name.includes('@') ? customerData.full_name : (customerData.full_name ? customerData.full_name.split('@')[0] : t('customer.welcome')) })}</p>
-              <LocationSelector />
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Sticky Header Section */}
+      <div className="sticky top-0 z-50 bg-gray-50 border-b border-gray-200 shadow-sm">
+        <div className="py-8">
+          <div className="max-w-6xl mx-auto px-4">
+            {/* Header */}
+            <div className="mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+                <div>
+                  <h1 className="text-xl md:text-2xl font-bold text-gray-800">{businessName}</h1>
+                  <p className="text-gray-600">{t('customer.welcomeMessage', { name: customerData.full_name && !customerData.full_name.includes('@') ? customerData.full_name : (customerData.full_name ? customerData.full_name.split('@')[0] : t('customer.welcome')) })}</p>
+                  <LocationSelector />
+                </div>
+                <div className="flex items-center space-x-3 mt-4 sm:mt-0">
+                  <SessionIndicator />
+                  <UserDropdown 
+                    userEmail={userEmail}
+                    userRole={userRole}
+                    userName={userName}
+                    currentUserId={currentUserId}
+                    onProfileUpdate={handleProfileUpdate}
+                  />
+                </div>
+              </div>
             </div>
-            <div className="flex items-center space-x-3 mt-4 sm:mt-0">
-              <SessionIndicator />
-              <UserDropdown 
-                userEmail={userEmail}
-                userRole={userRole}
-                userName={userName}
-                currentUserId={currentUserId}
-                onProfileUpdate={handleProfileUpdate}
-              />
-            </div>
+
+            {/* Booking Steps Section */}
+            <BookingSteps />
           </div>
         </div>
+      </div>
 
-        {/* Booking Steps Section */}
-        <BookingSteps />
+      {/* Scrollable Content Area */}
+      <div className="flex-grow">
+        <div className="max-w-6xl mx-auto px-4 pb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Personal Information */}
+            <div className="lg:col-span-1">
+              <CustomerProfile customerData={customerData} />
+            </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Personal Information */}
-          <div className="lg:col-span-1">
-            <CustomerProfile customerData={customerData} />
-          </div>
-
-          {/* Bookings Section */}
-          <div className="lg:col-span-2">
+            {/* Bookings Section */}
+            <div className="lg:col-span-2">
             <CustomerBookingsList 
               bookings={bookings}
               onNewBooking={handleNewBooking}
@@ -400,6 +409,7 @@ const CustomerDashboard = () => {
       
       {/* Add ToastMessage component */}
       <ToastMessage />
+    </div>
     </div>
   );
 };

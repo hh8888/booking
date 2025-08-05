@@ -24,24 +24,24 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
   useEffect(() => {
     const initData = async () => {
       console.log('initData called, staffId:', staffId, 'currentMonth:', currentMonth);
-      
+
       // Get current location name
       const locationService = LocationService.getInstance();
       const loc = locationService.getSelectedLocation();
       setCurrentLocationName(loc.name);
-      
+
       const dbService = DatabaseService.getInstance();
       const businessHoursStr = await dbService.getSettingsByKey('system', 'businessHours');
-      
+
       let defaultStartTime = '09:00';
       let defaultEndTime = '17:00';
-      
+
       if (businessHoursStr) {
         const [start, end] = businessHoursStr.split('-');
         defaultStartTime = start;
         defaultEndTime = end;
       }
-      
+
       await fetchAvailability(defaultStartTime, defaultEndTime);
       generateCalendarDates(currentMonth);
     };
@@ -54,23 +54,23 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
     const month = date.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    
+
     // 调整到最近的周一
     const start = new Date(firstDay);
     start.setDate(start.getDate() - (start.getDay() || 7) + 1);
-    
+
     // 调整到最后一个周日
     const end = new Date(lastDay);
     end.setDate(end.getDate() + (7 - end.getDay()) % 7);
-    
+
     const dates = [];
     const current = new Date(start);
-    
+
     while (current <= end) {
       dates.push(new Date(current));
       current.setDate(current.getDate() + 1);
     }
-    
+
     console.log('Calendar dates generated:', dates.length, 'dates');
     setCalendarDates(dates);
   };
@@ -79,11 +79,11 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
     console.log('fetchAvailability called with defaultTimes:', { defaultStartTime, defaultEndTime });
     try {
       const service = StaffDateAvailabilityService.getInstance();
-      
+
       // Get current location ID
       const locationService = LocationService.getInstance();
       const locationId = locationService.getSelectedLocationId();
-      
+
       // 获取未来365天的日期 (changed from 30 to 365)
       const today = new Date();
       const dates = [];
@@ -100,7 +100,7 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
       console.log('Fetching availability for staffId:', staffId, 'from:', dates[0], 'to:', dates[dates.length - 1], 'locationId:', locationId);
       const data = await service.getStaffDateAvailability(staffId, dates[0], dates[dates.length - 1], locationId);
       console.log('Received availability data:', data);
-      
+
       // Get working hours settings from database
       const dbService = DatabaseService.getInstance();
       const workingHoursSettings = await Promise.all([
@@ -112,27 +112,27 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
         dbService.getSettingsByKey('working_hours', 'saturdayHours'),
         dbService.getSettingsByKey('working_hours', 'sundayHours')
       ]);
-      
+
       // Helper function to get working hours for a specific date
       const getWorkingHoursForDate = (date) => {
         const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
         const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to 0 = Monday, 6 = Sunday
         const workingHours = workingHoursSettings[dayIndex];
-        
+
         if (!workingHours || workingHours === 'closed') {
           return { start: defaultStartTime, end: defaultEndTime, isClosed: true };
         }
-        
+
         const [start, end] = workingHours.split('-');
         return { start: start || defaultStartTime, end: end || defaultEndTime, isClosed: false };
       };
-      
+
       // 初始化所有日期的可用性
       const initialAvailability = dates.map(dateStr => {
         const date = new Date(dateStr + 'T00:00:00');
         const workingHours = getWorkingHoursForDate(date);
         const existingSchedule = data.find(item => item.date === dateStr);
-        
+
         return existingSchedule || {
           date: dateStr,
           start_time: workingHours.start,
@@ -168,7 +168,7 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
       // Toggle availability and ensure time display is consistent
       const newIsAvailable = !isCurrentlyAvailable;
       handleAvailabilityChange(dateStr, 'is_available', newIsAvailable);
-      
+
       // If making available, ensure times are set
       if (newIsAvailable && (!schedule.start_time || !schedule.end_time)) {
         // Set default times if they're empty
@@ -184,9 +184,9 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
       // Get location index instead of full location object
       const locationService = LocationService.getInstance();
       const locationIndex = locationService.getSelectedLocationId();
-      
+  
       console.log('Location index for saving:', locationIndex);
-      
+  
       // 比较原始数据和修改后的数据，找出变更的记录
       const changedAvailability = availability.filter((schedule, index) => {
         const original = originalAvailability[index];
@@ -199,15 +199,18 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
         ...schedule,
         location: locationIndex // Save the location index instead of full object
       }));
-
+  
       console.log('Changed availability to save:', changedAvailability);
       console.log('Location index being saved:', locationIndex);
-
+  
       if (changedAvailability.length > 0) {
         const service = StaffDateAvailabilityService.getInstance();
         await service.updateStaffDateAvailability(staffId, changedAvailability);
         // 更新成功后，将当前数据设置为原始数据
         setOriginalAvailability(availability);
+        toast.success(SUCCESS_MESSAGES.AVAILABILITY_UPDATED);
+      } else {
+        toast.info('No changes to save');
       }
       onClose();
     } catch (error) {
@@ -226,42 +229,42 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
 
 
   const handleMarkUnmarkAll = () => {
-    const currentMonthDates = calendarDates.filter(date => 
-      date.getMonth() === currentMonth.getMonth() && 
+    const currentMonthDates = calendarDates.filter(date =>
+      date.getMonth() === currentMonth.getMonth() &&
       date >= new Date(new Date().setHours(0, 0, 0, 0)) // Only future dates
     );
-    
-    const currentMonthDateStrs = currentMonthDates.map(date => 
+
+    const currentMonthDateStrs = currentMonthDates.map(date =>
       `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
     );
-    
-    const currentMonthAvailability = availability.filter(schedule => 
+
+    const currentMonthAvailability = availability.filter(schedule =>
       currentMonthDateStrs.includes(schedule.date)
     );
-    
+
     const allMarked = currentMonthAvailability.every(schedule => schedule.is_available);
     const newAvailabilityState = !allMarked;
-    
+
     setAvailability(prev => prev.map(schedule => {
       if (currentMonthDateStrs.includes(schedule.date)) {
         // Get working hours for this specific date
         const date = new Date(schedule.date + 'T00:00:00');
         const dayOfWeek = date.getDay();
         const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-        
+
         // Use working hours as default times when marking as available
         const getDefaultTimes = async () => {
           const dbService = DatabaseService.getInstance();
           const dayKeys = ['mondayHours', 'tuesdayHours', 'wednesdayHours', 'thursdayHours', 'fridayHours', 'saturdayHours', 'sundayHours'];
           const workingHours = await dbService.getSettingsByKey('working_hours', dayKeys[dayIndex]);
-          
+
           if (workingHours && workingHours !== 'closed') {
             const [start, end] = workingHours.split('-');
             return { start: start || '09:00', end: end || '17:00' };
           }
           return { start: '09:00', end: '17:00' };
         };
-        
+
         return {
           ...schedule,
           is_available: newAvailabilityState,
@@ -272,7 +275,7 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
       }
       return schedule;
     }));
-    
+
     // Reset the force flag after action
     setForceMarkAll(false);
   };
@@ -285,19 +288,19 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
       const adjustedDayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert Sunday=0 to Sunday=6
       return adjustedDayIndex === dayIndex && date >= new Date(new Date().setHours(0, 0, 0, 0)); // Only future dates
     });
-    
-    const columnDateStrs = columnDates.map(date => 
+
+    const columnDateStrs = columnDates.map(date =>
       `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
     );
-    
-    const columnAvailability = availability.filter(schedule => 
+
+    const columnAvailability = availability.filter(schedule =>
       columnDateStrs.includes(schedule.date)
     );
-    
+
     // Check if all dates in this column are marked as available
     const allMarked = columnAvailability.every(schedule => schedule.is_available);
     const newAvailabilityState = !allMarked;
-    
+
     setAvailability(prev => prev.map(schedule => {
       if (columnDateStrs.includes(schedule.date)) {
         return {
@@ -312,281 +315,365 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
     }));
   };
 
+  // Function to toggle availability for an entire week
+  const handleWeekToggle = (weekDates) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Filter out past dates
+    const futureDates = weekDates.filter(date => date >= today);
+
+    if (futureDates.length === 0) return; // No future dates in this week
+
+    // Check if any future date in the week is available
+    const hasAvailableDate = futureDates.some(date => {
+      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      const schedule = availability.find(s => s.date === dateStr);
+      return schedule?.is_available;
+    });
+
+    // Toggle all future dates in the week
+    futureDates.forEach(date => {
+      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+      if (hasAvailableDate) {
+        // If any date is available, mark all as unavailable
+        handleAvailabilityChange(dateStr, 'is_available', false);
+      } else {
+        // If no dates are available, mark all as available with default times
+        handleAvailabilityChange(dateStr, 'is_available', true);
+        handleAvailabilityChange(dateStr, 'start_time', '09:00');
+        handleAvailabilityChange(dateStr, 'end_time', '17:00');
+      }
+    });
+  };
+
+  // Helper function to group calendar dates into weeks
+  const getWeeksFromDates = (dates) => {
+    const weeks = [];
+    for (let i = 0; i < dates.length; i += 7) {
+      weeks.push(dates.slice(i, i + 7));
+    }
+    return weeks;
+  };
+
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-2 sm:p-4">
       <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full mx-auto relative max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
         <div className="p-3 sm:p-6">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-        >
-          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-        <h2 className="text-xl sm:text-2xl font-semibold mb-2 pr-8">{t('staffAvailability.title')}</h2>
-        
-        {/* Add current location display */}
-        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center">
-            <svg className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+          >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-            <span className="text-xs sm:text-sm font-medium text-blue-800">
-              {t('staffAvailability.currentLocation')}: <span className="font-semibold">{currentLocationName || t('staffAvailability.unknownLocation')}</span>
-            </span>
+          </button>
+          <h2 className="text-xl sm:text-2xl font-semibold mb-2 pr-8">{t('staffAvailability.title')}</h2>
+
+          {/* Add current location display */}
+          <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center">
+              <svg className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="text-xs sm:text-sm font-medium text-blue-800">
+                {t('staffAvailability.currentLocation')}: <span className="font-semibold">{currentLocationName || t('staffAvailability.unknownLocation')}</span>
+              </span>
+            </div>
           </div>
-        </div>
-        
-        <form onSubmit={handleSubmit}>
-          <div className="mb-3 sm:mb-4 flex justify-between items-center">
-            <button
-              type="button"
-              onClick={() => {
-                const newDate = new Date(currentMonth);
-                newDate.setMonth(newDate.getMonth() - 1);
-                setCurrentMonth(newDate);
-                setForceMarkAll(true); // Force "Mark All" display
-              }}
-              className="px-2 py-1 sm:px-3 sm:py-1 border border-gray-300 rounded-md shadow-sm text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 min-h-[44px] flex items-center"
-            >
-              <span className="hidden sm:inline">{t('staffAvailability.previousMonth')}</span>
-              <span className="sm:hidden">{t('staffAvailability.prev')}</span>
-            </button>
-            <h3 className="text-sm sm:text-lg font-medium text-gray-900 text-center px-2">
-              {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
-            </h3>
-            <button
-              type="button"
-              onClick={() => {
-                const newDate = new Date(currentMonth);
-                newDate.setMonth(newDate.getMonth() + 1);
-                setCurrentMonth(newDate);
-                setForceMarkAll(true); // Force "Mark All" display
-              }}
-              className="px-2 py-1 sm:px-3 sm:py-1 border border-gray-300 rounded-md shadow-sm text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 min-h-[44px] flex items-center"
-            >
-              <span className="hidden sm:inline">{t('staffAvailability.nextMonth')}</span>
-              <span className="sm:hidden">{t('staffAvailability.next')}</span>
-            </button>
-          </div>
-          
-          {/* Mark/Unmark All Button */}
-          <div className="mb-3 sm:mb-4 flex justify-end">
-            <button
-              type="button"
-              onClick={handleMarkUnmarkAll}
-              className="px-3 py-2 sm:px-4 sm:py-2 border border-blue-300 rounded-md shadow-sm text-xs sm:text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 min-h-[44px]"
-            >
-              {(() => {
-                // If forceMarkAll is true, always show "Mark All in 30 days"
-                if (forceMarkAll) {
-                  return t('staffAvailability.markNext30Days');
-                }
-                
-                const currentMonthDates = calendarDates.filter(date => 
-                  date.getMonth() === currentMonth.getMonth() && 
-                  date >= new Date(new Date().setHours(0, 0, 0, 0))
-                );
-                const currentMonthDateStrs = currentMonthDates.map(date => 
-                  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-                );
-                const currentMonthAvailability = availability.filter(schedule => 
-                  currentMonthDateStrs.includes(schedule.date)
-                );
-                const allMarked = currentMonthAvailability.every(schedule => schedule.is_available);
-                return allMarked ? t('staffAvailability.unmarkNext30Days') : t('staffAvailability.markNext30Days');
-              })()} 
-            </button>
-          </div>
-          
-          {/* Day of week headers */}
-          <div className="grid grid-cols-7 gap-1 sm:gap-1 mb-3">
-            {[t('staffAvailability.monday'), t('staffAvailability.tuesday'), t('staffAvailability.wednesday'), t('staffAvailability.thursday'), t('staffAvailability.friday'), t('staffAvailability.saturday'), t('staffAvailability.sunday')].map((day, index) => {
-              // Calculate if all dates in this column are available
-              const columnDates = calendarDates.filter(date => {
-                const dayOfWeek = date.getDay();
-                const adjustedDayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-                return adjustedDayIndex === index && date >= new Date(new Date().setHours(0, 0, 0, 0));
-              });
-              
-              const columnDateStrs = columnDates.map(date => 
-                `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-              );
-              
-              const columnAvailability = availability.filter(schedule => 
-                columnDateStrs.includes(schedule.date)
-              );
-              
-              const allMarked = columnAvailability.length > 0 && columnAvailability.every(schedule => schedule.is_available);
-              
-              return (
-                <button
-                  key={day}
-                  type="button"
-                  onClick={() => handleColumnToggle(index)}
-                  className={`text-center font-medium py-2 text-xs sm:text-sm rounded-md transition-all duration-200 hover:shadow-md transform hover:scale-105 active:scale-95 ${
-                    allMarked 
-                      ? 'bg-blue-100 text-blue-800 border-2 border-blue-300 hover:bg-blue-200' 
-                      : 'bg-gray-50 text-gray-600 border-2 border-gray-200 hover:bg-gray-100'
-                  }`}
-                  title={`Click to ${allMarked ? 'unmark' : 'mark'} all ${day}s`}
-                >
-                  <span className="hidden sm:inline">{day}</span>
-                  <span className="sm:hidden">{day.charAt(0)}</span>
+
+          <form onSubmit={handleSubmit}>
+            <div className="mb-3 sm:mb-4 flex justify-between items-center">
+              <button
+                type="button"
+                onClick={() => {
+                  const newDate = new Date(currentMonth);
+                  newDate.setMonth(newDate.getMonth() - 1);
+                  setCurrentMonth(newDate);
+                  setForceMarkAll(true); // Force "Mark All" display
+                }}
+                className="px-2 py-1 sm:px-3 sm:py-1 border border-gray-300 rounded-md shadow-sm text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 min-h-[44px] flex items-center"
+              >
+                <span className="hidden sm:inline">{t('staffAvailability.previousMonth')}</span>
+                <span className="sm:hidden">{t('staffAvailability.prev')}</span>
+              </button>
+              <h3 className="text-sm sm:text-lg font-medium text-gray-900 text-center px-2">
+                {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  const newDate = new Date(currentMonth);
+                  newDate.setMonth(newDate.getMonth() + 1);
+                  setCurrentMonth(newDate);
+                  setForceMarkAll(true); // Force "Mark All" display
+                }}
+                className="px-2 py-1 sm:px-3 sm:py-1 border border-gray-300 rounded-md shadow-sm text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 min-h-[44px] flex items-center"
+              >
+                <span className="hidden sm:inline">{t('staffAvailability.nextMonth')}</span>
+                <span className="sm:hidden">{t('staffAvailability.next')}</span>
                 </button>
-              );
-            })}
-          </div>
-          <div className="grid grid-cols-7 gap-1 sm:gap-1 mb-4">
-            {calendarDates.map(date => {
-              // Use local date formatting instead of toISOString()
-              const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-              const schedule = availability.find(s => s.date === dateStr);
-              const isCurrentMonth = date.getMonth() === currentMonth.getMonth();
-              const isPastDate = date < new Date(new Date().setHours(0, 0, 0, 0));
-              const isAvailable = schedule?.is_available || false;
-              // Use local date formatting for today comparison too
+            </div>
+
+            {/* Mark/Unmark All Button */}
+            <div className="mb-3 sm:mb-4 flex justify-end">
+              <button
+                type="button"
+                onClick={handleMarkUnmarkAll}
+                className="px-3 py-2 sm:px-4 sm:py-2 border border-blue-300 rounded-md shadow-sm text-xs sm:text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 min-h-[44px]"
+              >
+                {(() => {
+                  // If forceMarkAll is true, always show "Mark All in 30 days"
+                  if (forceMarkAll) {
+                    return t('staffAvailability.markNext30Days');
+                  }
+
+                  const currentMonthDates = calendarDates.filter(date =>
+                    date.getMonth() === currentMonth.getMonth() &&
+                    date >= new Date(new Date().setHours(0, 0, 0, 0))
+                  );
+                  const currentMonthDateStrs = currentMonthDates.map(date =>
+                    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+                  );
+                  const currentMonthAvailability = availability.filter(schedule =>
+                    currentMonthDateStrs.includes(schedule.date)
+                  );
+                  const allMarked = currentMonthAvailability.every(schedule => schedule.is_available);
+                  return allMarked ? t('staffAvailability.unmarkNext30Days') : t('staffAvailability.markNext30Days');
+                })()}
+              </button>
+            </div>
+
+            {/* Day of week headers */}
+            <div className="flex items-center gap-1 mb-2">
+              <div className="grid grid-cols-7 gap-1 flex-1">
+                {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, dayIndex) => {
+                  // Check if all dates in this column (day of week) are marked as available
+                  const columnDates = calendarDates.filter((date, index) => index % 7 === dayIndex);
+                  const futureDatesInColumn = columnDates.filter(date => date >= new Date(new Date().setHours(0, 0, 0, 0)));
+                  const availableDatesInColumn = futureDatesInColumn.filter(date => {
+                    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                    const schedule = availability.find(s => s.date === dateStr);
+                    return schedule?.is_available;
+                  });
+                  
+                  const allMarked = futureDatesInColumn.length > 0 && availableDatesInColumn.length === futureDatesInColumn.length;
+                  
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => handleColumnToggle(dayIndex)}
+                      disabled={futureDatesInColumn.length === 0}
+                      className={`p-2 rounded-md transition-all duration-200 text-xs sm:text-sm font-medium border-2 ${
+                        futureDatesInColumn.length === 0
+                          ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                          : allMarked 
+                            ? 'bg-blue-100 text-blue-800 border-2 border-blue-300 hover:bg-blue-200' 
+                            : 'bg-gray-50 text-gray-600 border-2 border-gray-200 hover:bg-gray-100'
+                      }`}
+                      title={`Click to ${allMarked ? 'unmark' : 'mark'} all ${day}s`}
+                    >
+                      <span className="hidden sm:inline">{day}</span>
+                      <span className="sm:hidden">{day.charAt(0)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Empty space for alignment with week buttons */}
+              <div className="w-6"></div>
+            </div>
+
+            {/* Week-based calendar grid */}
+            {getWeeksFromDates(calendarDates).map((weekDates, weekIndex) => {
               const today = new Date();
-              const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-              const isToday = todayStr === dateStr;
-              
-              // Add debug log for specific dates to check availability
-              if (isToday) {
-                console.log('Today\'s schedule:', { dateStr, schedule, isAvailable });
-              }
-              
+              today.setHours(0, 0, 0, 0);
+
+              // Check week availability status for button styling
+              const futureDatesInWeek = weekDates.filter(date => date >= today);
+              const availableDatesInWeek = futureDatesInWeek.filter(date => {
+                const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                const schedule = availability.find(s => s.date === dateStr);
+                return schedule?.is_available;
+              });
+
+              const allWeekAvailable = futureDatesInWeek.length > 0 && availableDatesInWeek.length === futureDatesInWeek.length;
+              const someWeekAvailable = availableDatesInWeek.length > 0;
+
               return (
-                <div 
-                  key={date} 
-                  className={`p-2 sm:p-2 rounded-lg transition-all duration-200 min-h-[70px] sm:min-h-[80px] flex flex-col justify-between cursor-pointer select-none
-                    ${!isCurrentMonth ? 'bg-gray-100 text-gray-400' : ''}
-                    ${isPastDate ? 'bg-gray-200 cursor-not-allowed opacity-60' : ''}
-                    ${isAvailable && !isPastDate ? 'bg-blue-50 border-2 border-blue-200 hover:bg-blue-100 active:bg-blue-200' : 'bg-gray-50 border-2 border-gray-200 hover:bg-gray-100 active:bg-gray-200'}
-                    ${isToday ? 'ring-2 ring-blue-500 ring-offset-1' : ''}
-                    ${selectedDate === dateStr ? 'ring-2 ring-green-700 ring-offset-1' : ''}
-                    ${!isPastDate && isCurrentMonth ? 'transform hover:scale-105 active:scale-95' : ''}
-                  `}
-                  onClick={() => {
-                    // Allow clicking on future dates, regardless of which month they're in
-                    if (!isPastDate) {
-                      toggleDateAvailability(dateStr, isAvailable);
-                      // If making the day unavailable, collapse the time input
-                      if (isAvailable && selectedDate === dateStr) {
-                        setSelectedDate(null);
-                      }
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    // Allow keyboard interaction on future dates, regardless of which month they're in
-                    if ((e.key === 'Enter' || e.key === ' ') && !isPastDate) {
-                      e.preventDefault();
-                      toggleDateAvailability(dateStr, isAvailable);
-                      if (isAvailable && selectedDate === dateStr) {
-                        setSelectedDate(null);
-                      }
-                    }
-                  }}
-                >
-                  <div className="font-medium text-gray-900 mb-1 text-sm sm:text-base">{date.getDate()}</div>
-                  <div 
-                    className="text-xs sm:text-sm text-gray-600 cursor-pointer hover:text-blue-600 active:text-blue-800 leading-tight p-1 rounded transition-colors duration-150 min-h-[32px] flex items-center justify-center"
-                    onClick={(e) => {
-                      // Only stop propagation if the date is available (has times to edit)
-                      if (isAvailable) {
-                        e.stopPropagation();
-                        // On mobile, show modal instead of inline editing
-                        if (window.innerWidth < 640) {
-                          setMobileEditDate(dateStr);
-                          setShowMobileTimeModal(true);
-                        } else {
-                          setSelectedDate(selectedDate === dateStr ? null : dateStr);
-                        }
-                      }
-                      // If not available, let the click bubble up to the parent calendar box
-                    }}
-                    onKeyDown={(e) => {
-                      if ((e.key === 'Enter' || e.key === ' ') && isAvailable) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (window.innerWidth < 640) {
-                          setMobileEditDate(dateStr);
-                          setShowMobileTimeModal(true);
-                        } else {
-                          setSelectedDate(selectedDate === dateStr ? null : dateStr);
-                        }
-                      }
-                    }}
-                    tabIndex={isAvailable ? 0 : -1}
-                  >
-                    {isAvailable ? (
-                      <div className="text-center">
-                        <div className="hidden sm:block">{schedule?.start_time?.substring(0, 5)} - {schedule?.end_time?.substring(0, 5)}</div>
-                        <div className="sm:hidden">
-                          <div>{schedule?.start_time?.substring(0, 5)}</div>
-                          <div>{schedule?.end_time?.substring(0, 5)}</div>
+                <div key={weekIndex} className="flex items-center gap-1 mb-1">
+                  {/* Week row with 7 date cells */}
+                  <div className="grid grid-cols-7 gap-1 flex-1">
+                    {weekDates.map(date => {
+                      // Use local date formatting instead of toISOString()
+                      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                      const schedule = availability.find(s => s.date === dateStr);
+                      const isCurrentMonth = date.getMonth() === currentMonth.getMonth();
+                      const isPastDate = date < new Date(new Date().setHours(0, 0, 0, 0));
+                      const isAvailable = schedule?.is_available || false;
+                      // Use local date formatting for today comparison too
+                      const today = new Date();
+                      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                      const isToday = todayStr === dateStr;
+
+                      return (
+                        <div
+                          key={date}
+                          className={`p-2 sm:p-2 rounded-lg transition-all duration-200 min-h-[70px] sm:min-h-[80px] flex flex-col justify-between cursor-pointer select-none
+                ${!isCurrentMonth ? 'bg-gray-100 text-gray-400' : ''}
+                ${isPastDate ? 'bg-gray-200 cursor-not-allowed opacity-60' : ''}
+                ${isAvailable && !isPastDate ? 'bg-blue-50 border-2 border-blue-200 hover:bg-blue-100 active:bg-blue-200' : 'bg-gray-50 border-2 border-gray-200 hover:bg-gray-100 active:bg-gray-200'}
+                 ${isToday ? 'ring-2 ring-blue-500 ring-offset-1' : ''}
+                ${selectedDate === dateStr ? 'ring-2 ring-green-700 ring-offset-1' : ''}
+                ${!isPastDate && isCurrentMonth ? 'transform hover:scale-105 active:scale-95' : ''}
+              `}
+                          onClick={() => {
+                            // Allow clicking on future dates, regardless of which month they're in
+                            if (!isPastDate) {
+                              toggleDateAvailability(dateStr, isAvailable);
+                              // If making the day unavailable, collapse the time input
+                              if (isAvailable && selectedDate === dateStr) {
+                                setSelectedDate(null);
+                              }
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            // Allow keyboard interaction on future dates, regardless of which month they're in
+                            if ((e.key === 'Enter' || e.key === ' ') && !isPastDate) {
+                              e.preventDefault();
+                              toggleDateAvailability(dateStr, isAvailable);
+                              if (isAvailable && selectedDate === dateStr) {
+                                setSelectedDate(null);
+                              }
+                            }
+                          }}
+                        >
+                          {/* Date cell content - same as before */}
+                          <div className="font-medium text-gray-900 mb-1 text-sm sm:text-base">{date.getDate()}</div>
+                          <div
+                            className="text-xs sm:text-sm text-gray-600 cursor-pointer hover:text-blue-600 active:text-blue-800 leading-tight p-1 rounded transition-colors duration-150 min-h-[32px] flex items-center justify-center"
+                            onClick={(e) => {
+                              // Only stop propagation if the date is available (has times to edit)
+                              if (isAvailable) {
+                                e.stopPropagation();
+                                // On mobile, show modal instead of inline editing
+                                if (window.innerWidth < 640) {
+                                  setMobileEditDate(dateStr);
+                                  setShowMobileTimeModal(true);
+                                } else {
+                                  setSelectedDate(selectedDate === dateStr ? null : dateStr);
+                                }
+                              }
+                              // If not available, let the click bubble up to the parent calendar box
+                            }}
+                            onKeyDown={(e) => {
+                              if ((e.key === 'Enter' || e.key === ' ') && isAvailable) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (window.innerWidth < 640) {
+                                  setMobileEditDate(dateStr);
+                                  setShowMobileTimeModal(true);
+                                } else {
+                                  setSelectedDate(selectedDate === dateStr ? null : dateStr);
+                                }
+                              }
+                            }}
+                            tabIndex={isAvailable ? 0 : -1}
+                          >
+                            {isAvailable ? (
+                              <div className="text-center">
+                                <div className="hidden sm:block">{schedule?.start_time?.substring(0, 5)} - {schedule?.end_time?.substring(0, 5)}</div>
+                                <div className="sm:hidden">
+                                  <div>{schedule?.start_time?.substring(0, 5)}</div>
+                                  <div>{schedule?.end_time?.substring(0, 5)}</div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-center">
+                                {schedule ? (
+                                  // Record exists but is_available is false
+                                  <>
+                                    <span className="hidden sm:inline">{t('staffAvailability.notAvailable')}</span>
+                                    <span className="sm:hidden">{t('staffAvailability.na')}</span>
+                                  </>
+                                ) : (
+                                  // No record exists for this date
+                                  <>
+                                    <span className="hidden sm:inline">{t('staffAvailability.notSet')}</span>
+                                    <span className="sm:hidden">{t('staffAvailability.na')}</span>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          {selectedDate === dateStr && (
+                            <div className="space-y-1 mt-2">
+                              <div>
+                                <input
+                                  type="time"
+                                  value={schedule?.start_time}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    handleAvailabilityChange(dateStr, 'start_time', e.target.value);
+                                    // Always ensure availability is set to true when time is changed
+                                    handleAvailabilityChange(dateStr, 'is_available', true);
+                                  }}
+                                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm min-h-[44px]"
+                                  placeholder={t('staffAvailability.startTime')}
+                                />
+                              </div>
+                              <div>
+                                <input
+                                  type="time"
+                                  value={schedule?.end_time}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    handleAvailabilityChange(dateStr, 'end_time', e.target.value);
+                                    // Always ensure availability is set to true when time is changed
+                                    handleAvailabilityChange(dateStr, 'is_available', true);
+                                  }}
+                                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm min-h-[44px]"
+                                  placeholder={t('staffAvailability.endTime')}
+                                />
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ) : (
-                      <div className="text-center">
-                        {schedule ? (
-                          // Record exists but is_available is false
-                          <>
-                            <span className="hidden sm:inline">{t('staffAvailability.notAvailable')}</span>
-                            <span className="sm:hidden">{t('staffAvailability.na')}</span>
-                          </>
-                        ) : (
-                          // No record exists for this date
-                          <>
-                            <span className="hidden sm:inline">{t('staffAvailability.notSet')}</span>
-                            <span className="sm:hidden">{t('staffAvailability.na')}</span>
-                          </>
-                        )}
-                      </div>
-                    )}
+                      );
+                    })}
                   </div>
-                  {selectedDate === dateStr && (
-                    <div className="space-y-1 mt-2">
-                      <div>
-                        <input
-                          type="time"
-                          value={schedule?.start_time}
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            handleAvailabilityChange(dateStr, 'start_time', e.target.value);
-                            // Always ensure availability is set to true when time is changed
-                            handleAvailabilityChange(dateStr, 'is_available', true);
-                          }}
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm min-h-[44px]"
-                          placeholder={t('staffAvailability.startTime')}
-                        />
-                      </div>
-                      <div>
-                        <input
-                          type="time"
-                          value={schedule?.end_time}
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            handleAvailabilityChange(dateStr, 'end_time', e.target.value);
-                            // Always ensure availability is set to true when time is changed
-                            handleAvailabilityChange(dateStr, 'is_available', true);
-                          }}
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm min-h-[44px]"
-                          placeholder={t('staffAvailability.endTime')}
-                        />
-                      </div>
-                    </div>
-                  )}
+
+                  {/* Week toggle button */}
+                  <button
+                    type="button"
+                    onClick={() => handleWeekToggle(weekDates)}
+                    disabled={futureDatesInWeek.length === 0}
+                    className={`w-6 h-16 rounded-md transition-all duration-200 flex items-center justify-center text-xs font-medium border-2 ${
+                      futureDatesInWeek.length === 0
+                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                        : allWeekAvailable
+                          ? 'bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200 active:bg-blue-300'
+                          : someWeekAvailable
+                            ? 'bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200 active:bg-yellow-300'
+                            : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 active:bg-gray-200'
+                    }`}
+                    title={`Click to ${allWeekAvailable ? 'unmark' : 'mark'} entire week`}
+                  >
+                    <span>◀</span>
+                  </button>
                 </div>
               );
             })}
-          </div>
-          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 mt-4 sm:mt-6">
+
+
+            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 mt-4 sm:mt-6">
             <button
               type="button"
               onClick={onClose}
@@ -600,11 +687,11 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
             >
               {t('staffAvailability.save')}
             </button>
-          </div>
-        </form>
+            </div>
+          </form>
         </div>
       </div>
-      
+
       {/* Mobile Time Edit Modal */}
       {showMobileTimeModal && mobileEditDate && (
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50 p-4">
@@ -613,7 +700,7 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
               <h3 className="text-lg font-semibold mb-4 text-center">
                 {t('staffAvailability.editTimeFor')} {new Date(mobileEditDate + 'T00:00:00').toLocaleDateString('default', { month: 'short', day: 'numeric' })}
               </h3>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">{t('staffAvailability.startTime')}</label>
@@ -627,7 +714,7 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-lg min-h-[48px]"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">{t('staffAvailability.endTime')}</label>
                   <input
@@ -641,7 +728,7 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
                   />
                 </div>
               </div>
-              
+
               <div className="flex space-x-2 mt-6">
                 <button
                   type="button"

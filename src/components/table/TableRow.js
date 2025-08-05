@@ -1,10 +1,10 @@
 import React from 'react';
 import DateTimeFormatter from '../../utils/DateTimeFormatter';
 import StaffAvailabilityService from '../../services/StaffAvailabilityService';
-import { PencilIcon, ClockIcon, KeyIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, ClockIcon, KeyIcon, DocumentDuplicateIcon } from '@heroicons/react/24/outline';
 import { USER_ROLES } from '../../constants';
 
-const TableRow = ({ row, columns, selectedRows, onSelectRow, onEdit, onSetAvailability, onResetPassword }) => {
+const TableRow = ({ row, columns, selectedRows, onSelectRow, onEdit, onSetAvailability, onResetPassword, onViewHistory }) => {
   // Check if value is a date type
   const isDateValue = (value) => {
     if (!value) return false;
@@ -83,6 +83,16 @@ const TableRow = ({ row, columns, selectedRows, onSelectRow, onEdit, onSetAvaila
               title="Reset Password"
             >
               <KeyIcon className="h-5 w-5" />
+            </button>
+          )}
+          {/* Add History Icon for Customer role */}
+          {row.role === USER_ROLES.CUSTOMER && onViewHistory && (
+            <button
+              onClick={() => onViewHistory(row)}
+              className="text-purple-500 hover:text-purple-700 p-1 rounded-full hover:bg-purple-100 transition-colors duration-200"
+              title="View Booking History"
+            >
+              <DocumentDuplicateIcon className="h-5 w-5" />
             </button>
           )}
         </div>

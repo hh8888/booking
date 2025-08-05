@@ -162,9 +162,58 @@ class BookingService {
   }
 
   async updateBooking(bookingData) {
-    console.log('Updating:',bookingData.start_time);
+    console.log('Updating:', bookingData.start_time);
+    
+    // Get the old booking data before updating
+    const oldBooking = await this.getBookingById(bookingData.id);
+    
     await this.validateBookingTime(bookingData.start_time);
     await this.dbService.updateItem(TABLES.BOOKINGS, bookingData, 'Booking');
+    
+    // Check if status changed and trigger email notification
+    if (oldBooking && oldBooking.status !== bookingData.status) {
+      await this.triggerStatusChangeEmail(bookingData.id, oldBooking.status, bookingData.status);
+    }
+  }
+  
+  // Add new method to get booking by ID
+  async getBookingById(bookingId) {
+    try {
+      const bookings = await this.dbService.fetchData(TABLES.BOOKINGS, 'created_at', false, { id: bookingId });
+      return bookings.length > 0 ? bookings[0] : null;
+    } catch (error) {
+      console.error('Error fetching booking by ID:', error);
+      return null;
+    }
+  }
+  
+  // Add new method to trigger email notifications
+  async triggerStatusChangeEmail(bookingId, oldStatus, newStatus) {
+    try {
+      const response = await fetch('/functions/v1/send-booking-status-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabase.supabaseKey}`
+        },
+        body: JSON.stringify({
+          bookingId,
+          oldStatus,
+          newStatus
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('Email notification sent successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('Failed to send email notification:', error);
+      // Don't throw error to prevent booking update from failing
+    }
   }
 
   async deleteBookings(bookingIds) {

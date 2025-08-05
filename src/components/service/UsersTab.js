@@ -9,12 +9,10 @@ import withErrorHandling from '../common/withErrorHandling';
 import { showToast } from '../common/ToastMessage';
 import ToastMessage from '../common/ToastMessage';
 import StaffDateAvailabilityForm from './StaffDateAvailabilityForm';
+import UserBookingHistory from '../common/UserBookingHistory';
 import { USER_ROLES, TABLES } from '../../constants';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getAvailableRoleOptions, canUpdateToRole } from '../../utils/userUtils';
-// Change this line:
-// import { useDashboardUser } from '../../hooks/useDashboardUser';
-// To:
 import useDashboardUser from '../../hooks/useDashboardUser';
 
 function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = false }) {
@@ -28,6 +26,7 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
   const [roleFilter, setRoleFilter] = useState('all');
   const [searchFilter, setSearchFilter] = useState('');
   const [selectedStaffId, setSelectedStaffId] = useState(null);
+  const [selectedUserForHistory, setSelectedUserForHistory] = useState(null);
 
   useEffect(() => {
     if (!users || users.length === 0) {
@@ -117,6 +116,10 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
       console.error('Password reset error:', error);
       showToast.error(`Failed to send reset email: ${error.message}`);
     }
+  };
+
+  const handleViewHistory = (user) => {
+    setSelectedUserForHistory(user);
   };
 
   if (loading) return <div>{t('common.loading')}</div>;
@@ -240,6 +243,7 @@ const getAvailableRoleOptions = (currentUserRole) => {
         onEdit={!staffMode ? setEditItem : null}
         onSetAvailability={(staff) => setSelectedStaffId(staff.id)}
         onResetPassword={!staffMode ? handleResetPassword : null}
+        onViewHistory={handleViewHistory}
         staffMode={staffMode}
         columns={[
           { key: 'full_name', label: t('formLabels.fullName') },
@@ -323,6 +327,13 @@ const getAvailableRoleOptions = (currentUserRole) => {
           staffId={selectedStaffId}
           onClose={() => setSelectedStaffId(null)}
           selectedLocation={selectedLocation}
+        />
+      )}
+      
+      {selectedUserForHistory && (
+        <UserBookingHistory
+          user={selectedUserForHistory}
+          onClose={() => setSelectedUserForHistory(null)}
         />
       )}
     </div>

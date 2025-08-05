@@ -107,6 +107,7 @@ const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, l
     console.log('=== GenericForm handleSubmit END ===');
   };
 
+  // In the renderField function, add a case for custom components:
   const renderField = (field) => {
     // Check if field is hidden
     if (field.hidden) {

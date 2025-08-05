@@ -15,10 +15,12 @@ const useDashboardUser = () => {
   // Monitor auth state changes
   useAuthStateMonitor(currentUserId);
   
-  const fetchUserInfo = async () => {
+  const fetchUserInfo = async (skipLoadingState = false) => {
     try {
       console.log('=== useDashboardUser fetchUserInfo START ===');
-      setLoading(true);
+      if (!skipLoadingState) {
+        setLoading(true);
+      }
       setError(null);
       
       const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -83,9 +85,9 @@ const useDashboardUser = () => {
       console.log('useDashboardUser - Auth state change:', event);
       console.log('useDashboardUser - Session:', session?.user ? 'User present' : 'No user');
       
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        console.log('useDashboardUser - Fetching user info due to auth state change');
-        await fetchUserInfo();
+      if (event === 'SIGNED_IN') {
+        console.log('useDashboardUser - Fetching user info due to sign in');
+        await fetchUserInfo(); // Show loading for actual sign in
       } else if (event === 'SIGNED_OUT') {
         console.log('useDashboardUser - Clearing user data due to sign out');
         setUserEmail('');
@@ -96,6 +98,7 @@ const useDashboardUser = () => {
         setLoading(false);
         setError(null);
       }
+      // Remove TOKEN_REFRESHED handling - token refresh doesn't need to re-fetch user data
     });
     
     // Also fetch user info immediately on mount

@@ -84,68 +84,75 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-6 flex flex-col">
-      <div className="flex justify-between items-center mb-4 md:mb-6">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800">{businessName}</h1>
-          <LocationSelector />
-        </div>
-        <div className="flex items-center space-x-3">
-          <SessionIndicator />
-          <UserDropdown 
-            userEmail={userEmail}
-            userRole={userRole}
-            userName={userName}
-            currentUserId={currentUserId}
-          />
+    <div className="min-h-screen bg-gray-100 flex flex-col">
+      {/* Sticky Header Section */}
+      <div className="sticky top-0 z-50 bg-gray-100 border-b border-gray-200 shadow-sm">
+        <div className="p-4 md:p-6">
+          <div className="flex justify-between items-center mb-4 md:mb-6">
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-800">{businessName}</h1>
+              <LocationSelector />
+            </div>
+            <div className="flex items-center space-x-3">
+              <SessionIndicator />
+              <UserDropdown 
+                userEmail={userEmail}
+                userRole={userRole}
+                userName={userName}
+                currentUserId={currentUserId}
+              />
+            </div>
+          </div>
+        
+          {/* Tab Navigation */}
+          <div className="flex gap-2 border-b border-gray-200 overflow-x-auto">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${activeTab === 'dashboard' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              {t('nav.dashboard')}
+            </button>
+            <button
+              onClick={() => setActiveTab('bookings')}
+              className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${activeTab === 'bookings' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              {t('nav.bookings')}
+            </button>
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${activeTab === 'users' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              {t('nav.users')}
+            </button>
+            <button
+              onClick={() => setActiveTab('Services')}
+              className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${activeTab === 'Services' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              {t('nav.services')}
+            </button>
+            <button
+              onClick={() => setActiveTab('reports')}
+              className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${activeTab === 'reports' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              {t('nav.reports')}
+            </button>
+            {/* Settings tab only visible to Admin */}
+            {userRole === USER_ROLES.ADMIN && (
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${activeTab === 'settings' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                {t('nav.settings')}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     
-      {/* Tab Navigation */}
-      <div className="flex flex-wrap gap-2 border-b border-gray-200 mb-4 md:mb-6 overflow-x-auto">
-        <button
-          onClick={() => setActiveTab('dashboard')}
-          className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${activeTab === 'dashboard' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          {t('nav.dashboard')}
-        </button>
-        <button
-          onClick={() => setActiveTab('bookings')}
-          className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${activeTab === 'bookings' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          {t('nav.bookings')}
-        </button>
-        <button
-          onClick={() => setActiveTab('users')}
-          className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${activeTab === 'users' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          {t('nav.users')}
-        </button>
-        <button
-          onClick={() => setActiveTab('Services')}
-          className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${activeTab === 'Services' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          {t('nav.services')}
-        </button>
-        <button
-          onClick={() => setActiveTab('reports')}
-          className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${activeTab === 'reports' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          {t('nav.reports')}
-        </button>
-        {/* Settings tab only visible to Admin */}
-        {userRole === USER_ROLES.ADMIN && (
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${activeTab === 'settings' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            {t('nav.settings')}
-          </button>
-        )}
-      </div>
-    
-      {/* Tab Content */}
-      <div className="bg-white p-4 md:p-6 rounded-lg shadow-md flex-grow mb-16">
+      {/* Scrollable Content Area */}
+      <div className="flex-grow p-4 md:p-6 pt-0">
+        {/* Tab Content */}
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow-md flex-grow mb-16">
         {/* Update the loading condition to check both loading states */}
         {userLoading ? (
           <div>
@@ -195,6 +202,7 @@ export default function AdminDashboard() {
           </>
         )}
       </div>
+    </div>
     </div>
   );
 }

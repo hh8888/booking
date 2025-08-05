@@ -40,59 +40,66 @@ export default function StaffDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-6 flex flex-col">
-      <div className="flex justify-between items-center mb-4 md:mb-6">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800">{businessName} - {t('nav.staffPortal')}</h1>
-          <LocationSelector />
-        </div>
-        <div className="flex items-center space-x-3">
-          <SessionIndicator />
-          <UserDropdown 
-            userEmail={userEmail}
-            userRole={userRole}
-            userName={userName}
-            currentUserId={currentUserId}
-          />
+    <div className="min-h-screen bg-gray-100 flex flex-col">
+      {/* Sticky Header Section */}
+      <div className="sticky top-0 z-50 bg-gray-100 border-b border-gray-200 shadow-sm">
+        <div className="p-4 md:p-6">
+          <div className="flex justify-between items-center mb-4 md:mb-6">
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-800">{businessName} - {t('nav.staffPortal')}</h1>
+              <LocationSelector />
+            </div>
+            <div className="flex items-center space-x-3">
+              <SessionIndicator />
+              <UserDropdown 
+                userEmail={userEmail}
+                userRole={userRole}
+                userName={userName}
+                currentUserId={currentUserId}
+              />
+            </div>
+          </div>
+        
+          {/* Tab Navigation - Removed Settings, Services, and Reports tabs */}
+          <div className="flex gap-2 border-b border-gray-200 overflow-x-auto">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+                activeTab === 'dashboard' 
+                  ? 'text-blue-500 border-b-2 border-blue-500' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {t('nav.dashboard')}
+            </button>
+            <button
+              onClick={() => setActiveTab('bookings')}
+              className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+                activeTab === 'bookings' 
+                  ? 'text-blue-500 border-b-2 border-blue-500' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {t('nav.myBookings')}
+            </button>
+            <button
+              onClick={() => setActiveTab('customers')}
+              className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+                activeTab === 'customers' 
+                  ? 'text-blue-500 border-b-2 border-blue-500' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {t('nav.customers')}
+            </button>
+          </div>
         </div>
       </div>
     
-      {/* Tab Navigation - Removed Settings, Services, and Reports tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-gray-200 mb-4 md:mb-6 overflow-x-auto">
-        <button
-          onClick={() => setActiveTab('dashboard')}
-          className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${
-            activeTab === 'dashboard' 
-              ? 'text-blue-500 border-b-2 border-blue-500' 
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          {t('nav.dashboard')}
-        </button>
-        <button
-          onClick={() => setActiveTab('bookings')}
-          className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${
-            activeTab === 'bookings' 
-              ? 'text-blue-500 border-b-2 border-blue-500' 
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          {t('nav.myBookings')}
-        </button>
-        <button
-          onClick={() => setActiveTab('customers')}
-          className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap ${
-            activeTab === 'customers' 
-              ? 'text-blue-500 border-b-2 border-blue-500' 
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          {t('nav.customers')}
-        </button>
-      </div>
-    
-      {/* Tab Content */}
-      <div className="bg-white p-4 md:p-6 rounded-lg shadow-md flex-grow mb-16">
+      {/* Scrollable Content Area */}
+      <div className="flex-grow p-4 md:p-6 pt-0">
+        {/* Tab Content */}
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow-md flex-grow mb-16">
         {loading ? (
           <LoadingSpinner fullScreen={true} text={t('common.loading')} />
         ) : networkError ? (
@@ -118,6 +125,8 @@ export default function StaffDashboard() {
           </>
         )}
       </div>
+    </div>
+    
     </div>
   );
 }
