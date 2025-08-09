@@ -90,7 +90,8 @@ export default {
     country: '国家',
     notes: '备注',
     description: '描述',
-    notProvided: '未提供'
+    notProvided: '未提供',
+    noResults: '无结果'
   },
 
   // Navigation

@@ -88,7 +88,8 @@ export default {
     address: 'Address',
     notes: 'Notes',
     description: 'Description',
-    notProvided: 'Not provided'
+    notProvided: 'Not provided',
+    noResults: 'No results found',
   },
 
   // Navigation

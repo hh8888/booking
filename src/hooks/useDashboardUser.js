@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { TABLES } from '../constants';
 import { useAuthStateMonitor } from './useAuthStateMonitor';
@@ -15,7 +15,8 @@ const useDashboardUser = () => {
   // Monitor auth state changes
   useAuthStateMonitor(currentUserId);
   
-  const fetchUserInfo = async (skipLoadingState = false) => {
+  // Memoize fetchUserInfo to prevent unnecessary re-renders
+  const fetchUserInfo = useCallback(async (skipLoadingState = false) => {
     try {
       console.log('=== useDashboardUser fetchUserInfo START ===');
       if (!skipLoadingState) {
@@ -75,8 +76,8 @@ const useDashboardUser = () => {
     } finally {
       setLoading(false);
     }
-  };
-  
+  }, []);
+
   useEffect(() => {
     console.log('=== useDashboardUser useEffect triggered ===');
     
@@ -97,8 +98,12 @@ const useDashboardUser = () => {
         setLastLocation(null);
         setLoading(false);
         setError(null);
+      } else if (event === 'TOKEN_REFRESHED') {
+        // Token refresh should not trigger loading state or re-fetch user data
+        // The user data hasn't changed, only the token was refreshed
+        console.log('useDashboardUser - Token refreshed, no action needed');
+        return;
       }
-      // Remove TOKEN_REFRESHED handling - token refresh doesn't need to re-fetch user data
     });
     
     // Also fetch user info immediately on mount
@@ -107,7 +112,7 @@ const useDashboardUser = () => {
     return () => {
       subscription?.unsubscribe();
     };
-  }, []);
+  }, [fetchUserInfo]);
   
   return {
     userEmail,
