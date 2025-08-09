@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import Table from '../table/Table';
 import GenericForm from '../common/GenericForm';
+import CreateUserPopup from '../common/CreateUserPopup';
 import FilterBox from '../common/FilterBox';
 import DatabaseService from '../../services/DatabaseService';
 import UserService from '../../services/UserService';
@@ -23,6 +25,7 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
   const [error, setError] = useState(null);
   const [editItem, setEditItem] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [showCreateUserForm, setShowCreateUserForm] = useState(false);
   const [roleFilter, setRoleFilter] = useState('all');
   const [searchFilter, setSearchFilter] = useState('');
   const [selectedStaffId, setSelectedStaffId] = useState(null);
@@ -92,11 +95,32 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
   };
 
   const handleDeleteSelected = async () => {
+    // Add confirmation dialog
+    if (selectedRows.length === 0) {
+      showToast.error('No users selected for deletion');
+      return;
+    }
+  
+    const confirmMessage = `Are you sure you want to delete ${selectedRows.length} selected user(s)? This action cannot be undone.`;
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+  
     try {
       const dbService = DatabaseService.getInstance();
       await dbService.deleteItems(TABLES.USERS, selectedRows, 'User');
+      
+      // Update the users list by filtering out deleted users
       setUsers(users.filter((item) => !selectedRows.includes(item.id)));
+      
+      // Clear selected rows after successful deletion
+      setSelectedRows([]);
+      
+      // Remove this line to eliminate duplicate toast:
+      // showToast.success(`Successfully deleted ${selectedRows.length} user(s)`);
     } catch (error) {
+      console.error('Error deleting users:', error);
+      showToast.error(`Failed to delete users: ${error.message}`);
       handleError('deleting', () => Promise.reject(error));
     }
   };
@@ -120,6 +144,15 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
 
   const handleViewHistory = (user) => {
     setSelectedUserForHistory(user);
+  };
+
+  // Add this function to handle when a new user is created
+  const handleUserCreated = async (newUser) => {
+    // Refresh users list
+    await fetchUsers();
+    
+    // Show success message
+    showToast.success('User created successfully');
   };
 
   if (loading) return <div>{t('common.loading')}</div>;
@@ -171,7 +204,7 @@ const getAvailableRoleOptions = (currentUserRole) => {
       {!staffMode && (
         <>
           <button
-            onClick={() => setIsCreating(true)}
+            onClick={() => setShowCreateUserForm(true)}
             className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 my-4"
           >
             {t('users.addNewUser')}
@@ -202,7 +235,7 @@ const getAvailableRoleOptions = (currentUserRole) => {
       {staffMode && (
         <>
           <button
-            onClick={() => setIsCreating(true)}
+            onClick={() => setShowCreateUserForm(true)}
             className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 my-4"
           >
             {t('users.addNewCustomer')}
@@ -220,20 +253,33 @@ const getAvailableRoleOptions = (currentUserRole) => {
           </button>
         </>
       )}
-      {/* Role filter dropdown - Add this section */}
-      <div className="my-4">
-        <label className="mr-2 font-medium">{t('users.filterByRole')}</label>
-        <select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="all">{t('users.allUsers')}</option>
-          <option value={USER_ROLES.ADMIN}>{t('users.admin')}</option>
-          <option value={USER_ROLES.MANAGER}>{t('users.manager')}</option>
-          <option value={USER_ROLES.STAFF}>{t('users.staff')}</option>
-          <option value={USER_ROLES.CUSTOMER}>{t('users.customer')}</option>
-        </select>
+      {/* Role filter dropdown and search filter - Update this section */}
+      <div className="my-4 flex items-center gap-4">
+        <div className="flex items-center">
+          <label className="mr-2 font-medium">{t('users.filterByRole')}</label>
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="all">{t('users.allUsers')}</option>
+            <option value={USER_ROLES.ADMIN}>{t('users.admin')}</option>
+            <option value={USER_ROLES.MANAGER}>{t('users.manager')}</option>
+            <option value={USER_ROLES.STAFF}>{t('users.staff')}</option>
+            <option value={USER_ROLES.CUSTOMER}>{t('users.customer')}</option>
+          </select>
+        </div>
+        
+        <div className="flex items-center">
+          <label className="mr-2 font-medium">Search:</label>
+          <input
+            type="text"
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            placeholder="Search by name or email..."
+            className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500 w-64"
+          />
+        </div>
       </div>
 
       <Table
@@ -319,6 +365,14 @@ const getAvailableRoleOptions = (currentUserRole) => {
               }
             ])
           ]}
+        />
+      )}
+
+      {/* Create User Form Modal */}
+      {showCreateUserForm && (
+        <CreateUserPopup
+          onClose={() => setShowCreateUserForm(false)}
+          onUserCreated={handleUserCreated}
         />
       )}
 

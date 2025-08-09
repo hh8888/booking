@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import GenericForm from '../common/GenericForm';
 import CustomerSearchSelect from '../common/CustomerSearchSelect';
+import CreateUserPopup from '../common/CreateUserPopup';
 import DatabaseService from '../../services/DatabaseService';
 import DateTimeFormatter from '../../utils/DateTimeFormatter';
 import BookingService from '../../services/BookingService';
@@ -48,6 +49,7 @@ export default function EditBookingPopup({
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
   const [bookedSlots, setBookedSlots] = useState([]);
   const [allTimeSlots, setAllTimeSlots] = useState([]);
+  const [showCreateUserForm, setShowCreateUserForm] = useState(false);
 
   // Check if current user can edit staff comments
   const canEditStaffComments = currentUser && (
@@ -558,7 +560,8 @@ export default function EditBookingPopup({
   const fetchCustomers = async () => {
     try {
       const dbService = DatabaseService.getInstance();
-      const data = await dbService.fetchSpecificColumns(TABLES.USERS, 'id, full_name', { role: USER_ROLES.CUSTOMER });
+      // Include both verified and unverified customers
+      const data = await dbService.fetchSpecificColumns(TABLES.USERS, 'id, full_name, email_verified', { role: USER_ROLES.CUSTOMER });
       setCustomers(data);
       return data;
     } catch (error) {
@@ -869,6 +872,23 @@ export default function EditBookingPopup({
     console.log('Edit item:', editItem);
   }, [hourOptions, minuteOptions, editItem]);
 
+  // Add this useEffect near the other useEffect hooks
+  useEffect(() => {
+    console.log('showCreateUserForm state changed:', showCreateUserForm);
+  }, [showCreateUserForm]);
+
+  // Function to handle when a new user is created
+  const handleUserCreated = async (newUser) => {
+    // Refresh customers list
+    await fetchCustomers();
+    
+    // Auto-select the newly created user
+    setEditItem(prev => ({
+      ...prev,
+      customer_id: newUser.id
+    }));
+  };
+
   // Add this useEffect to ensure customer_id is set when hideCustomerSelection is true
   useEffect(() => {
     if (hideCustomerSelection && editItem && !editItem.customer_id) {
@@ -879,8 +899,9 @@ export default function EditBookingPopup({
   }, [hideCustomerSelection, editItem]);
   
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+    <>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
         <GenericForm
           data={editItem}
           onSave={handleSave}
@@ -896,18 +917,35 @@ export default function EditBookingPopup({
               required: !hideCustomerSelection,
               hidden: hideCustomerSelection,
               renderField: () => !hideCustomerSelection ? (
-                <CustomerSearchSelect
-                  customers={customers}
-                  value={editItem?.customer_id}
-                  onChange={(value) => {
-                    setEditItem(prev => ({
-                      ...prev,
-                      customer_id: value
-                    }));
-                  }}
-                  placeholder={t('editBooking.selectCustomer')}
-                  required={!hideCustomerSelection}
-                />
+                <div className="flex items-end space-x-2">
+                  <div className="flex-1">
+                    <CustomerSearchSelect
+                      customers={customers}
+                      value={editItem?.customer_id}
+                      onChange={(value) => {
+                        setEditItem(prev => ({
+                          ...prev,
+                          customer_id: value
+                        }));
+                      }}
+                      placeholder={t('editBooking.selectCustomer')}
+                      required={!hideCustomerSelection}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      console.log('Create user button clicked'); // Add this line
+                      setShowCreateUserForm(true);
+                    }}
+                    className="bg-green-500 text-white px-3 py-2 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 whitespace-nowrap"
+                    title={t('users.addNewUser')}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </button>
+                </div>
               ) : null
             },
             {
@@ -1348,7 +1386,16 @@ export default function EditBookingPopup({
             },
           ]}
         />
+        </div>
       </div>
-    </div>
+      
+      {/* Create User Form Modal */}
+      {showCreateUserForm && (
+        <CreateUserPopup
+          onClose={() => setShowCreateUserForm(false)}
+          onUserCreated={handleUserCreated}
+        />
+      )}
+    </>
   );
 }

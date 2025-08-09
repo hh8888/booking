@@ -188,28 +188,24 @@ class BookingService {
   }
   
   // Add new method to trigger email notifications
-  async triggerStatusChangeEmail(bookingId, oldStatus, newStatus) {
+  async triggerStatusChangeEmail(bookingId, oldStatus, newStatus, emailRecipients = 'both') {
     try {
-      const response = await fetch('/functions/v1/send-booking-status-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.supabaseKey}`
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('send-booking-status-email', {
+        body: {
           bookingId,
           oldStatus,
-          newStatus
-        })
+          newStatus,
+          emailRecipients
+        }
       });
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (error) {
+        console.error('Edge Function error:', error);
+        throw new Error(`Failed to send email notification: ${error.message}`);
       }
       
-      const result = await response.json();
-      console.log('Email notification sent successfully:', result);
-      return result;
+      console.log('Email notification sent successfully:', data);
+      return data;
     } catch (error) {
       console.error('Failed to send email notification:', error);
       // Don't throw error to prevent booking update from failing

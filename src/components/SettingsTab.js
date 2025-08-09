@@ -783,6 +783,7 @@ const [emailTestData, setEmailTestData] = useState({
   bookingId: '',
   oldStatus: 'pending',
   newStatus: 'confirmed',
+  emailRecipients: 'both',
   isLoading: false
 });
 
@@ -802,17 +803,80 @@ const testEmailSend = async () => {
       body: {
         bookingId: emailTestData.bookingId,
         oldStatus: emailTestData.oldStatus,
-        newStatus: emailTestData.newStatus
+        newStatus: emailTestData.newStatus,
+        emailRecipients: emailTestData.emailRecipients
       }
     });
     
-    if (error) throw error;
+    if (error) {
+      // Enhanced error handling with more details
+      let errorMessage = 'Unknown error occurred';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      // Check if it's a FunctionsHttpError with additional context
+      if (error.context) {
+        try {
+          const errorContext = typeof error.context === 'string' ? JSON.parse(error.context) : error.context;
+          if (errorContext.error) {
+            errorMessage = errorContext.error;
+          }
+        } catch (parseError) {
+          console.warn('Could not parse error context:', parseError);
+        }
+      }
+      
+      // Provide specific guidance for common issues
+      if (errorMessage.includes('RESEND_API_KEY') || errorMessage.includes('email service')) {
+        errorMessage = 'Email service not configured. Please set up RESEND_API_KEY in Supabase Edge Function environment variables.';
+      } else if (errorMessage.includes('Failed to fetch booking')) {
+        errorMessage = 'Could not find the specified booking. Please check if the booking ID exists.';
+      } else if (errorMessage.includes('Failed to send email')) {
+        errorMessage = 'Email delivery failed. Please check email service configuration and recipient addresses.';
+      }
+      
+      console.error('Detailed error information:', {
+        originalError: error,
+        message: errorMessage,
+        context: error.context,
+        stack: error.stack
+      });
+      
+      throw new Error(errorMessage);
+    }
     
     toast.success('Test email sent successfully!');
     console.log('Email test result:', data);
   } catch (error) {
     console.error('Error sending test email:', error);
-    toast.error(`Failed to send test email: ${error.message}`);
+    
+    // Enhanced error display
+    let displayMessage = error.message || 'Unknown error occurred';
+    
+    // Add troubleshooting hints
+    const troubleshootingHints = [];
+    
+    if (displayMessage.includes('RESEND_API_KEY') || displayMessage.includes('email service')) {
+      troubleshootingHints.push('Configure RESEND_API_KEY in Supabase');
+    }
+    
+    if (displayMessage.includes('booking')) {
+      troubleshootingHints.push('Verify booking ID exists');
+    }
+    
+    if (displayMessage.includes('non-2xx status code')) {
+      troubleshootingHints.push('Check Edge Function logs in Supabase dashboard');
+    }
+    
+    const fullMessage = troubleshootingHints.length > 0 
+      ? `${displayMessage}\n\nTroubleshooting: ${troubleshootingHints.join(', ')}`
+      : displayMessage;
+    
+    toast.error(`Failed to send test email: ${fullMessage}`, {
+      autoClose: 8000 // Longer display time for detailed messages
+    });
   } finally {
     setEmailTestData(prev => ({ ...prev, isLoading: false }));
   }
@@ -884,7 +948,13 @@ useEffect(() => {
         settings={customerDashboardSettings} 
         onSave={saveCustomerDashboardSettings} 
       />
-      
+       
+      {/* System Settings Group */}
+      <SystemSettings 
+        settings={systemSettings} 
+        onSave={saveSystemSettings} 
+      />
+           
       {/* Email Test Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <h3 className="text-lg font-medium text-gray-800 mb-4">Email Test</h3>
@@ -907,6 +977,22 @@ useEffect(() => {
                   {booking.id.slice(0, 8)}... - {booking.customer?.full_name} - {booking.service?.name}
                 </option>
               ))}
+            </select>
+          </div>
+          
+          {/* Email Recipients */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email Recipients
+            </label>
+            <select
+              value={emailTestData.emailRecipients}
+              onChange={(e) => setEmailTestData(prev => ({ ...prev, emailRecipients: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="both">Both Customer & Provider</option>
+              <option value="customer">Customer Only</option>
+              <option value="provider">Provider Only</option>
             </select>
           </div>
           
@@ -967,16 +1053,11 @@ useEffect(() => {
         
         <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
           <p className="text-sm text-yellow-800">
-            <strong>Note:</strong> This will send actual emails to the customer and provider associated with the selected booking.
+            <strong>Note:</strong> This will send emails to the selected recipients (customer and/or provider) associated with the chosen booking.
           </p>
         </div>
       </div>
-      
-      {/* System Settings Group */}
-      <SystemSettings 
-        settings={systemSettings} 
-        onSave={saveSystemSettings} 
-      />
+
       
       {/* Toast Notification Container */}
       <ToastMessage />

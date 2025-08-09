@@ -287,7 +287,7 @@ export default {
   users: {
     title: 'Users Management',
     manageUsers: 'Manage Users',
-    addNewUser: 'Add New User',
+    addNewUser: 'Create New User',
     addNewCustomer: 'Add New Customer',
     deleteSelected: 'Delete Selected',
     filterByRole: 'Filter by Role:',
@@ -314,7 +314,9 @@ export default {
     noUsers: 'No users found',
     loadingUsers: 'Loading users...',
     resetPassword: 'Reset Password',
-    setAvailability: 'Set Availability'
+    setAvailability: 'Set Availability',
+    userCreatedSuccessfully: 'User created successfully',
+    failedToCreateUser: 'Failed to create user'
   },
 
   // Services
