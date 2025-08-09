@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { TABLES } from '../constants';
 import { useAuthStateMonitor } from './useAuthStateMonitor';
@@ -11,6 +11,9 @@ const useDashboardUser = () => {
   const [lastLocation, setLastLocation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Add ref to track if user is already signed in
+  const isUserSignedInRef = useRef(false);
 
   // Monitor auth state changes
   useAuthStateMonitor(currentUserId);
@@ -57,6 +60,7 @@ const useDashboardUser = () => {
           setLastLocation(userData.last_location);
           console.log('Set currentUserId to:', userData.id);
           console.log('Set userRole to:', userData.role);
+          isUserSignedInRef.current = true;
         } else {
           console.warn('No user data found in database');
         }
@@ -68,6 +72,7 @@ const useDashboardUser = () => {
         setUserName('');
         setCurrentUserId(null);
         setLastLocation(null);
+        isUserSignedInRef.current = false;
       }
       console.log('=== useDashboardUser fetchUserInfo END ===');
     } catch (err) {
@@ -87,8 +92,16 @@ const useDashboardUser = () => {
       console.log('useDashboardUser - Session:', session?.user ? 'User present' : 'No user');
       
       if (event === 'SIGNED_IN') {
-        console.log('useDashboardUser - Fetching user info due to sign in');
-        await fetchUserInfo(); // Show loading for actual sign in
+        // Check if this is a real sign-in or just tab focus validation
+        if (!isUserSignedInRef.current) {
+          // This is a real sign-in, show loading
+          console.log('useDashboardUser - Real sign-in detected, fetching user info');
+          await fetchUserInfo();
+        } else {
+          // This is just tab focus validation, skip loading state
+          console.log('useDashboardUser - Tab focus validation, skipping loading state');
+          await fetchUserInfo(true); // Skip loading state
+        }
       } else if (event === 'SIGNED_OUT') {
         console.log('useDashboardUser - Clearing user data due to sign out');
         setUserEmail('');
@@ -98,6 +111,7 @@ const useDashboardUser = () => {
         setLastLocation(null);
         setLoading(false);
         setError(null);
+        isUserSignedInRef.current = false;
       } else if (event === 'TOKEN_REFRESHED') {
         // Token refresh should not trigger loading state or re-fetch user data
         // The user data hasn't changed, only the token was refreshed
