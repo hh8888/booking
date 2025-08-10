@@ -15,7 +15,8 @@ import SessionIndicator from './components/common/SessionIndicator';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { useBusinessInfo } from './hooks/useBusinessInfo';
 import useDashboardUser from './hooks/useDashboardUser';
-import useLocationManager from './hooks/useLocationManager';
+// Remove this import completely
+// import useLocationManager from './hooks/useLocationManager';
 import { useUsersData } from './hooks/useUsersData';
 import { useLanguage } from './contexts/LanguageContext';
 import { USER_ROLES, TABLES } from './constants';
@@ -110,13 +111,13 @@ export default function Dashboard() {
     }
   }, [userLoading, usersLoading, userError, usersError, networkError, currentUserId, userRole, users, isAdmin]);
 
-  // Use the location manager hook for both admin and staff
-  useLocationManager({
-    userId: currentUserId,
-    lastLocation,
-    userLoading,
-    userType: isAdmin ? 'admin' : 'staff'
-  });
+  // Remove the useLocationManager call (around lines 114-120)
+  // useLocationManager({
+  //   userId: currentUserId,
+  //   lastLocation,
+  //   userLoading,
+  //   userType: userRole === USER_ROLES.ADMIN ? 'admin' : 'staff'
+  // });
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();

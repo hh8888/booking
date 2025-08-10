@@ -155,7 +155,7 @@ export function useBookingsState(users, userId) {
         dispatch({ type: ACTIONS.SET_BOOKINGS, payload: [newBooking, ...state.bookings] });
         dispatch({ type: ACTIONS.SET_IS_CREATING, payload: false });
         dispatch({ type: ACTIONS.SET_EDIT_ITEM, payload: null });
-        toast.success('Booking created successfully');
+        // toast.success('Booking created successfully'); // Remove this - DatabaseService handles it
       } else {
         await bookingService.updateBooking(itemData);
         dispatch({
@@ -165,7 +165,7 @@ export function useBookingsState(users, userId) {
           )
         });
         dispatch({ type: ACTIONS.SET_EDIT_ITEM, payload: null });
-        toast.success('Booking updated successfully');
+        // toast.success('Booking updated successfully'); // Remove this - DatabaseService handles it
       }
     } catch (error) {
       console.error('Error:', error);

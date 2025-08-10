@@ -166,7 +166,7 @@ const BookingCard = ({
           
           {/* Customer Notes - Always show, even if empty */}
           <div className="mt-3 p-2 bg-gray-50 rounded text-sm text-gray-700">
-            <strong>{t('Notes')}:</strong> {booking.notes || t('common.notProvided')}
+            <strong>{t('common.notes')}:</strong> {booking.notes || t('common.notProvided')}
           </div>
           
           {/* Staff Comments - Always show for authorized users, even if empty */}

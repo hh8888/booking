@@ -74,7 +74,7 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
         const newUser = await dbService.createItem(TABLES.USERS, updateData, 'User');
         setUsers([newUser, ...users]);
         setIsCreating(false);
-        showToast.success('User created successfully');
+        // showToast.success('User created successfully');
       } else {
         // updateItem doesn't return data, so we need to update local state manually
         await dbService.updateItem(TABLES.USERS, updateData, 'User');
@@ -86,7 +86,7 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
         
         // Close the form
         setEditItem(null);
-        showToast.success('User updated successfully');
+        // showToast.success('User updated successfully');
       }
     } catch (error) {
       console.error('Error in handleSave:', error);
@@ -271,12 +271,12 @@ const getAvailableRoleOptions = (currentUserRole) => {
         </div>
         
         <div className="flex items-center">
-          <label className="mr-2 font-medium">Search:</label>
+          <label className="mr-2 font-medium">{t('users.search')}:</label>
           <input
             type="text"
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
-            placeholder="Search by name or email..."
+            placeholder={t('users.searchPlaceholder')}
             className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500 w-64"
           />
         </div>

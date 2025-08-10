@@ -148,12 +148,12 @@ export default function DashboardTab() {
         // Update existing booking using BookingService
         await bookingService.updateBooking(dataToSave);
         console.log('Booking updated successfully');
-        toast.success(SUCCESS_MESSAGES.BOOKING_UPDATED);
+        // toast.success(SUCCESS_MESSAGES.BOOKING_UPDATED);
       } else {
         // Create new booking using BookingService
         await bookingService.createBooking(dataToSave);
         console.log('Booking created successfully');
-        toast.success(SUCCESS_MESSAGES.BOOKING_CREATED);
+        // toast.success(SUCCESS_MESSAGES.BOOKING_CREATED);
       }
       
       // Refresh the dashboard data

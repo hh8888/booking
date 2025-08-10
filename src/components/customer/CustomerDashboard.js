@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef,useCallback } from 'react';
 import { useUser } from '../../hooks/useUser';
 import { useNavigate } from 'react-router-dom';
 import DatabaseService from '../../services/DatabaseService';
@@ -18,11 +18,19 @@ import LoadingSpinner from '../common/LoadingSpinner';
 import { useBusinessInfo } from '../../hooks/useBusinessInfo';
 import { useLanguage } from '../../contexts/LanguageContext';
 import useDashboardUser from '../../hooks/useDashboardUser';
-import useLocationManager from '../../hooks/useLocationManager';
+import useCustomerRealtime from '../../hooks/useCustomerRealtime';
+// Remove this line:
+// import useLocationManager from '../../hooks/useLocationManager';
 import { BOOKING_STATUS, TABLES, SUCCESS_MESSAGES, ERROR_MESSAGES, QUERY_FILTERS } from '../../constants';
 
+// Remove the useUser import at the top
+// import { useUser } from '../../hooks/useUser';
+
 const CustomerDashboard = () => {
-  const { user, loading: userLoading } = useUser();
+  console.log('🔄 CustomerDashboard: Component render started');
+  
+  // Remove this line
+  // const { user, loading: userLoading } = useUser();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [customerData, setCustomerData] = useState(null);
@@ -35,18 +43,33 @@ const CustomerDashboard = () => {
   
   // Use custom hooks for shared logic
   const { businessName } = useBusinessInfo();
-  const { userEmail, userRole, userName, currentUserId } = useDashboardUser();
+  // Get all user data from useDashboardUser
+  const { userEmail, userRole, userName, currentUserId, loading: userLoading } = useDashboardUser();
   
-  // Use the location manager hook
-  useLocationManager({
-    userId: customerData?.id,
-    lastLocation: customerData?.last_location,
+  console.log('🔄 CustomerDashboard: State values:', {
     userLoading,
-    userType: 'customer'
+    loading,
+    customerDataId: customerData?.id,
+    currentUserId,
+    bookingsCount: bookings.length
   });
+  
+  // Remove this entire block (lines 41-46):
+  // useLocationManager({
+  //   userId: customerData?.id,
+  //   lastLocation: customerData?.last_location,
+  //   userLoading,
+  //   userType: 'customer'
+  // });
 
-  // Define fetchCustomerBookings function
-  const fetchCustomerBookings = async () => {
+
+  // Define fetchCustomerBookings function with useCallback to prevent recreation
+  const fetchCustomerBookings = useCallback(async () => {
+    console.log('📊 fetchCustomerBookings: Starting fetch', {
+      customerDataId: customerData?.id,
+      hasCustomerData: !!customerData
+    });
+    
     if (customerData) {
       try {
         const dbService = DatabaseService.getInstance();
@@ -55,21 +78,25 @@ const CustomerDashboard = () => {
         
         // Get current selected location
         const currentLocationId = locationService.getSelectedLocationId();
+        console.log('📊 fetchCustomerBookings: Current location ID:', currentLocationId);
         
         // Build filter object with customer_id and optionally location
         const filter = { customer_id: customerData.id };
         if (currentLocationId) {
           filter.location = currentLocationId;
         }
+        console.log('📊 fetchCustomerBookings: Filter object:', filter);
         
         // Fetch customer's bookings filtered by location
         const customerBookings = await dbService.fetchData(TABLES.BOOKINGS, 'start_time', false, filter);
+        console.log('📊 fetchCustomerBookings: Raw bookings fetched:', customerBookings.length);
         
         // Get services and staff data for booking details
         const [servicesData, staffData] = await Promise.all([
           dbService.fetchData(TABLES.SERVICES, 'name'),
           dbService.fetchData(TABLES.USERS, 'full_name', false, QUERY_FILTERS.ROLE_STAFF)
         ]);
+        console.log('📊 fetchCustomerBookings: Services and staff data fetched');
         
         // Process bookings with additional details
         const processedBookings = bookingService.processBookingsData(
@@ -78,17 +105,23 @@ const CustomerDashboard = () => {
           [customerData],
           staffData
         );
+        console.log('📊 fetchCustomerBookings: Processed bookings:', processedBookings.length);
         
         setBookings(processedBookings);
+        console.log('📊 fetchCustomerBookings: Bookings state updated');
       } catch (error) {
-        console.error('Error fetching bookings:', error);
+        console.error('❌ fetchCustomerBookings: Error:', error);
         toast.error(ERROR_MESSAGES.FAILED_LOAD_BOOKINGS);
       }
+    } else {
+      console.log('📊 fetchCustomerBookings: No customer data, skipping fetch');
     }
-  };
+  }, [customerData]); // Add customerData as dependency
 
   // Define refreshBookings function
   const refreshBookings = async () => {
+    console.log('🔄 refreshBookings: Starting refresh');
+    
     if (customerData) {
       try {
         const dbService = DatabaseService.getInstance();
@@ -96,12 +129,16 @@ const CustomerDashboard = () => {
         const bookingService = new BookingService();
         
         const currentLocationId = locationService.getSelectedLocationId();
+        console.log('🔄 refreshBookings: Current location ID:', currentLocationId);
+        
         const filter = { customer_id: customerData.id };
         if (currentLocationId) {
           filter.location = currentLocationId;
         }
+        console.log('🔄 refreshBookings: Filter object:', filter);
         
         const customerBookings = await dbService.fetchData(TABLES.BOOKINGS, 'start_time', false, filter);
+        console.log('🔄 refreshBookings: Raw bookings fetched:', customerBookings.length);
         
         const [servicesData, staffData] = await Promise.all([
           dbService.fetchData(TABLES.SERVICES, 'name'),
@@ -114,23 +151,34 @@ const CustomerDashboard = () => {
           [customerData],
           staffData
         );
+        console.log('🔄 refreshBookings: Processed bookings:', processedBookings.length);
+        
         setBookings(processedBookings);
+        console.log('🔄 refreshBookings: Bookings state updated');
       } catch (error) {
-        console.error('Error refreshing bookings:', error);
+        console.error('❌ refreshBookings: Error:', error);
         toast.error(ERROR_MESSAGES.FAILED_REFRESH_BOOKINGS);
       }
+    } else {
+      console.log('🔄 refreshBookings: No customer data, skipping refresh');
     }
   };
 
   // Initialize customer data
   useEffect(() => {
+    console.log('🚀 useEffect[initCustomerData]: Triggered', {
+      userId: currentUserId,
+      hasUser: !!currentUserId
+    });
+    
     const initCustomerData = async () => {
-      if (!user || !user.id) {
+      if (!currentUserId) {
+        console.log('🚀 initCustomerData: No user or user ID, returning early');
         return;
       }
       
       console.log('=== CustomerDashboard initCustomerData START ===');
-      console.log('User:', user);
+      console.log('User ID:', currentUserId);
       
       try {
         const dbService = DatabaseService.getInstance();
@@ -138,36 +186,41 @@ const CustomerDashboard = () => {
         
         // Get or create customer record for current user
         let customer = await dbService.fetchData(TABLES.USERS, 'created_at', false, { 
-          id: user.id
+          id: currentUserId
         });
         
-        console.log('Fetched customer:', customer);
+        console.log('🚀 initCustomerData: Fetched customer:', customer);
         
         if (customer.length === 0) {
           // Create customer record if doesn't exist
           const newCustomer = {
-            id: user.id,
-            email: user.email || null,
-            phone_number: user.phone || null,
-            full_name: user.user_metadata?.full_name || user.email || user.phone,
-            post_code: user.user_metadata?.post_code || null,
-            birthday: user.user_metadata?.birthday || null,
-            gender: user.user_metadata?.gender || null,
+            id: currentUserId,
+            email: userEmail || null,
+            phone_number: null, // We don't have phone from useDashboardUser
+            full_name: userName || userEmail,
+            post_code: null, // We don't have post_code from useDashboardUser
+            birthday: null, // We don't have birthday from useDashboardUser
+            gender: null, // We don't have gender from useDashboardUser
             role: 'customer'
           };
-          console.log('Creating new customer:', newCustomer);
+          
+          console.log('🚀 initCustomerData: Creating new customer:', newCustomer);
           const created = await dbService.createItem(TABLES.USERS, newCustomer);
-          console.log('Created customer:', created);
+          console.log('🚀 initCustomerData: Created customer:', created);
           setCustomerData(created[0]);
+          console.log('🚀 initCustomerData: Customer data state set to new customer');
         } else {
           const existingCustomer = customer[0];
+          console.log('🚀 initCustomerData: Setting existing customer:', existingCustomer);
           setCustomerData(existingCustomer);
+          console.log('🚀 initCustomerData: Customer data state set to existing customer');
         }
       } catch (error) {
-        console.error('Error initializing customer data:', error);
+        console.error('❌ initCustomerData: Error:', error);
         setError(`${ERROR_MESSAGES.FAILED_LOAD_CUSTOMER_INFO}: ${error.message}`);
         toast.error(ERROR_MESSAGES.FAILED_LOAD_CUSTOMER_INFO);
       } finally {
+        console.log('🚀 initCustomerData: Setting loading to false');
         setLoading(false);
       }
       
@@ -175,31 +228,55 @@ const CustomerDashboard = () => {
     };
 
     initCustomerData();
-  }, [user?.id]);
+  }, [currentUserId]); // Changed from user?.id to currentUserId
 
   // Fetch customer bookings when customerData changes
   useEffect(() => {
+    console.log('📊 useEffect[fetchCustomerBookings]: Triggered', {
+      customerDataId: customerData?.id,
+      hasCustomerData: !!customerData
+    });
+    
     fetchCustomerBookings();
   }, [customerData]);
 
   // Add location change listener to refetch bookings
   useEffect(() => {
+    console.log('🌍 useEffect[locationListener]: Setting up location change listener');
+    
     const locationService = LocationService.getInstance();
     
     // Add listener for location changes
     const removeListener = locationService.addLocationChangeListener(async (newLocation) => {
-      console.log('Location changed, refetching bookings...');
+      console.log('🌍 Location change detected:', {
+        newLocationId: newLocation?.id,
+        newLocationName: newLocation?.name,
+        customerDataId: customerData?.id
+      });
+      
+      console.log('🌍 Calling fetchCustomerBookings due to location change...');
       fetchCustomerBookings();
     });
     
+    console.log('🌍 Location change listener added');
+    
     // Cleanup listener on unmount
     return () => {
+      console.log('🌍 Cleaning up location change listener');
       removeListener();
     };
-  }, [customerData]);
+  }, []); // Remove customerData dependency - only set up listener once
+
+  // Use the custom real-time hook
+  useCustomerRealtime({
+    customerData,
+    refreshBookings,
+    setCustomerData
+  });
 
   // Error state handling
   if (error) {
+    console.log('❌ CustomerDashboard: Rendering error state:', error);
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -217,17 +294,21 @@ const CustomerDashboard = () => {
 
   // Loading state
   if (userLoading || loading) {
+    console.log('⏳ CustomerDashboard: Rendering loading state', { userLoading, loading });
     return <LoadingSpinner fullScreen={true} text={t('common.loading')} />;
   }
 
   // Authentication check
   if (!customerData) {
+    console.log('🚫 CustomerDashboard: No customer data, rendering auth error');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-lg text-red-600">{t('messages.error.pleaseLogin')}</div>
       </div>
     );
   }
+
+  console.log('✅ CustomerDashboard: Rendering main component');
 
   const handleBookingSave = async (bookingData) => {
     console.log('=== CustomerDashboard handleBookingSave CALLED ===');
@@ -254,12 +335,12 @@ const CustomerDashboard = () => {
         };
         await bookingService.updateBooking(bookingWithId);
         console.log('Update completed');
-        toast.success(SUCCESS_MESSAGES.BOOKING_UPDATED);
+        //toast.success(SUCCESS_MESSAGES.BOOKING_UPDATED);
       } else {
         console.log('Creating new booking...');
         const result = await bookingService.createBooking(bookingWithCustomer);
         console.log('Create result:', result);
-        toast.success(SUCCESS_MESSAGES.BOOKING_CREATED);
+        //toast.success(SUCCESS_MESSAGES.BOOKING_CREATED);
       }
       
       console.log('Closing booking form and refreshing...');
@@ -296,97 +377,78 @@ const CustomerDashboard = () => {
   };
 
   const handleNewBooking = () => {
+    console.log('➕ handleNewBooking: Called');
     setEditingBooking(null);
     setShowBookingForm(true);
   };
 
   const handleEditBooking = (booking) => {
+    console.log('✏️ handleEditBooking: Called with booking:', booking?.id);
     setEditingBooking(booking);
     setShowBookingForm(true);
   };
 
   const handleCloseBookingForm = () => {
+    console.log('❌ handleCloseBookingForm: Called');
     setShowBookingForm(false);
     setEditingBooking(null);
   };
 
   const handleProfileUpdate = async () => {
+    console.log('👤 handleProfileUpdate: Called');
     // Refresh customer data when profile is updated
-    if (user) {
+    if (currentUserId) {
       try {
         const dbService = DatabaseService.getInstance();
         const customer = await dbService.fetchData(TABLES.USERS, 'created_at', false, { 
-          id: user.id
+          id: currentUserId
         });
         
         if (customer.length > 0) {
+          console.log('👤 handleProfileUpdate: Updated customer data:', customer[0]);
           setCustomerData(customer[0]);
         }
       } catch (error) {
-        console.error('Error refreshing customer data:', error);
+        console.error('❌ handleProfileUpdate: Error:', error);
       }
     }
   };
 
-
-
-  // Update the loading condition to include userLoading
-  if (userLoading || loading) {
-    return <LoadingSpinner fullScreen={true} text={t('common.loading')} />;
-  }
-
-  if (!customerData) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-lg text-red-600">{t('messages.error.pleaseLogin')}</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Sticky Header Section */}
-      <div className="sticky top-0 z-50 bg-gray-50 border-b border-gray-200 shadow-sm">
-        <div className="py-8">
-          <div className="max-w-6xl mx-auto px-4">
-            {/* Header */}
-            <div className="mb-8">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-                <div>
-                  <h1 className="text-xl md:text-2xl font-bold text-gray-800">{businessName}</h1>
-                  <p className="text-gray-600">{t('customer.welcomeMessage', { name: customerData.full_name && !customerData.full_name.includes('@') ? customerData.full_name : (customerData.full_name ? customerData.full_name.split('@')[0] : t('customer.welcome')) })}</p>
-                  <LocationSelector />
-                </div>
-                <div className="flex items-center space-x-3 mt-4 sm:mt-0">
-                  <SessionIndicator />
-                  <UserDropdown 
-                    userEmail={userEmail}
-                    userRole={userRole}
-                    userName={userName}
-                    currentUserId={currentUserId}
-                    onProfileUpdate={handleProfileUpdate}
-                  />
-                </div>
-              </div>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-6xl mx-auto px-4">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-800">{businessName}</h1>
+              <p className="text-gray-600">{t('customer.welcomeMessage', { name: customerData.full_name && !customerData.full_name.includes('@') ? customerData.full_name : (customerData.full_name ? customerData.full_name.split('@')[0] : t('customer.welcome')) })}</p>
+              <LocationSelector />
             </div>
-
-            {/* Booking Steps Section */}
-            <BookingSteps />
+            <div className="flex items-center space-x-3 mt-4 sm:mt-0">
+              <SessionIndicator />
+              <UserDropdown 
+                userEmail={userEmail}
+                userRole={userRole}
+                userName={userName}
+                currentUserId={currentUserId}
+                onProfileUpdate={handleProfileUpdate}
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Scrollable Content Area */}
-      <div className="flex-grow">
-        <div className="max-w-6xl mx-auto px-4 pb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Personal Information */}
-            <div className="lg:col-span-1">
-              <CustomerProfile customerData={customerData} />
-            </div>
+        {/* Booking Steps Section */}
+        <BookingSteps />
 
-            {/* Bookings Section */}
-            <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Personal Information */}
+          <div className="lg:col-span-1">
+            <CustomerProfile customerData={customerData} />
+          </div>
+
+          {/* Bookings Section */}
+          <div className="lg:col-span-2">
             <CustomerBookingsList 
               bookings={bookings}
               onNewBooking={handleNewBooking}
@@ -409,7 +471,6 @@ const CustomerDashboard = () => {
       
       {/* Add ToastMessage component */}
       <ToastMessage />
-    </div>
     </div>
   );
 };

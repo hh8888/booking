@@ -4,6 +4,8 @@ import { TABLES } from '../constants';
 import LocationService from '../services/LocationService';
 import StaffAvailabilityService from '../services/StaffAvailabilityService';
 import { toast } from 'react-toastify';
+// Add this import
+import { supabase } from '../supabaseClient';
 
 // Helper function to format time strings
 const formatTime = (timeString) => {
@@ -412,24 +414,24 @@ export const useDashboardData = () => {
       setCurrentLocation(selectedLocation);
       
       // Add listener for location changes
-      const handleLocationChange = async (location) => {
-        setCurrentLocation(location);
-        
-        // Reload all data when location changes
-        try {
-          console.log('Location changed to:', location.name, 'Reloading data...');
-          await fetchTableStats();
-          const customersData = await fetchCustomers();
-          await fetchServices();
-          await fetchBookingsWithStaff(customersData);
-          await fetchStaffAvailability();
-        } catch (error) {
-          console.error('Error reloading data after location change:', error);
-          toast.error('Failed to reload data for new location');
-        }
-      };
-      locationService.addLocationChangeListener(handleLocationChange);
-      
+      // Comment out the location change listener (around lines 451-468)
+      // const handleLocationChange = async (location) => {
+      //   setCurrentLocation(location);
+      //   
+      //   // Reload all data when location changes
+      //   try {
+      //     console.log('Location changed to:', location.name, 'Reloading data...');
+      //     await fetchTableStats();
+      //     const customersData = await fetchCustomers();
+      //     await fetchServices();
+      //     await fetchBookingsWithStaff(customersData);
+      //     await fetchStaffAvailability();
+      //   } catch (error) {
+      //     console.error('Error reloading data after location change:', error);
+      //     toast.error('Failed to reload data for new location');
+      //   }
+      // };
+      // locationService.addLocationChangeListener(handleLocationChange);
       const businessHoursStr = await dbService.getSettingsByKey('system', 'businessHours');
       
       if (businessHoursStr) {
@@ -446,9 +448,43 @@ export const useDashboardData = () => {
       await fetchBookingsWithStaff(customersData);
       await fetchStaffAvailability();
       
+      // Add real-time subscription for bookings
+      const bookingsChannel = supabase
+        .channel('bookings-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+            schema: 'public',
+            table: 'bookings'
+          },
+          async (payload) => {
+            console.log('📡 Real-time booking change detected:', payload);
+            
+            // Refresh bookings data when any booking changes
+            try {
+              const customersData = await fetchCustomers();
+              await fetchBookingsWithStaff(customersData);
+              await fetchTableStats(); // Also refresh stats
+              
+              // Show toast notification for the change
+              if (payload.eventType === 'INSERT') {
+                toast.info('New booking created');
+              } else if (payload.eventType === 'UPDATE') {
+                toast.info('Booking updated');
+              } else if (payload.eventType === 'DELETE') {
+                toast.info('Booking deleted');
+              }
+            } catch (error) {
+              console.error('Error refreshing bookings after real-time update:', error);
+            }
+          }
+        )
+        .subscribe();
+      
       // Cleanup function
       return () => {
-        locationService.removeLocationChangeListener(handleLocationChange);
+        //locationService.removeLocationChangeListener(handleLocationChange);
       };
     };
     initData();

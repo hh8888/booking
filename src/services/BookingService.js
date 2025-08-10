@@ -2,6 +2,7 @@ import { supabase } from '../supabaseClient';
 import DatabaseService from './DatabaseService';
 import { TABLES } from '../constants';
 import DateTimeFormatter from '../utils/DateTimeFormatter';
+import { toast } from 'react-toastify'; // Add this import
 
 class BookingService {
   static instance = null;
@@ -75,13 +76,22 @@ class BookingService {
   }
 
   calculateDuration(booking, service) {
-    if (service?.duration) {
-      return this.parseDuration(service.duration);
-    } else if (booking.start_time && booking.end_time) {
+    // First check if booking has both start_time and end_time
+    if (booking.start_time && booking.end_time) {
       const startTime = new Date(booking.start_time);
       const endTime = new Date(booking.end_time);
-      return Math.round((endTime - startTime) / 60000);
+      const calculatedDuration = Math.round((endTime - startTime) / 60000);
+      // Only use calculated duration if it's valid (greater than 0)
+      if (calculatedDuration > 0) {
+        return calculatedDuration;
+      }
     }
+    
+    // Fall back to service duration if booking times are invalid
+    if (service?.duration) {
+      return this.parseDuration(service.duration);
+    }
+    
     return 60; // default 60 minutes
   }
 
@@ -201,14 +211,17 @@ class BookingService {
       
       if (error) {
         console.error('Edge Function error:', error);
+        toast.error(`Failed to send email notification: ${error.message}`);
         throw new Error(`Failed to send email notification: ${error.message}`);
       }
       
       console.log('Email notification sent successfully:', data);
+      toast.success('Email notification sent successfully!');
       return data;
     } catch (error) {
       console.error('Failed to send email notification:', error);
-      // Don't throw error to prevent booking update from failing
+      // Show error toast but don't throw to prevent booking update from failing
+      toast.error('Failed to send email notification');
     }
   }
 

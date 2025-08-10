@@ -284,6 +284,8 @@ export default {
     bookingHistory: '客户历史',
     customerNotes: '备注',
     customerNotesPlaceholder: '输入备注',
+    search: '搜索',
+    searchPlaceholder: '按客户、服务或备注搜索...'
   },
 
   // Users
@@ -317,7 +319,9 @@ export default {
     noUsers: '未找到用户',
     loadingUsers: '加载用户中...',
     resetPassword: '重置密码',
-    setAvailability: '设置可用性'
+    setAvailability: '设置可用性',
+    search: '搜索',
+    searchPlaceholder: '按姓名或邮箱搜索...'
   },
 
   // Services

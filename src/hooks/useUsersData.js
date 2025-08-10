@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import UserService from '../services/UserService';
 import { USER_ROLES } from '../constants';
 
@@ -47,16 +47,11 @@ export function useUsersData(options = {}) {
     fetchUsers();
   };
   
-  // Stabilize the roleFilter dependency
-  const stableRoleFilter = useMemo(() => {
-    return roleFilter ? roleFilter.join(',') : null;
-  }, [roleFilter]);
-  
   useEffect(() => {
     if (autoFetch) {
       fetchUsers();
     }
-  }, [autoFetch, stableRoleFilter]);
+  }, [autoFetch, roleFilter?.join(',')]);
   
   return {
     users,

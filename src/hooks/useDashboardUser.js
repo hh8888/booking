@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { TABLES } from '../constants';
-import { useAuthStateMonitor } from './useAuthStateMonitor';
+// Remove this import - it's causing the circular dependency
+// import { useAuthStateMonitor } from './useAuthStateMonitor';
 
 const useDashboardUser = () => {
   const [userEmail, setUserEmail] = useState('');
@@ -16,7 +17,8 @@ const useDashboardUser = () => {
   const isUserSignedInRef = useRef(false);
 
   // Monitor auth state changes
-  useAuthStateMonitor(currentUserId);
+  // Remove this line - it's creating duplicate auth listeners
+  // useAuthStateMonitor(currentUserId);
   
   // Memoize fetchUserInfo to prevent unnecessary re-renders
   const fetchUserInfo = useCallback(async (skipLoadingState = false) => {
@@ -91,16 +93,28 @@ const useDashboardUser = () => {
       console.log('useDashboardUser - Auth state change:', event);
       console.log('useDashboardUser - Session:', session?.user ? 'User present' : 'No user');
       
-      if (event === 'SIGNED_IN') {
-        // Check if this is a real sign-in or just tab focus validation
-        if (!isUserSignedInRef.current) {
-          // This is a real sign-in, show loading
-          console.log('useDashboardUser - Real sign-in detected, fetching user info');
-          await fetchUserInfo();
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        // Handle both sign-in and initial session (when page loads with existing session)
+        if (session?.user) {
+          if (event === 'SIGNED_IN' && !isUserSignedInRef.current) {
+            // This is a real sign-in, show loading
+            console.log('useDashboardUser - Real sign-in detected, fetching user info');
+            await fetchUserInfo();
+            isUserSignedInRef.current = true;
+          } else if (event === 'INITIAL_SESSION') {
+            // This is initial session load, fetch user info
+            console.log('useDashboardUser - Initial session detected, fetching user info');
+            await fetchUserInfo();
+            isUserSignedInRef.current = true;
+          } else {
+            // This is just tab focus validation, skip entirely if user is already signed in
+            console.log('useDashboardUser - Tab focus validation, user already signed in, skipping');
+            // Don't call fetchUserInfo at all - user data is already loaded
+          }
         } else {
-          // This is just tab focus validation, skip loading state
-          console.log('useDashboardUser - Tab focus validation, skipping loading state');
-          await fetchUserInfo(true); // Skip loading state
+          // No user in session, set loading to false
+          console.log('useDashboardUser - No user in session');
+          setLoading(false);
         }
       } else if (event === 'SIGNED_OUT') {
         console.log('useDashboardUser - Clearing user data due to sign out');
@@ -120,13 +134,10 @@ const useDashboardUser = () => {
       }
     });
     
-    // Also fetch user info immediately on mount
-    fetchUserInfo();
-    
     return () => {
       subscription?.unsubscribe();
     };
-  }, [fetchUserInfo]);
+  }, []); // Keep empty dependency array
   
   return {
     userEmail,

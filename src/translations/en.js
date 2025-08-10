@@ -281,6 +281,8 @@ export default {
     bookingHistory: 'Customer History',
     customerNotes: 'Notes',
     customerNotesPlaceholder: 'Enter notes',
+    search: 'Search',
+    searchPlaceholder: 'Search by customer, service, or notes...'
   },
 
   // Users
@@ -316,7 +318,9 @@ export default {
     resetPassword: 'Reset Password',
     setAvailability: 'Set Availability',
     userCreatedSuccessfully: 'User created successfully',
-    failedToCreateUser: 'Failed to create user'
+    failedToCreateUser: 'Failed to create user',
+    search: 'Search',
+    searchPlaceholder: 'Search by name or email...'
   },
 
   // Services

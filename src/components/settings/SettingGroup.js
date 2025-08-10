@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import BookingStepsEditor from './BookingStepsEditor';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export const SettingGroup = ({ title, settings, onSave }) => {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -27,7 +29,7 @@ export const SettingGroup = ({ title, settings, onSave }) => {
     e.preventDefault();
     onSave(formData);
     setIsEditing(false);
-    toast.success(`${title} settings saved`);
+    toast.success(t('settings.settingsSaved'));
   };
 
   const renderSettingField = (setting) => {

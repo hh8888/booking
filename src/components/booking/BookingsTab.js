@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ToastMessage from '../common/ToastMessage';
@@ -28,6 +28,7 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [timeFilter, setTimeFilter] = useState('today+');
   const [userFilter, setUserFilter] = useState('all');
+  const [searchFilter, setSearchFilter] = useState(''); // Add this line
   const [bookingTimeInterval, setBookingTimeInterval] = useState(30);
   const [showRecurringOptions, setShowRecurringOptions] = useState(false);
   const [hourOptions, setHourOptions] = useState([]);
@@ -37,67 +38,59 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
     { value: 'weekly', label: t('bookings.repeatWeekly') }
   ]);
 
-  useEffect(() => {
-    const initData = async () => {
-      // Get booking time interval setting
-      await fetchBookingTimeInterval();
-      
-      // Get business hours
-      const dbService = DatabaseService.getInstance();
-      const businessHours = await dbService.getSettingsByKey('system', 'businessHours');
-      
-      // Parse business hours or use default (9:00-17:00)
-      let startHour = 9;
-      let endHour = 17;
-      
-      if (businessHours) {
-        const [start, end] = businessHours.split('-');
-        startHour = parseInt(start.split(':')[0]);
-        endHour = parseInt(end.split(':')[0]);
-      }
+  // Use ref to track if initial load is complete
+  const initialLoadComplete = useRef(false);
 
-      // Generate hour options
-      const hours = [];
-      for (let hour = startHour; hour <= endHour; hour++) {
-        hours.push(hour.toString().padStart(2, '0'));
-      }
-      setHourOptions(hours);
-
-      // Generate minute options based on interval
-      const minutes = [];
-      for (let minute = 0; minute < 60; minute += bookingTimeInterval) {
-        minutes.push(minute.toString().padStart(2, '0'));
-      }
-      setMinuteOptions(minutes);
-      
-      const [customerData, serviceData] = await Promise.all([
-        fetchCustomers(),
-        fetchServices()
-      ]);
-      fetchBookings(serviceData, customerData);
-    };
-    initData();
-  }, [timeFilter, bookingTimeInterval]); // Add timeFilter and bookingTimeInterval as dependencies
-
-  // Get booking time interval setting
-  const fetchBookingTimeInterval = async () => {
+  // Stabilize fetchCustomers with useCallback
+  const fetchCustomers = useCallback(async () => {
+    console.log('🔄 fetchCustomers called');
     try {
-      const bookingService = BookingService.getInstance();
-      const interval = await bookingService.getBookingTimeInterval();
-      setBookingTimeInterval(interval);
+      if (users && users.length > 0) {
+        console.log('📊 Using users prop, length:', users.length);
+        const customerData = filterUsersByRole(users, [USER_ROLES.CUSTOMER])
+          .map(user => ({ id: user.id, full_name: user.full_name }));
+        setCustomers(customerData);
+        console.log('✅ fetchCustomers completed (from users prop)');
+        return customerData;
+      } else {
+        console.log('🗄️ Fetching customers from database');
+        const dbService = DatabaseService.getInstance();
+        const data = await dbService.fetchSpecificColumns(TABLES.USERS, 'id, full_name', QUERY_FILTERS.ROLE_CUSTOMER);
+        setCustomers(data);
+        console.log('✅ fetchCustomers completed (from database)');
+        return data;
+      }
     } catch (error) {
-      errorHandler.handleDatabaseError(error, 'fetching', 'booking time interval');
-      // Keep default value of 30 minutes
+      console.error('❌ fetchCustomers error:', error);
+      errorHandler.handleDatabaseError(error, 'fetching', 'customers');
+      return [];
     }
-  };
+  }, [users]); // Only depend on users
 
-  // Use DateTimeFormatter to format date and time
-  const formatDateTime = (dateTimeString) => {
-    const formatter = DateTimeFormatter.getInstance();
-    return formatter.formatDateTime(dateTimeString);
-  };
+  // Stabilize fetchServices with useCallback
+  const fetchServices = useCallback(async () => {
+    console.log('🔄 fetchServices called');
+    try {
+      const dbService = DatabaseService.getInstance();
+      const data = await dbService.fetchData(TABLES.SERVICES);
+      setServices(data);
+      console.log('✅ fetchServices completed, services count:', data.length);
+      return data;
+    } catch (error) {
+      console.error('❌ fetchServices error:', error);
+      errorHandler.handleDatabaseError(error, 'fetching', 'services');
+      return [];
+    }
+  }, []);
 
-  const fetchBookings = async (serviceData, customerData) => {
+  // Stabilize fetchBookings with useCallback
+  const fetchBookings = useCallback(async (serviceData, customerData) => {
+    console.log('🔄 fetchBookings called with:', {
+      serviceData: serviceData ? `${serviceData.length} services` : 'using state',
+      customerData: customerData ? `${customerData.length} customers` : 'using state',
+      timeFilter,
+      userId
+    });
     try {
       const bookingService = BookingService.getInstance();
       const bookingsWithDetails = await bookingService.fetchBookings(serviceData || services, customerData || customers);
@@ -108,44 +101,121 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
         filteredBookings = filteredBookings.filter(booking => booking.customer_id === userId);
       }
       setBookings(filteredBookings);
+      console.log('✅ fetchBookings completed, bookings count:', filteredBookings.length);
     } catch (error) {
+      console.error('❌ fetchBookings error:', error);
       const { message } = errorHandler.handleDatabaseError(error, 'fetching', 'bookings');
       setError(message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [services, customers, timeFilter, userId]);
 
-  const fetchServices = async () => {
+  // Get booking time interval setting
+  const fetchBookingTimeInterval = useCallback(async () => {
+    console.log('🔄 fetchBookingTimeInterval called');
     try {
-      const dbService = DatabaseService.getInstance();
-      const data = await dbService.fetchData(TABLES.SERVICES);
-      setServices(data);
-      return data;
+      const bookingService = BookingService.getInstance();
+      const interval = await bookingService.getBookingTimeInterval();
+      console.log('✅ fetchBookingTimeInterval completed, interval:', interval);
+      setBookingTimeInterval(interval);
     } catch (error) {
-      errorHandler.handleDatabaseError(error, 'fetching', 'services');
-      return [];
+      console.error('❌ fetchBookingTimeInterval error:', error);
+      errorHandler.handleDatabaseError(error, 'fetching', 'booking time interval');
+      // Keep default value of 30 minutes
     }
-  };
+  }, []);
 
-  const fetchCustomers = async () => {
-    try {
-      if (users && users.length > 0) {
-        const customerData = filterUsersByRole(users, [USER_ROLES.CUSTOMER])
-          .map(user => ({ id: user.id, full_name: user.full_name }));
-        setCustomers(customerData);
-        return customerData;
-      } else {
+  // Initial data loading - only run once
+  useEffect(() => {
+    console.log('🚀 Initial useEffect triggered, initialLoadComplete:', initialLoadComplete.current);
+    if (!initialLoadComplete.current) {
+      const initData = async () => {
+        console.log('🔧 Starting initial data load...');
+        // Get booking time interval setting
+        await fetchBookingTimeInterval();
+        
+        // Get business hours
         const dbService = DatabaseService.getInstance();
-        const data = await dbService.fetchSpecificColumns(TABLES.USERS, 'id, full_name', QUERY_FILTERS.ROLE_CUSTOMER);
-        setCustomers(data);
-        return data;
-      }
-    } catch (error) {
-      errorHandler.handleDatabaseError(error, 'fetching', 'customers');
-      return [];
+        const businessHours = await dbService.getSettingsByKey('system', 'businessHours');
+        
+        // Parse business hours or use default (9:00-17:00)
+        let startHour = 9;
+        let endHour = 17;
+        
+        if (businessHours) {
+          const [start, end] = businessHours.split('-');
+          startHour = parseInt(start.split(':')[0]);
+          endHour = parseInt(end.split(':')[0]);
+        }
+
+        // Generate hour options
+        const hours = [];
+        for (let hour = startHour; hour <= endHour; hour++) {
+          hours.push(hour.toString().padStart(2, '0'));
+        }
+        setHourOptions(hours);
+        
+        const [customerData, serviceData] = await Promise.all([
+          fetchCustomers(),
+          fetchServices()
+        ]);
+        await fetchBookings(serviceData, customerData);
+        
+        initialLoadComplete.current = true;
+        console.log('✅ Initial data load completed');
+      };
+      initData();
     }
+  }, []); // Empty dependency array - only run once
+
+  // Handle timeFilter changes separately
+  useEffect(() => {
+    console.log('⏰ timeFilter useEffect triggered, timeFilter:', timeFilter, 'initialLoadComplete:', initialLoadComplete.current);
+    if (initialLoadComplete.current) {
+      console.log('🔄 Refetching bookings due to timeFilter change');
+      // Only refetch bookings when timeFilter changes after initial load
+      fetchBookings();
+    }
+  }, [timeFilter, fetchBookings]);
+
+  // Handle users changes separately
+  useEffect(() => {
+    console.log('👥 users useEffect triggered, users length:', users?.length, 'initialLoadComplete:', initialLoadComplete.current);
+    if (initialLoadComplete.current) {
+      console.log('🔄 Refetching customers and bookings due to users change');
+      // Only refetch customers and bookings when users change after initial load
+      const updateCustomersAndBookings = async () => {
+        const customerData = await fetchCustomers();
+        await fetchBookings(undefined, customerData); // Let fetchBookings use its internal services state
+      };
+      updateCustomersAndBookings();
+    }
+  }, [users, fetchCustomers, fetchBookings]); // Remove services from dependency array
+
+  // Handle bookingTimeInterval changes
+  useEffect(() => {
+    console.log('⏱️ bookingTimeInterval useEffect triggered, interval:', bookingTimeInterval);
+    if (bookingTimeInterval > 0) {
+      console.log('🔄 Regenerating minute options for interval:', bookingTimeInterval);
+      // Regenerate minute options when interval changes
+      const minutes = [];
+      for (let minute = 0; minute < 60; minute += bookingTimeInterval) {
+        minutes.push(minute.toString().padStart(2, '0'));
+      }
+      setMinuteOptions(minutes);
+      console.log('✅ Minute options updated, count:', minutes.length);
+    }
+  }, [bookingTimeInterval]);
+
+  // Use DateTimeFormatter to format date and time
+  const formatDateTime = (dateTimeString) => {
+    const formatter = DateTimeFormatter.getInstance();
+    return formatter.formatDateTime(dateTimeString);
   };
+
+
+
 
   // Parse various duration formats to minutes
   const parseDuration = (duration) => {
@@ -371,10 +441,17 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
     }
   };
 
-  // Filter bookings by status and user
+  // Filter bookings by status, user, and search term
   const filteredBookings = bookings
     .filter(booking => statusFilter === 'all' ? true : booking.status === statusFilter)
-    .filter(booking => userFilter === 'all' ? true : booking.customer_id === userFilter);
+    .filter(booking => userFilter === 'all' ? true : booking.customer_id === userFilter)
+    .filter(booking => {
+      const searchTerm = searchFilter.toLowerCase();
+      return searchTerm === '' ||
+        booking.customer_name?.toLowerCase().includes(searchTerm) ||
+        booking.service_name?.toLowerCase().includes(searchTerm) ||
+        booking.notes?.toLowerCase().includes(searchTerm);
+    });
 
   // Calculate booking statistics
   const getBookingStats = () => {
@@ -478,7 +555,7 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
           console.log('Refreshing bookings data...');
           const initData = async () => {
             // Get booking time interval setting
-            await fetchBookingTimeInterval();
+            await fetchBookingTimeInterval(); // ← This updates bookingTimeInterval
             
             // Get business hours
             const dbService = DatabaseService.getInstance();
@@ -503,7 +580,7 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
 
             // Generate minute options based on interval
             const minutes = [];
-            for (let minute = 0; minute < 60; minute += bookingTimeInterval) {
+            for (let minute = 0; minute < 60; minute += bookingTimeInterval) { // ← Using stale value!
               minutes.push(minute.toString().padStart(2, '0'));
             }
             setMinuteOptions(minutes);
@@ -581,6 +658,18 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
             </select>
           </div>
         )}
+        
+        {/* Search filter - Add this section */}
+        <div className="flex items-center">
+          <label className="mr-2 font-medium">{t('bookings.search')}:</label>
+          <input
+            type="text"
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            placeholder={t('bookings.searchPlaceholder')}
+            className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500 w-64"
+          />
+        </div>
       </div>
 
       {/* Bookings Table */}

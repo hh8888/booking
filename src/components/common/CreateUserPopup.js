@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import GenericForm from './GenericForm';
-import DatabaseService from '../../services/DatabaseService';
-import { USER_ROLES, TABLES } from '../../constants';
+import UserService from '../../services/UserService';
+import { USER_ROLES } from '../../constants';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 const CreateUserPopup = ({ onClose, onUserCreated }) => {
@@ -12,13 +12,13 @@ const CreateUserPopup = ({ onClose, onUserCreated }) => {
   const handleSave = async (userData) => {
     setLoading(true);
     try {
-      const databaseService = DatabaseService.getInstance();
+      const userService = UserService.getInstance();
       
-      // Create user with default role as customer
+      // Create user with default role as customer and generate a temporary password
       const newUserData = {
         ...userData,
         role: USER_ROLES.CUSTOMER,
-        email_verified: false
+        password: await userService.generateTemporaryPassword() // Generate temporary password
       };
       
       // Remove empty birthday field
@@ -26,9 +26,11 @@ const CreateUserPopup = ({ onClose, onUserCreated }) => {
         delete newUserData.birthday;
       }
       
-      const result = await databaseService.createItem(TABLES.USERS, newUserData, 'User');
+      // Use UserService.createUser() which properly handles auth and sends verification email
+      const result = await userService.createUser(newUserData);
       
-      toast.success(t('users.addNewUser') + ' successfully created');
+      toast.success(t('messages.success.created'));
+      toast.info(t('messages.success.passwordReset'));
       
       // Call the callback with the new user data
       if (onUserCreated) {
