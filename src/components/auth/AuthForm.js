@@ -50,7 +50,7 @@ export default function AuthForm({
   const { businessName, loading: businessLoading } = useBusinessInfo();
   
   return (
-    <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md relative">
+    <div className="bg-white p-8 rounded-lg shadow-md w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl relative">
       {/* Language Switcher - positioned at top right */}
       <div className="absolute top-3 right-3">
         <LanguageSwitcher />

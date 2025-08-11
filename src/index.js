@@ -26,6 +26,9 @@ serviceWorkerRegistration.register({
   }
 });
 
+// Unregister service worker to prevent cached app shell (e.g., login page)
+serviceWorkerRegistration.unregister();
+
 reportWebVitals();
 
 // If you want to start measuring performance in your app, pass a function
