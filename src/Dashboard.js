@@ -195,7 +195,7 @@ export default function Dashboard() {
             {availableTabs.dashboard && (
               <button
                 onClick={() => setActiveTab('dashboard')}
-                className={`whitespace-nowrap flex-shrink-0 text-sm transition-all duration-300 ease-in-out ${
+                className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-all duration-300 ease-in-out ${
                   isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
                 } ${
                   activeTab === 'dashboard' 
@@ -211,7 +211,7 @@ export default function Dashboard() {
             {availableTabs.bookings && (
               <button
                 onClick={() => setActiveTab('bookings')}
-                className={`whitespace-nowrap flex-shrink-0 text-sm transition-all duration-300 ease-in-out ${
+                className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-all duration-300 ease-in-out ${
                   isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
                 } ${
                   activeTab === 'bookings' 
@@ -225,7 +225,7 @@ export default function Dashboard() {
             {availableTabs.users && (
               <button
                 onClick={() => setActiveTab('users')}
-                className={`whitespace-nowrap flex-shrink-0 text-sm transition-all duration-300 ease-in-out ${
+                className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-all duration-300 ease-in-out ${
                   isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
                 } ${
                   activeTab === 'users' 
@@ -239,7 +239,7 @@ export default function Dashboard() {
             {availableTabs.customers && (
               <button
                 onClick={() => setActiveTab('customers')}
-                className={`whitespace-nowrap flex-shrink-0 text-sm transition-all duration-300 ease-in-out ${
+                className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-all duration-300 ease-in-out ${
                   isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
                 } ${
                   activeTab === 'customers' 
@@ -252,9 +252,11 @@ export default function Dashboard() {
             )}
             {availableTabs.services && (
               <button
-                onClick={() => setActiveTab('Services')}
-                className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
-                  activeTab === 'Services' 
+                onClick={() => setActiveTab('services')}
+                className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-all duration-300 ease-in-out ${
+                  isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
+                } ${
+                  activeTab === 'services' 
                     ? 'text-blue-500 border-b-2 border-blue-500' 
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
@@ -265,7 +267,9 @@ export default function Dashboard() {
             {availableTabs.reports && (
               <button
                 onClick={() => setActiveTab('reports')}
-                className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+                className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-all duration-300 ease-in-out ${
+                  isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
+                } ${
                   activeTab === 'reports' 
                     ? 'text-blue-500 border-b-2 border-blue-500' 
                     : 'text-gray-500 hover:text-gray-700'
@@ -277,7 +281,9 @@ export default function Dashboard() {
             {availableTabs.settings && (
               <button
                 onClick={() => setActiveTab('settings')}
-                className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+                className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-all duration-300 ease-in-out ${
+                  isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
+                } ${
                   activeTab === 'settings' 
                     ? 'text-blue-500 border-b-2 border-blue-500' 
                     : 'text-gray-500 hover:text-gray-700'
