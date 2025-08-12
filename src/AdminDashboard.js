@@ -127,8 +127,8 @@ export default function AdminDashboard() {
               {t('nav.users')}
             </button>
             <button
-              onClick={() => setActiveTab('Services')}
-              className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${activeTab === 'Services' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
+              onClick={() => setActiveTab('services')}
+              className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${activeTab === 'services' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
             >
               {t('nav.services')}
             </button>
@@ -198,7 +198,7 @@ export default function AdminDashboard() {
             {activeTab === 'dashboard' && <DashboardTab />}
             {activeTab === 'bookings' && <BookingsTab users={users} />}
             {activeTab === 'users' && <UsersTab users={users} setUsers={setUsers} />}
-            {activeTab === 'Services' && <ServicesTab users={users} />}
+            {activeTab === 'services' && <ServicesTab users={users} />}
             {activeTab === 'reports' && <ReportsTab />}
             {activeTab === 'settings' && userRole === USER_ROLES.ADMIN && <SettingsTab />}
           </>

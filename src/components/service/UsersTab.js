@@ -195,9 +195,6 @@ const getAvailableRoleOptions = (currentUserRole) => {
 };
   return (
     <div>
-      <ToastMessage />
-      
-
       <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('users.manageUsers')}</h2>
       
       {/* Only show Add New User and Delete Selected buttons for non-staff users */}
@@ -390,6 +387,7 @@ const getAvailableRoleOptions = (currentUserRole) => {
           onClose={() => setSelectedUserForHistory(null)}
         />
       )}
+      <ToastMessage />
     </div>
   );
 }

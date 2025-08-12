@@ -365,7 +365,7 @@ export default function Dashboard() {
                 staffMode={true} 
               />
             )}
-            {activeTab === 'Services' && isAdmin && (
+            {activeTab === 'services' && isAdmin && (
               <ServicesTab users={users} />
             )}
             {activeTab === 'reports' && isAdmin && (

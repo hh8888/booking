@@ -8,8 +8,24 @@ import { useLanguage } from '../../contexts/LanguageContext';
 const CreateUserPopup = ({ onClose, onUserCreated }) => {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
+  const [validationMessage, setValidationMessage] = useState('');
 
   const handleSave = async (userData) => {
+    // Clear previous validation message
+    setValidationMessage('');
+
+    // Custom validation: require either email or phone number
+    if (!userData.email && !userData.phone_number) {
+      setValidationMessage('Either email or phone number is required');
+      return;
+    }
+
+    // If no email is provided, generate a placeholder email for Supabase auth
+    if (!userData.email && userData.phone_number) {
+      // Generate a unique email using phone number as base
+      userData.email = `${userData.phone_number.replace(/[^\d]/g, '')}@temp.local`;
+    }
+
     setLoading(true);
     try {
       const userService = UserService.getInstance();
@@ -41,24 +57,27 @@ const CreateUserPopup = ({ onClose, onUserCreated }) => {
       onClose();
     } catch (error) {
       console.error('Error creating user:', error);
-      toast.error('Failed to create user: ' + error.message);
+      setValidationMessage('Failed to create user: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+    <>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
         <GenericForm
           title={t('users.addNewUser')}
           onSave={handleSave}
           onCancel={onClose}
           loading={loading}
+          validationMessage={validationMessage}
+          setValidationMessage={setValidationMessage}
           fields={[
             { key: 'full_name', label: t('formLabels.fullName'), type: 'text', required: true },
-            { key: 'email', label: t('formLabels.email'), type: 'email', required: true },
-            { key: 'phone_number', label: t('formLabels.phoneNumber'), type: 'text' },
+            { key: 'email', label: t('formLabels.email'), type: 'email', required: false },
+            { key: 'phone_number', label: t('formLabels.phoneNumber'), type: 'text', required: false },
             { key: 'gender', label: t('formLabels.gender'), type: 'select', options: [
               { value: 'male', label: t('formLabels.male') }, 
               { value: 'female', label: t('formLabels.female') }, 
@@ -68,8 +87,12 @@ const CreateUserPopup = ({ onClose, onUserCreated }) => {
             { key: 'post_code', label: t('formLabels.postCode'), type: 'text' }
           ]}
         />
+        <div className="mt-2 text-sm text-gray-600">
+          * Either email or phone number is required
+        </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

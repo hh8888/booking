@@ -4,7 +4,7 @@ import LoadingSpinner from './LoadingSpinner';
 import { ERROR_MESSAGES } from '../../constants';
 import { useLanguage } from '../../contexts/LanguageContext'; // Add this import
 
-const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, loadingAvailability = false }) => {
+const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, loadingAvailability = false, validationMessage = '', setValidationMessage }) => {
   const { t } = useLanguage(); // Add this line
   const [formData, setFormData] = useState({});
 
@@ -66,8 +66,12 @@ const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, l
     console.log('onSave function:', onSave);
     
     e.preventDefault();
+    if (typeof setValidationMessage === 'function') {
+      setValidationMessage('');
+    }
     let hasErrors = false;
     const newErrors = {};
+    let firstErrorMessage = '';
     
     // 验证所有必填字段
     for (const field of fields) {
@@ -76,7 +80,11 @@ const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, l
         if (value === undefined || value === null || value === '' || (typeof value === 'string' && value.trim() === '')) {
           newErrors[field.key] = true;
           hasErrors = true;
-          showToast.error(`${field.label || field.key} ${ERROR_MESSAGES.FIELD_REQUIRED}`);
+          const msg = `${field.label || field.key} ${ERROR_MESSAGES.FIELD_REQUIRED}`;
+          if (!firstErrorMessage) firstErrorMessage = msg;
+          if (!setValidationMessage) {
+            showToast.error(msg);
+          }
         }
       }
     }
@@ -90,13 +98,20 @@ const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, l
         if (isNaN(date.getTime())) {
           newErrors[field.key] = true;
           hasErrors = true;
-          showToast.error(ERROR_MESSAGES.INVALID_DATE);
+          const msg = ERROR_MESSAGES.INVALID_DATE;
+          if (!firstErrorMessage) firstErrorMessage = msg;
+          if (!setValidationMessage) {
+            showToast.error(msg);
+          }
         }
       }
     }
 
     setErrors(newErrors);
     if (hasErrors) {
+      if (typeof setValidationMessage === 'function') {
+        setValidationMessage(firstErrorMessage);
+      }
       console.log('=== GenericForm validation errors ===', newErrors);
       return;
     }
@@ -312,6 +327,33 @@ const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, l
             {field.text}
           </button>
         );
+      case 'email':
+        return (
+          <input
+            type="email"
+            name={field.key || field.name}
+            value={formData[field.key || field.name] || ''}
+            onChange={(e) => {
+              handleChange(e);
+            }}
+            onBlur={(e) => {
+              if (field.onChange) {
+                field.onChange(e.target.value);
+              }
+            }}
+            onInvalid={(e) => {
+              e.preventDefault(); // Prevent default browser validation message
+              // Custom validation message in English
+              e.target.setCustomValidity('Please enter a valid email address');
+            }}
+            onInput={(e) => {
+              e.target.setCustomValidity(''); // Reset custom validity
+            }}
+            className={`mt-1 block w-full px-3 py-2 border ${errors[field.key] ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+            placeholder={field.placeholder}
+            required={field.required}
+          />
+        );
       default: // Default to text input
         return (
           <input
@@ -344,7 +386,7 @@ const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, l
           </div>
         )}
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           {fields.map((field, index) => {
             // 检查字段是否应该被隐藏
             if (field.dependsOn) {
@@ -384,6 +426,22 @@ const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, l
               </div>
             );
           })}
+          
+          {/* Validation message area */}
+          {validationMessage && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-800">{validationMessage}</p>
+                </div>
+              </div>
+            </div>
+          )}
           
           <div className="flex justify-end space-x-2 pt-4">
             <button

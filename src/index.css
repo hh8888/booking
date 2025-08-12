@@ -14,3 +14,8 @@
     padding-bottom: 0.25rem;
   }
 }
+
+/* Ensure toast notifications appear above all modals */
+.Toastify__toast-container {
+  z-index: 99999 !important;
+}
