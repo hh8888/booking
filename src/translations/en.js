@@ -583,7 +583,8 @@ export default {
       bookingConfirmed: 'Booking confirmed successfully',
       bookingCancelled: 'Booking cancelled successfully',
       passwordReset: 'Password reset email sent',
-      profileUpdated: 'Profile updated successfully'
+      profileUpdated: 'Profile updated successfully',
+      verificationEmailSent: 'Verification email sent to user'
     },
     error: {
       general: 'An error occurred. Please try again.',

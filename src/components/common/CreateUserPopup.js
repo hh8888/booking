@@ -4,6 +4,7 @@ import GenericForm from './GenericForm';
 import UserService from '../../services/UserService';
 import { USER_ROLES } from '../../constants';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { isFakeEmail } from '../../utils/validationUtils';
 
 const CreateUserPopup = ({ onClose, onUserCreated }) => {
   const { t } = useLanguage();
@@ -45,14 +46,20 @@ const CreateUserPopup = ({ onClose, onUserCreated }) => {
       // Use UserService.createUser() which properly handles auth and sends verification email
       const result = await userService.createUser(newUserData);
       
-      toast.success(t('messages.success.created'));
-      toast.info(t('messages.success.passwordReset'));
+      // Check if email is fake and show appropriate message
+      if (isFakeEmail(newUserData.email)) {
+        // Don't show verification email message for fake emails
+        console.log('User created with fake email address - no verification email sent');
+      } else {
+        // Show verification email message for real emails
+        toast.info(t('messages.success.verificationEmailSent') || 'Verification email sent to user');
+      }
       
       // Call the callback with the new user data
       if (onUserCreated) {
         onUserCreated(result);
       }
-      
+
       // Close the popup
       onClose();
     } catch (error) {
@@ -76,8 +83,8 @@ const CreateUserPopup = ({ onClose, onUserCreated }) => {
           setValidationMessage={setValidationMessage}
           fields={[
             { key: 'full_name', label: t('formLabels.fullName'), type: 'text', required: true },
-            { key: 'email', label: t('formLabels.email'), type: 'email', required: false },
             { key: 'phone_number', label: t('formLabels.phoneNumber'), type: 'text', required: false },
+            { key: 'email', label: t('formLabels.email'), type: 'email', required: false },
             { key: 'gender', label: t('formLabels.gender'), type: 'select', options: [
               { value: 'male', label: t('formLabels.male') }, 
               { value: 'female', label: t('formLabels.female') }, 

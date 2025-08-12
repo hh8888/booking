@@ -590,7 +590,8 @@ export default {
       bookingConfirmed: '预约确认成功',
       bookingCancelled: '预约取消成功',
       passwordReset: '密码重置邮件已发送',
-      profileUpdated: '资料更新成功'
+      profileUpdated: '资料更新成功',
+      verificationEmailSent: '验证邮件已发送到用户'
     },
     error: {
       general: '发生错误，请重试。',

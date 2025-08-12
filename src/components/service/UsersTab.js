@@ -251,13 +251,13 @@ const getAvailableRoleOptions = (currentUserRole) => {
         </>
       )}
       {/* Role filter dropdown and search filter - Update this section */}
-      <div className="my-4 flex items-center gap-4">
+      <div className="my-4 flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex items-center">
           <label className="mr-2 font-medium">{t('users.filterByRole')}</label>
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500 min-w-0 flex-1 sm:flex-initial"
           >
             <option value="all">{t('users.allUsers')}</option>
             <option value={USER_ROLES.ADMIN}>{t('users.admin')}</option>
@@ -274,7 +274,7 @@ const getAvailableRoleOptions = (currentUserRole) => {
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
             placeholder={t('users.searchPlaceholder')}
-            className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500 w-64"
+            className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500 w-full sm:w-64 min-w-0"
           />
         </div>
       </div>

@@ -2,7 +2,8 @@ import { supabase } from '../supabaseClient';
 import DatabaseService from './DatabaseService';
 import { TABLES } from '../constants';
 import DateTimeFormatter from '../utils/DateTimeFormatter';
-import { toast } from 'react-toastify'; // Add this import
+import { toast } from 'react-toastify';
+import { isFakeEmail } from '../utils/validationUtils';
 
 class BookingService {
   static instance = null;
@@ -200,12 +201,62 @@ class BookingService {
   // Add new method to trigger email notifications
   async triggerStatusChangeEmail(bookingId, oldStatus, newStatus, emailRecipients = 'both') {
     try {
+      // First, get the booking details to check customer and provider emails
+      const booking = await this.getBookingById(bookingId);
+      if (!booking) {
+        throw new Error('Booking not found');
+      }
+
+      // Get customer and provider details to check their email addresses
+      const customerData = await this.dbService.fetchData(TABLES.USERS, 'created_at', false, { id: booking.customer_id });
+      const providerData = booking.provider_id ? await this.dbService.fetchData(TABLES.USERS, 'created_at', false, { id: booking.provider_id }) : [];
+      
+      const customer = customerData.length > 0 ? customerData[0] : null;
+      const provider = providerData.length > 0 ? providerData[0] : null;
+      
+      // Check if we should skip email sending based on fake email addresses
+      let shouldSkipCustomerEmail = false;
+      let shouldSkipProviderEmail = false;
+      
+      if (customer && isFakeEmail(customer.email)) {
+        shouldSkipCustomerEmail = true;
+        console.log('Skipping email notification for customer with fake email:', customer.email);
+      }
+      
+      if (provider && isFakeEmail(provider.email)) {
+        shouldSkipProviderEmail = true;
+        console.log('Skipping email notification for provider with fake email:', provider.email);
+      }
+      
+      // Determine if we should skip the entire email sending process
+      let actualEmailRecipients = emailRecipients;
+      if (emailRecipients === 'both' && shouldSkipCustomerEmail && shouldSkipProviderEmail) {
+        console.log('Skipping all email notifications - both customer and provider have fake emails');
+        toast.info('Email notifications skipped for temporary email addresses');
+        return { success: true, skipped: true, reason: 'All recipients have temporary email addresses' };
+      } else if (emailRecipients === 'customer' && shouldSkipCustomerEmail) {
+        console.log('Skipping customer email notification - customer has fake email');
+        toast.info('Customer email notification skipped for temporary email address');
+        return { success: true, skipped: true, reason: 'Customer has temporary email address' };
+      } else if (emailRecipients === 'provider' && shouldSkipProviderEmail) {
+        console.log('Skipping provider email notification - provider has fake email');
+        toast.info('Provider email notification skipped for temporary email address');
+        return { success: true, skipped: true, reason: 'Provider has temporary email address' };
+      } else if (emailRecipients === 'both') {
+        // Adjust recipients based on which emails are fake
+        if (shouldSkipCustomerEmail && !shouldSkipProviderEmail) {
+          actualEmailRecipients = 'provider';
+        } else if (!shouldSkipCustomerEmail && shouldSkipProviderEmail) {
+          actualEmailRecipients = 'customer';
+        }
+      }
+      
       const { data, error } = await supabase.functions.invoke('send-booking-status-email', {
         body: {
           bookingId,
           oldStatus,
           newStatus,
-          emailRecipients
+          emailRecipients: actualEmailRecipients
         }
       });
       

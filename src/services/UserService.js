@@ -1,6 +1,7 @@
 import DatabaseService from './DatabaseService';
 import { supabase } from '../supabaseClient';
 import { TABLES, ERROR_MESSAGES } from '../constants';
+import { isFakeEmail } from '../utils/validationUtils';
 
 class UserService {
   static instance = null;
@@ -49,25 +50,45 @@ class UserService {
 
   async createUser(userData) {
     try {
-      // First create user in auth table
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: userData.email,
-        password: userData.password,
-        options: {
-          data: {
-            full_name: userData.full_name,
-            role: userData.role
-          }
-        }
-      });
+      // Check if email is a fake temp.local address
+      const isFakeEmailAddress = isFakeEmail(userData.email);
       
-      if (authError) {
-         // Check for duplicate email in auth
-         if (authError.message && authError.message.includes('already registered')) {
-           throw new Error(ERROR_MESSAGES.DUPLICATE_EMAIL);
+      let authData;
+      if (isFakeEmailAddress) {
+        // For fake emails, create a mock auth user without calling Supabase auth
+        // Generate a unique ID for the fake user
+        const fakeUserId = `fake_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        authData = {
+          user: {
+            id: fakeUserId,
+            email: userData.email,
+            // Mark as confirmed since we're not sending verification emails
+            email_confirmed_at: new Date().toISOString()
+          }
+        };
+      } else {
+        // For real emails, use normal Supabase auth signup
+        const { data: realAuthData, error: authError } = await supabase.auth.signUp({
+          email: userData.email,
+          password: userData.password,
+          options: {
+            data: {
+              full_name: userData.full_name,
+              role: userData.role
+            }
+          }
+        });
+        
+        if (authError) {
+           // Check for duplicate email in auth
+           if (authError.message && authError.message.includes('already registered')) {
+             throw new Error(ERROR_MESSAGES.DUPLICATE_EMAIL);
+           }
+           throw new Error(`Auth Error: ${authError.message}`);
          }
-         throw new Error(`Auth Error: ${authError.message}`);
-       }
+         
+         authData = realAuthData;
+      }
       
       // Remove password field from userData
       const { password, ...userDataWithoutPassword } = userData;
@@ -75,8 +96,13 @@ class UserService {
       // Set user ID to auth user's ID
       userDataWithoutPassword.id = authData.user.id;
       
-      // Create new user
-      return await this.dbService.createItem(TABLES.USERS, userDataWithoutPassword, 'User');
+      // For fake emails, mark as email verified in the database
+      if (isFakeEmailAddress) {
+        userDataWithoutPassword.email_verified = true;
+      }
+      
+      // Create new user - pass empty string to suppress DatabaseService toast
+      return await this.dbService.createItem(TABLES.USERS, userDataWithoutPassword, '');
     } catch (error) {
        // Handle duplicate email constraint violation from database
        if (error.message && (error.message.includes('duplicate key value violates unique constraint') || 
@@ -120,6 +146,13 @@ class UserService {
 
   async resetUserPassword(user) {
     try {
+      // Check if email is a fake temp.local address
+      if (isFakeEmail(user.email)) {
+        // Skip sending reset email for fake addresses
+        console.log('Skipping password reset email for fake address:', user.email);
+        return { success: true, method: 'skipped', message: 'Password reset skipped for temp email address' };
+      }
+      
       console.log('Supabase URL:', process.env.REACT_APP_SUPABASE_URL);
       console.log('Attempting to send reset email to:', user.email);
       console.log('Redirect URL:', `${window.location.origin}/#/reset-password`);

@@ -285,3 +285,21 @@ export const validateUserForm = (userData) => {
     errors
   };
 };
+
+/**
+ * Check if an email address is a fake/temporary email (ends with @temp.local)
+ * @param {string} email - Email address to check
+ * @returns {boolean} True if the email is a fake/temporary email
+ */
+export const isFakeEmail = (email) => {
+  return email && email.endsWith('@temp.local');
+};
+
+/**
+ * Check if an email address is a real email (not fake/temporary)
+ * @param {string} email - Email address to check
+ * @returns {boolean} True if the email is a real email
+ */
+export const isRealEmail = (email) => {
+  return email && !email.endsWith('@temp.local');
+};
