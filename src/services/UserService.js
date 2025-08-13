@@ -55,17 +55,37 @@ class UserService {
       
       let authData;
       if (isFakeEmailAddress) {
-        // For fake emails, create a mock auth user without calling Supabase auth
-        // Generate a proper UUID for the fake user
-        const fakeUserId = crypto.randomUUID();
-        authData = {
-          user: {
-            id: fakeUserId,
-            email: userData.email,
-            // Mark as confirmed since we're not sending verification emails
-            email_confirmed_at: new Date().toISOString()
+        // For fake emails, create a real auth user but with a fake email
+        // This ensures the user ID exists in auth.users to satisfy RLS policies
+        const { data: realAuthData, error: authError } = await supabase.auth.signUp({
+          email: userData.email, // Use the fake email
+          password: userData.password,
+          options: {
+            data: {
+              full_name: userData.full_name,
+              role: userData.role
+            },
+            // Skip email confirmation for fake emails
+            emailRedirectTo: undefined
           }
-        };
+        });
+        
+        if (authError) {
+          // If auth signup fails for fake email, fall back to manual approach
+          console.warn('Auth signup failed for fake email, using manual approach:', authError);
+          
+          // Create user record without auth (requires RLS policy adjustment)
+          const fakeUserId = crypto.randomUUID();
+          authData = {
+            user: {
+              id: fakeUserId,
+              email: userData.email,
+              email_confirmed_at: new Date().toISOString()
+            }
+          };
+        } else {
+          authData = realAuthData;
+        }
       } else {
         // For real emails, use normal Supabase auth signup
         const { data: realAuthData, error: authError } = await supabase.auth.signUp({
@@ -109,6 +129,11 @@ class UserService {
                             error.message.includes('users_pkey') ||
                             error.message.includes('already registered'))) {
          throw new Error(ERROR_MESSAGES.DUPLICATE_EMAIL);
+       }
+       
+       // Handle RLS policy violations
+       if (error.message && error.message.includes('row-level security policy')) {
+         throw new Error('Unable to create user: Database security policy violation. Please contact support.');
        }
        
        // Re-throw other errors
