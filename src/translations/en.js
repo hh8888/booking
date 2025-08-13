@@ -239,7 +239,7 @@ export default {
     locationTBD: 'Location TBD',
     providerTBD: 'Provider TBD',
     createNewBooking: 'Create New Booking',
-    cancelSelected: 'Cancel Selected',
+    cancelSelected: 'Delete Selected',
     statusFilter: 'Status Filter',
     timeFilter: 'Time Filter',
     userFilter: 'User Filter',

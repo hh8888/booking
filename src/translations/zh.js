@@ -242,7 +242,7 @@ export default {
     locationTBD: '位置待定',
     providerTBD: '服务提供者待定',
     createNewBooking: '创建新预约',
-    cancelSelected: '取消选中',
+    cancelSelected: '删除选中',
     statusFilter: '状态筛选',
     timeFilter: '时间筛选',
     userFilter: '用户筛选',

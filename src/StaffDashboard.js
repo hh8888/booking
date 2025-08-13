@@ -5,6 +5,7 @@ import DashboardTab from './components/dashboard/DashboardTab';
 import UsersTab from './components/service/UsersTab';
 import BookingsTab from './components/booking/BookingsTab';
 import ReportsTab from './components/reports/ReportsTab';
+import StaffDateAvailabilityForm from './components/service/StaffDateAvailabilityForm';
 import LocationSelector from './components/common/LocationSelector';
 import UserDropdown from './components/common/UserDropdown';
 import SessionIndicator from './components/common/SessionIndicator';
@@ -60,7 +61,7 @@ export default function StaffDashboard() {
             </div>
           </div>
         
-          {/* Tab Navigation - Removed Settings, Services, and Reports tabs */}
+          {/* Tab Navigation - Added Set my availability tab */}
           <div className="flex gap-2 border-b border-gray-200 overflow-x-auto">
             <button
               onClick={() => setActiveTab('dashboard')}
@@ -92,6 +93,16 @@ export default function StaffDashboard() {
             >
               {t('nav.customers')}
             </button>
+            <button
+              onClick={() => setActiveTab('availability')}
+              className={`py-2 px-3 md:px-4 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+                activeTab === 'availability' 
+                  ? 'text-blue-500 border-b-2 border-blue-500' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {t('userDropdown.setAvailability')}
+            </button>
           </div>
         </div>
       </div>
@@ -122,6 +133,7 @@ export default function StaffDashboard() {
             {activeTab === 'dashboard' && <DashboardTab staffMode={true} currentUserId={currentUserId} />}
             {activeTab === 'bookings' && <BookingsTab users={users} staffMode={true} currentUserId={currentUserId} />}
             {activeTab === 'customers' && <UsersTab users={users.filter(user => user.role === USER_ROLES.CUSTOMER)} setUsers={setUsers} staffMode={true} />}
+            {activeTab === 'availability' && <StaffDateAvailabilityForm staffId={currentUserId} onClose={() => setActiveTab('dashboard')} />}
           </>
         )}
       </div>

@@ -40,6 +40,7 @@ export default function Dashboard() {
   
   // Role-based configuration
   const isAdmin = userRole === USER_ROLES.ADMIN;
+  const isManager = userRole === USER_ROLES.MANAGER;
   const isStaff = userRole === USER_ROLES.STAFF;
   
   // Conditional users data filtering for staff
@@ -95,9 +96,9 @@ export default function Dashboard() {
     };
   }, [isScrolled]); // Include isScrolled in dependencies for hysteresis
 
-  // Add debugging logs for admin
+  // Add debugging logs for admin and manager
   useEffect(() => {
-    if (isAdmin) {
+    if (isAdmin || isManager) {
       console.log('=== Dashboard Debug Info ===');
       console.log('userLoading:', userLoading);
       console.log('usersLoading:', usersLoading);
@@ -109,7 +110,7 @@ export default function Dashboard() {
       console.log('users count:', users?.length);
       console.log('=== End Debug Info ===');
     }
-  }, [userLoading, usersLoading, userError, usersError, networkError, currentUserId, userRole, users, isAdmin]);
+  }, [userLoading, usersLoading, userError, usersError, networkError, currentUserId, userRole, users, isAdmin, isManager]);
 
   // Remove the useLocationManager call (around lines 114-120)
   // useLocationManager({
@@ -147,11 +148,11 @@ export default function Dashboard() {
   const availableTabs = {
     dashboard: true,
     bookings: true,
-    users: isAdmin,
+    users: isAdmin || isManager,
     customers: isStaff,
-    services: isAdmin,
-    reports: isAdmin,
-    settings: isAdmin
+    services: isAdmin || isManager,
+    reports: isAdmin || isManager,
+    settings: isAdmin // Only admin can access settings, not manager
   };
 
   return (
@@ -355,7 +356,7 @@ export default function Dashboard() {
                 currentUserId={isStaff ? currentUserId : undefined} 
               />
             )}
-            {activeTab === 'users' && isAdmin && (
+            {activeTab === 'users' && (isAdmin || isManager) && (
               <UsersTab users={users} setUsers={setUsers} />
             )}
             {activeTab === 'customers' && isStaff && (
@@ -365,10 +366,10 @@ export default function Dashboard() {
                 staffMode={true} 
               />
             )}
-            {activeTab === 'services' && isAdmin && (
+            {activeTab === 'services' && (isAdmin || isManager) && (
               <ServicesTab users={users} />
             )}
-            {activeTab === 'reports' && isAdmin && (
+            {activeTab === 'reports' && (isAdmin || isManager) && (
               <ReportsTab />
             )}
             {activeTab === 'settings' && isAdmin && (

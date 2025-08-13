@@ -16,6 +16,7 @@ import { USER_ROLES, TABLES } from '../../constants';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getAvailableRoleOptions, canUpdateToRole } from '../../utils/userUtils';
 import useDashboardUser from '../../hooks/useDashboardUser';
+import { isFakeEmail } from '../../utils/validationUtils';
 
 function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = false }) {
   const { t } = useLanguage();
@@ -295,16 +296,27 @@ const getAvailableRoleOptions = (currentUserRole) => {
             key: 'email_verified', 
             label: t('formLabels.emailVerified'),
             render: (value, row) => {
-              // console.log('Email verified render - value:', value, 'type:', typeof value, 'row:', row.full_name);
+              // Use the existing utility function to check for fake emails
+              if (isFakeEmail(row.email)) {
+                return (
+                  <div className="flex items-center justify-center">
+                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                      Unused
+                    </span>
+                  </div>
+                );
+              }
+              
+              // For real emails, show actual verification status
               return (
                 <div className="flex items-center justify-center">
                   {value === true ? (
                     <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                      ✅ Verified
+                      Verified
                     </span>
                   ) : value === false ? (
                     <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
-                      ❌ Unverified
+                      Unverified
                     </span>
                   ) : (
                     <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
