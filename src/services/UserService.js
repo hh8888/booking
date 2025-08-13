@@ -55,36 +55,31 @@ class UserService {
       
       let authData;
       if (isFakeEmailAddress) {
-        // For fake emails, create a real auth user but with a fake email
-        // This ensures the user ID exists in auth.users to satisfy RLS policies
-        const { data: realAuthData, error: authError } = await supabase.auth.signUp({
-          email: userData.email, // Use the fake email
-          password: userData.password,
-          options: {
-            data: {
-              full_name: userData.full_name,
-              role: userData.role
-            },
-            // Skip email confirmation for fake emails
-            emailRedirectTo: undefined
-          }
-        });
-        
-        if (authError) {
-          // If auth signup fails for fake email, fall back to manual approach
-          console.warn('Auth signup failed for fake email, using manual approach:', authError);
-          
-          // Create user record without auth (requires RLS policy adjustment)
-          const fakeUserId = crypto.randomUUID();
-          authData = {
-            user: {
-              id: fakeUserId,
-              email: userData.email,
-              email_confirmed_at: new Date().toISOString()
+        // For fake emails, try creating auth user with a more permissive approach
+        try {
+          const { data: realAuthData, error: authError } = await supabase.auth.signUp({
+            email: userData.email, // Use the fake email
+            password: userData.password,
+            options: {
+              data: {
+                full_name: userData.full_name,
+                role: userData.role
+              },
+              // Skip email confirmation for fake emails
+              emailRedirectTo: undefined
             }
-          };
-        } else {
+          });
+          
+          if (authError) {
+            console.error('Auth signup failed for fake email:', authError);
+            // Instead of falling back to manual approach, throw a more specific error
+            throw new Error(`Unable to create user account: ${authError.message}. Please try with a different email or contact support.`);
+          }
+          
           authData = realAuthData;
+        } catch (authSignupError) {
+          // If auth signup completely fails, we cannot proceed due to RLS policy
+          throw new Error(`Unable to create user account: ${authSignupError.message}. The system requires valid authentication for all users.`);
         }
       } else {
         // For real emails, use normal Supabase auth signup
