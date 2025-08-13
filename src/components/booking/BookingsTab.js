@@ -109,7 +109,7 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
     } finally {
       setLoading(false);
     }
-  }, [services, customers, timeFilter, userId]);
+  }, [timeFilter, userId]); // Remove services and customers from dependencies
 
   // Get booking time interval setting
   const fetchBookingTimeInterval = useCallback(async () => {
@@ -191,7 +191,7 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
       };
       updateCustomersAndBookings();
     }
-  }, [users, fetchCustomers, fetchBookings]); // Remove services from dependency array
+  }, [users, fetchCustomers]); // Remove fetchBookings from dependencies
 
   // Handle bookingTimeInterval changes
   useEffect(() => {
