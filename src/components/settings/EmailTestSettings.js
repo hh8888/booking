@@ -9,6 +9,7 @@ export default function EmailTestSettings() {
   const [emailTestData, setEmailTestData] = useState({
     bookingId: '',
     emailRecipients: 'both',
+    testType: 'status', // New field for test type
     oldStatus: 'pending',
     newStatus: 'confirmed',
     isLoading: false
@@ -49,19 +50,35 @@ export default function EmailTestSettings() {
     setEmailTestData(prev => ({ ...prev, isLoading: true }));
 
     try {
-      const { data, error } = await supabase.functions.invoke('send-booking-status-email', {
-        body: {
+      let functionName, requestBody;
+      
+      if (emailTestData.testType === 'created') {
+        // Test booking created email
+        functionName = 'send-booking-created-email';
+        requestBody = {
+          bookingId: emailTestData.bookingId,
+          emailRecipients: emailTestData.emailRecipients,
+          isTest: true
+        };
+      } else {
+        // Test booking status email
+        functionName = 'send-booking-status-email';
+        requestBody = {
           bookingId: emailTestData.bookingId,
           oldStatus: emailTestData.oldStatus,
           newStatus: emailTestData.newStatus,
           emailRecipients: emailTestData.emailRecipients,
           isTest: true
-        }
+        };
+      }
+
+      const { data, error } = await supabase.functions.invoke(functionName, {
+        body: requestBody
       });
 
       if (error) throw error;
 
-      toast.success('Test email sent successfully!');
+      toast.success(`Test ${emailTestData.testType === 'created' ? 'booking created' : 'booking status'} email sent successfully!`);
     } catch (error) {
       console.error('Error sending test email:', error);
       toast.error(`Failed to send test email: ${error.message}`);
@@ -97,9 +114,24 @@ export default function EmailTestSettings() {
 
       {isExpanded && (
         <div>
-          <p className="text-gray-600 mb-4">Test the booking status email notification system</p>
+          <p className="text-gray-600 mb-4">Test the booking email notification system</p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            {/* Test Type Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Test Type
+              </label>
+              <select
+                value={emailTestData.testType}
+                onChange={(e) => setEmailTestData(prev => ({ ...prev, testType: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="status">Booking Status Change</option>
+                <option value="created">Booking Created</option>
+              </select>
+            </div>
+            
             {/* Booking Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -135,41 +167,46 @@ export default function EmailTestSettings() {
               </select>
             </div>
             
-            {/* Old Status */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Old Status
-              </label>
-              <select
-                value={emailTestData.oldStatus}
-                onChange={(e) => setEmailTestData(prev => ({ ...prev, oldStatus: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="no_show">No Show</option>
-              </select>
-            </div>
-            
-            {/* New Status */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                New Status
-              </label>
-              <select
-                value={emailTestData.newStatus}
-                onChange={(e) => setEmailTestData(prev => ({ ...prev, newStatus: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="no_show">No Show</option>
-              </select>
-            </div>
+            {/* Conditional fields for status change emails */}
+            {emailTestData.testType === 'status' && (
+              <>
+                {/* Old Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Old Status
+                  </label>
+                  <select
+                    value={emailTestData.oldStatus}
+                    onChange={(e) => setEmailTestData(prev => ({ ...prev, oldStatus: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="no_show">No Show</option>
+                  </select>
+                </div>
+                
+                {/* New Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    New Status
+                  </label>
+                  <select
+                    value={emailTestData.newStatus}
+                    onChange={(e) => setEmailTestData(prev => ({ ...prev, newStatus: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="no_show">No Show</option>
+                  </select>
+                </div>
+              </>
+            )}
           </div>
           
           <button
@@ -186,13 +223,13 @@ export default function EmailTestSettings() {
                 Sending...
               </>
             ) : (
-              'Send Test Email'
+              `Send Test ${emailTestData.testType === 'created' ? 'Booking Created' : 'Status Change'} Email`
             )}
           </button>
           
           <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
             <p className="text-sm text-yellow-800">
-              <strong>Note:</strong> This will send emails to the selected recipients (customer and/or provider) associated with the chosen booking.
+              <strong>Note:</strong> This will send {emailTestData.testType === 'created' ? 'booking created confirmation' : 'booking status change'} emails to the selected recipients (customer and/or provider) associated with the chosen booking.
             </p>
           </div>
         </div>

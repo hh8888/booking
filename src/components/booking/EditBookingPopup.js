@@ -560,8 +560,8 @@ export default function EditBookingPopup({
   const fetchCustomers = async () => {
     try {
       const dbService = DatabaseService.getInstance();
-      // Include both verified and unverified customers
-      const data = await dbService.fetchSpecificColumns(TABLES.USERS, 'id, full_name, email_verified', { role: USER_ROLES.CUSTOMER });
+      // Use fetchData instead of fetchSpecificColumns for better filtering support
+      const data = await dbService.fetchData(TABLES.USERS, 'created_at', false, { role: USER_ROLES.CUSTOMER });
       setCustomers(data);
       return data;
     } catch (error) {
