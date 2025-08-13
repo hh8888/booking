@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import 'react-toastify/dist/ReactToastify.css';
-import { showToast } from '../common/ToastMessage';
-import ToastMessage from '../common/ToastMessage';
 import Table from '../table/Table';
 import GenericForm from '../common/GenericForm';
 import ServiceForm from './ServiceForm';
@@ -302,8 +300,6 @@ function ServicesTab({ users, handleError }) {
         </div>
       )}
 
-      {/* Toast Message Component */}
-      <ToastMessage />
     </div>
   );
 }

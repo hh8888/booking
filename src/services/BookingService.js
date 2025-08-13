@@ -36,9 +36,9 @@ class BookingService {
     }
   }
 
-  async fetchBookings(serviceData, customerData) {
+  async fetchBookings(serviceData, customerData, staffData) {
     const data = await this.dbService.fetchData(TABLES.BOOKINGS, 'start_time', false);
-    return this.processBookingsData(data, serviceData, customerData);
+    return this.processBookingsData(data, serviceData, customerData, staffData);
   }
 
   processBookingsData(bookings, servicesData, customersData, staffData = []) {

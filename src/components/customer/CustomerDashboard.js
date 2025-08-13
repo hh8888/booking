@@ -9,7 +9,6 @@ import CustomerProfile from './CustomerProfile';
 import CustomerBookingsList from './CustomerBookingsList';
 import CustomerBooking from './CustomerBooking';
 import BookingSteps from './BookingSteps';
-import ToastMessage from '../common/ToastMessage';
 import LocationSelector from '../common/LocationSelector';
 import UserDropdown from '../common/UserDropdown';
 import SessionIndicator from '../common/SessionIndicator';
@@ -469,8 +468,6 @@ const CustomerDashboard = () => {
         />
       )}
       
-      {/* Add ToastMessage component */}
-      <ToastMessage />
     </div>
   );
 };

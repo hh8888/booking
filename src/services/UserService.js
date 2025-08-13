@@ -288,6 +288,22 @@ class UserService {
       throw new Error('Failed to fetch user');
     }
   }
+
+  async fetchStaffAndManagers() {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.USERS)
+        .select('*')
+        .in('role', ['STAFF', 'MANAGER'])
+        .order('full_name');
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching staff and managers:', error);
+      throw new Error('Failed to fetch staff and managers');
+    }
+  }
 }
 
 export default UserService;

@@ -9,7 +9,6 @@ import UserService from '../../services/UserService';
 import StaffAvailabilityService from '../../services/StaffAvailabilityService';
 import withErrorHandling from '../common/withErrorHandling';
 import { showToast } from '../common/ToastMessage';
-import ToastMessage from '../common/ToastMessage';
 import StaffDateAvailabilityForm from './StaffDateAvailabilityForm';
 import UserBookingHistory from '../common/UserBookingHistory';
 import { USER_ROLES, TABLES } from '../../constants';
@@ -188,7 +187,8 @@ const getAvailableRoleOptions = (currentUserRole) => {
   } else if (currentUserRole === USER_ROLES.MANAGER) {
     return [
       ...baseOptions,
-      { value: USER_ROLES.STAFF, label: t('formLabels.staff') }
+      { value: USER_ROLES.STAFF, label: t('formLabels.staff') },
+      { value: USER_ROLES.MANAGER, label: t('formLabels.manager') }
     ];
   }
   
@@ -399,7 +399,6 @@ const getAvailableRoleOptions = (currentUserRole) => {
           onClose={() => setSelectedUserForHistory(null)}
         />
       )}
-      <ToastMessage />
     </div>
   );
 }

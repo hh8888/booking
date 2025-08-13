@@ -273,6 +273,8 @@ export default {
     noBookingsYet: '暂无预约',
     startByCreating: '开始创建您的第一个预约',
     provider: '服务提供者',
+    providerFilter: '服务提供者筛选',
+    allProviders: '所有服务提供者',
     minutes: '分钟',
     editBookingTitle: '编辑预约',
     cancelBookingTitle: '取消预约',
@@ -285,7 +287,9 @@ export default {
     customerNotes: '备注',
     customerNotesPlaceholder: '输入备注',
     search: '搜索',
-    searchPlaceholder: '按客户、服务或备注搜索...'
+    searchPlaceholder: '按客户、服务或备注搜索...',
+    locationFilter: '位置筛选',
+    allLocations: '所有位置'
   },
 
   // Users

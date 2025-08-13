@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import ToastMessage from '../common/ToastMessage';
 import Table from '../table/Table';
 import { useLanguage } from '../../contexts/LanguageContext';
 import EditBookingPopup from './EditBookingPopup';
 import BookingService from '../../services/BookingService';
 import DatabaseService from '../../services/DatabaseService';
+import UserService from '../../services/UserService';
 import DateTimeFormatter from '../../utils/DateTimeFormatter';
 import ErrorHandlingService from '../../services/ErrorHandlingService';
 import withErrorHandling from '../common/withErrorHandling';
@@ -28,7 +28,11 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [timeFilter, setTimeFilter] = useState('today+');
   const [userFilter, setUserFilter] = useState('all');
-  const [searchFilter, setSearchFilter] = useState(''); // Add this line
+  const [searchFilter, setSearchFilter] = useState('');
+  const [locationFilter, setLocationFilter] = useState('all');
+  const [providerFilter, setProviderFilter] = useState('all');
+  const [locations, setLocations] = useState([]);
+  const [providers, setProviders] = useState([]);
   const [bookingTimeInterval, setBookingTimeInterval] = useState(30);
   const [showRecurringOptions, setShowRecurringOptions] = useState(false);
   const [hourOptions, setHourOptions] = useState([]);
@@ -40,6 +44,32 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
 
   // Use ref to track if initial load is complete
   const initialLoadComplete = useRef(false);
+
+
+  // Fetch providers (staff users)
+  const fetchProviders = useCallback(async () => {
+    console.log('🔄 fetchProviders called');
+    try {
+      if (users && users.length > 0) {
+        const staffUsers = users.filter(user => 
+          user.role === USER_ROLES.STAFF || user.role === USER_ROLES.MANAGER
+        );
+        setProviders(staffUsers);
+        console.log('✅ fetchProviders completed, providers count:', staffUsers.length);
+        return staffUsers;
+      } else {
+        const userService = UserService.getInstance();
+        const data = await userService.fetchStaffAndManagers();
+        setProviders(data);
+        console.log('✅ fetchProviders completed (from UserService), providers count:', data.length);
+        return data;
+      }
+    } catch (error) {
+      console.error('❌ fetchProviders error:', error);
+      errorHandler.handleDatabaseError(error, 'fetching', 'providers');
+      return [];
+    }
+  }, [users]);
 
   // Stabilize fetchCustomers with useCallback
   const fetchCustomers = useCallback(async () => {
@@ -65,7 +95,7 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
       errorHandler.handleDatabaseError(error, 'fetching', 'customers');
       return [];
     }
-  }, [users]); // Only depend on users
+  }, [users]);
 
   // Stabilize fetchServices with useCallback
   const fetchServices = useCallback(async () => {
@@ -84,16 +114,11 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
   }, []);
 
   // Stabilize fetchBookings with useCallback
-  const fetchBookings = useCallback(async (serviceData, customerData) => {
-    console.log('🔄 fetchBookings called with:', {
-      serviceData: serviceData ? `${serviceData.length} services` : 'using state',
-      customerData: customerData ? `${customerData.length} customers` : 'using state',
-      timeFilter,
-      userId
-    });
+  const fetchBookings = useCallback(async (serviceData, customerData, providerData) => {
+    console.log('🔄 fetchBookings called');
     try {
       const bookingService = BookingService.getInstance();
-      const bookingsWithDetails = await bookingService.fetchBookings(serviceData || services, customerData || customers);
+      const bookingsWithDetails = await bookingService.fetchBookings(serviceData || services, customerData || customers, providerData || providers);
       let filteredBookings = bookingService.filterBookingsByTime(bookingsWithDetails, timeFilter);
       
       // Filter bookings by user ID if provided
@@ -109,7 +134,7 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
     } finally {
       setLoading(false);
     }
-  }, [timeFilter, userId]); // Remove services and customers from dependencies
+  }, [timeFilter, userId, services, customers, providers]);
 
   // Get booking time interval setting
   const fetchBookingTimeInterval = useCallback(async () => {
@@ -122,89 +147,106 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
     } catch (error) {
       console.error('❌ fetchBookingTimeInterval error:', error);
       errorHandler.handleDatabaseError(error, 'fetching', 'booking time interval');
-      // Keep default value of 30 minutes
     }
   }, []);
 
+  // Move the filteredBookings computation BEFORE the early returns
+  const filteredBookings = useMemo(() => {
+    let filtered = bookings;
+
+    // Filter by status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(booking => booking.status === statusFilter);
+    }
+
+    // Filter by location (use 'location' field, not 'location_id')
+    if (locationFilter !== 'all') {
+      filtered = filtered.filter(booking => booking.location === parseInt(locationFilter));
+    }
+
+    // Filter by provider
+    if (providerFilter !== 'all') {
+      filtered = filtered.filter(booking => booking.provider_id === providerFilter);
+    }
+
+    // Filter by user (for non-staff mode)
+    if (!staffMode && userFilter !== 'all') {
+      filtered = filtered.filter(booking => booking.customer_id === userFilter);
+    }
+
+    // Filter by search term
+    if (searchFilter.trim()) {
+      const searchTerm = searchFilter.toLowerCase();
+      filtered = filtered.filter(booking => 
+        booking.customer_name?.toLowerCase().includes(searchTerm) ||
+        booking.service_name?.toLowerCase().includes(searchTerm) ||
+        booking.notes?.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    return filtered;
+  }, [bookings, statusFilter, locationFilter, providerFilter, userFilter, searchFilter, staffMode]);
+
   // Initial data loading - only run once
   useEffect(() => {
-    console.log('🚀 Initial useEffect triggered, initialLoadComplete:', initialLoadComplete.current);
+    console.log('🚀 Initial useEffect triggered');
     if (!initialLoadComplete.current) {
       const initData = async () => {
-        console.log('🔧 Starting initial data load...');
-        // Get booking time interval setting
-        await fetchBookingTimeInterval();
-        
-        // Get business hours
-        const dbService = DatabaseService.getInstance();
-        const businessHours = await dbService.getSettingsByKey('system', 'businessHours');
-        
-        // Parse business hours or use default (9:00-17:00)
-        let startHour = 9;
-        let endHour = 17;
-        
-        if (businessHours) {
-          const [start, end] = businessHours.split('-');
-          startHour = parseInt(start.split(':')[0]);
-          endHour = parseInt(end.split(':')[0]);
+        console.log('🚀 Starting initial data load...');
+        setLoading(true);
+        try {
+          // Fetch all data in parallel
+          const [serviceData, customerData, locationData, providerData] = await Promise.all([
+            fetchServices(),
+            fetchCustomers(),
+            fetchLocations(),
+            fetchProviders()
+          ]);
+          
+          // Then fetch bookings with the fresh data
+          await fetchBookings(serviceData, customerData, providerData);
+          await fetchBookingTimeInterval();
+          
+          initialLoadComplete.current = true;
+          console.log('✅ Initial data load completed');
+        } catch (error) {
+          console.error('❌ Initial data load failed:', error);
+          setError('Failed to load initial data');
         }
-
-        // Generate hour options
-        const hours = [];
-        for (let hour = startHour; hour <= endHour; hour++) {
-          hours.push(hour.toString().padStart(2, '0'));
-        }
-        setHourOptions(hours);
-        
-        const [customerData, serviceData] = await Promise.all([
-          fetchCustomers(),
-          fetchServices()
-        ]);
-        await fetchBookings(serviceData, customerData);
-        
-        initialLoadComplete.current = true;
-        console.log('✅ Initial data load completed');
       };
       initData();
     }
-  }, []); // Empty dependency array - only run once
+  }, []);
 
   // Handle timeFilter changes separately
   useEffect(() => {
-    console.log('⏰ timeFilter useEffect triggered, timeFilter:', timeFilter, 'initialLoadComplete:', initialLoadComplete.current);
     if (initialLoadComplete.current) {
-      console.log('🔄 Refetching bookings due to timeFilter change');
-      // Only refetch bookings when timeFilter changes after initial load
       fetchBookings();
     }
   }, [timeFilter, fetchBookings]);
 
   // Handle users changes separately
   useEffect(() => {
-    console.log('👥 users useEffect triggered, users length:', users?.length, 'initialLoadComplete:', initialLoadComplete.current);
     if (initialLoadComplete.current) {
-      console.log('🔄 Refetching customers and bookings due to users change');
-      // Only refetch customers and bookings when users change after initial load
-      const updateCustomersAndBookings = async () => {
-        const customerData = await fetchCustomers();
-        await fetchBookings(undefined, customerData); // Let fetchBookings use its internal services state
+      const updateData = async () => {
+        const [customerData, providerData] = await Promise.all([
+          fetchCustomers(),
+          fetchProviders()
+        ]);
+        await fetchBookings(undefined, customerData, providerData);
       };
-      updateCustomersAndBookings();
+      updateData();
     }
-  }, [users, fetchCustomers]); // Remove fetchBookings from dependencies
+  }, [users, fetchCustomers, fetchProviders]);
 
   // Handle bookingTimeInterval changes
   useEffect(() => {
-    console.log('⏱️ bookingTimeInterval useEffect triggered, interval:', bookingTimeInterval);
     if (bookingTimeInterval > 0) {
-      console.log('🔄 Regenerating minute options for interval:', bookingTimeInterval);
-      // Regenerate minute options when interval changes
       const minutes = [];
       for (let minute = 0; minute < 60; minute += bookingTimeInterval) {
         minutes.push(minute.toString().padStart(2, '0'));
       }
       setMinuteOptions(minutes);
-      console.log('✅ Minute options updated, count:', minutes.length);
     }
   }, [bookingTimeInterval]);
 
@@ -443,16 +485,71 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
   };
 
   // Filter bookings by status, user, and search term
-  const filteredBookings = bookings
-    .filter(booking => statusFilter === 'all' ? true : booking.status === statusFilter)
-    .filter(booking => userFilter === 'all' ? true : booking.customer_id === userFilter)
-    .filter(booking => {
-      const searchTerm = searchFilter.toLowerCase();
-      return searchTerm === '' ||
-        booking.customer_name?.toLowerCase().includes(searchTerm) ||
-        booking.service_name?.toLowerCase().includes(searchTerm) ||
-        booking.notes?.toLowerCase().includes(searchTerm);
-    });
+  // Add fetchLocations function
+  const fetchLocations = useCallback(async () => {
+    console.log('🔄 fetchLocations called');
+    try {
+      const locationService = LocationService.getInstance();
+      const dbService = DatabaseService.getInstance();
+      
+      // Initialize LocationService with database service
+      await locationService.initializeLocations(dbService);
+      
+      // Get locations from LocationService
+      const data = locationService.getLocations();
+      setLocations(data);
+      console.log('✅ fetchLocations completed, locations count:', data.length);
+      return data;
+    } catch (error) {
+      console.error('❌ fetchLocations error:', error);
+      errorHandler.handleDatabaseError(error, 'fetching', 'locations');
+      return [];
+    }
+  }, []);
+
+  // Update the initial data loading useEffect to include locations
+  useEffect(() => {
+    console.log('🚀 Initial useEffect triggered, initialLoadComplete:', initialLoadComplete.current);
+    if (!initialLoadComplete.current) {
+      const initData = async () => {
+        console.log('🔧 Starting initial data load...');
+        // Get booking time interval setting
+        await fetchBookingTimeInterval();
+        
+        // Get business hours
+        const dbService = DatabaseService.getInstance();
+        const businessHours = await dbService.getSettingsByKey('system', 'businessHours');
+        
+        // Parse business hours or use default (9:00-17:00)
+        let startHour = 9;
+        let endHour = 17;
+        
+        if (businessHours) {
+          const [start, end] = businessHours.split('-');
+          startHour = parseInt(start.split(':')[0]);
+          endHour = parseInt(end.split(':')[0]);
+        }
+
+        // Generate hour options
+        const hours = [];
+        for (let hour = startHour; hour <= endHour; hour++) {
+          hours.push(hour.toString().padStart(2, '0'));
+        }
+        setHourOptions(hours);
+        
+        const [customerData, serviceData, locationData] = await Promise.all([
+          fetchCustomers(),
+          fetchServices(),
+          fetchLocations() // Add locations fetching
+        ]);
+        await fetchBookings(serviceData, customerData);
+        
+        initialLoadComplete.current = true;
+        console.log('✅ Initial data load completed');
+      };
+      initData();
+    }
+  }, []);
 
   // Calculate booking statistics
   const getBookingStats = () => {
@@ -504,10 +601,12 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
     }
   };
 
+  // Early returns MUST come after all hooks
   if (loading) return <div>{t('common.loading')}</div>;
   if (error) return <div>Error: {error}</div>;
 
   const stats = getBookingStats();
+
 
   return (
     <div>
@@ -643,6 +742,38 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
           </select>
         </div>
 
+        {/* Location filter */}
+        <div>
+          <label className="mr-2 font-medium">{t('bookings.locationFilter')}:</label>
+          <select
+            value={locationFilter}
+            onChange={(e) => setLocationFilter(e.target.value)}
+            className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="all">{t('bookings.allLocations')}</option>
+            {locations.map(location => (
+              <option key={location.id} value={location.id}>{location.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Provider filter */}
+        <div>
+          <label className="mr-2 font-medium">{t('bookings.providerFilter')}:</label>
+          <select
+            value={providerFilter}
+            onChange={(e) => setProviderFilter(e.target.value)}
+            className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="all">{t('bookings.allProviders')}</option>
+            {providers.map(provider => (
+              <option key={provider.id} value={provider.id}>
+                {provider.full_name || `${provider.first_name} ${provider.last_name}`}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Only show User Filter for non-staff users */}
         {!staffMode && (
           <div>
@@ -660,7 +791,7 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
           </div>
         )}
         
-        {/* Search filter - Add this section */}
+        {/* Search filter */}
         <div className="flex items-center">
           <label className="mr-2 font-medium">{t('bookings.search')}:</label>
           <input
@@ -680,13 +811,21 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
           { key: "service_name", label: t('bookings.service') },
           { key: "booking_time_formatted", label: t('bookings.bookingTime') },
           { key: "duration", label: t('bookings.duration') },
-          // This will now work properly
           { 
             key: "location", 
             label: t('bookings.location'),
             formatter: (locationId) => {
               const locationService = LocationService.getInstance();
               return locationService.getLocationNameById(locationId);
+            }
+          },
+          {
+            key: "provider_id",
+            label: t('bookings.provider'),
+            formatter: (providerId) => {
+              if (!providerId) return t('common.notProvided');
+              const provider = providers.find(p => p.id === providerId);
+              return provider ? (provider.full_name || `${provider.first_name} ${provider.last_name}`) : t('common.unknown');
             }
           },
           { key: "status", label: t('bookings.status') },
@@ -736,8 +875,6 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
         />
       )}
 
-      {/* Toast Container */}
-      <ToastMessage/>
     </div>
   );
 }

@@ -213,7 +213,7 @@ export default {
 
   // Bookings
   bookings: {
-    title: 'Bookings',
+    title: 'Booking Management',
     newBooking: 'New Booking',
     editBooking: 'Edit Booking',
     deleteBooking: 'Delete Booking',
@@ -240,9 +240,9 @@ export default {
     providerTBD: 'Provider TBD',
     createNewBooking: 'Create New Booking',
     cancelSelected: 'Delete Selected',
-    statusFilter: 'Status Filter',
-    timeFilter: 'Time Filter',
-    userFilter: 'User Filter',
+    statusFilter: 'Status',
+    timeFilter: 'Time',
+    userFilter: 'User',
     allStatuses: 'All Statuses',
     pending: 'Pending',
     confirmed: 'Confirmed',
@@ -270,6 +270,8 @@ export default {
     noBookingsYet: 'No bookings yet',
     startByCreating: 'Start by creating your first appointment',
     provider: 'Provider',
+    providerFilter: 'Provider',
+    allProviders: 'All Providers',
     minutes: 'minutes',
     editBookingTitle: 'Edit booking',
     cancelBookingTitle: 'Cancel booking',
@@ -282,7 +284,9 @@ export default {
     customerNotes: 'Notes',
     customerNotesPlaceholder: 'Enter notes',
     search: 'Search',
-    searchPlaceholder: 'Search by customer, service, or notes...'
+    searchPlaceholder: 'Search by customer, service, or notes...',
+    locationFilter: 'Location',
+    allLocations: 'All Locations'
   },
 
   // Users
@@ -292,7 +296,7 @@ export default {
     addNewUser: 'Create New User',
     addNewCustomer: 'Add New Customer',
     deleteSelected: 'Delete Selected',
-    filterByRole: 'Filter by Role:',
+    filterByRole: 'Role:',
     allUsers: 'All Users',
     admin: 'Admin',
     manager: 'Manager',
@@ -328,7 +332,7 @@ export default {
     title: 'Services Management',
     manageServices: 'Manage Services',
     addNewService: 'Add New Service',
-    filterByStaff: 'Filter by Staff:',
+    filterByStaff: 'Staff:',
     allStaff: 'All Staff',
     unassigned: 'Unassigned',
     newService: 'New Service',

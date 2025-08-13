@@ -6,6 +6,9 @@ const ToastMessage = () => {
   return <ToastContainer />;
 };
 
+// Remove this duplicate import line
+// import { toast } from 'react-toastify';
+
 // 统一的toast配置
 const defaultConfig = {
   position: "bottom-right",
@@ -24,4 +27,5 @@ export const showToast = {
   warning: (message) => toast.warning(message, defaultConfig)
 };
 
-export default ToastMessage;
+// Remove the ToastMessage component export
+// export default ToastMessage;

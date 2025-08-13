@@ -8,7 +8,6 @@ import { useLanguage } from '../../contexts/LanguageContext';
 // import StaffLegend from './StaffLegend';
 import EventModal from './EventModal';
 import EditBookingPopup from '../booking/EditBookingPopup';
-import ToastMessage from '../common/ToastMessage';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import DatabaseService from '../../services/DatabaseService';
 import BookingService from '../../services/BookingService';
@@ -514,7 +513,6 @@ export default function DashboardTab() {
         />
       )}
       
-      <ToastMessage />
     </div>
   );
 }

@@ -3,7 +3,7 @@ import FilterBox from './FilterBox';
 import Footer from './Footer';
 import GenericForm from './GenericForm';
 import LocationSelector from './LocationSelector';
-import ToastMessage from './ToastMessage';
+// Remove this line: import ToastMessage from './ToastMessage';
 import UserDropdown from './UserDropdown';
 import UserProfileForm from './UserProfileForm';
 import withErrorHandling from './withErrorHandling';
@@ -15,7 +15,7 @@ export {
   Footer,
   GenericForm,
   LocationSelector,
-  ToastMessage,
+  // Remove this line: ToastMessage,
   UserDropdown,
   UserProfileForm,
   withErrorHandling,

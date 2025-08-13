@@ -13,7 +13,8 @@ import LocationSelector from './components/common/LocationSelector';
 import UserDropdown from './components/common/UserDropdown';
 import SessionIndicator from './components/common/SessionIndicator';
 import LoadingSpinner from './components/common/LoadingSpinner';
-import ToastMessage from './components/common/ToastMessage';
+// Remove this import
+// import ToastMessage from './components/common/ToastMessage';
 import { useBusinessInfo } from './hooks/useBusinessInfo';
 import useDashboardUser from './hooks/useDashboardUser';
 // Remove this import completely
@@ -380,8 +381,8 @@ export default function Dashboard() {
         )}
       </div>
       
-      {/* Add ToastMessage component */}
-      <ToastMessage />
+      {/* Remove this line */}
+      {/* <ToastMessage /> */}
     </div>
     </div>
   );

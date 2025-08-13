@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import ToastMessage from './common/ToastMessage';
 import { supabase } from '../supabaseClient';
 import DatabaseService from '../services/DatabaseService';
 import { USER_ROLES, BOOKING_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES, TABLES, DEFAULT_BOOKING_STEPS } from '../constants';
@@ -833,8 +832,6 @@ export default function SettingsTab() {
       <EmailTestSettings />
 
       
-      {/* Toast Notification Container */}
-      <ToastMessage />
     </div>
   );
 }
