@@ -56,8 +56,8 @@ class UserService {
       let authData;
       if (isFakeEmailAddress) {
         // For fake emails, create a mock auth user without calling Supabase auth
-        // Generate a unique ID for the fake user
-        const fakeUserId = `fake_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        // Generate a proper UUID for the fake user
+        const fakeUserId = crypto.randomUUID();
         authData = {
           user: {
             id: fakeUserId,
