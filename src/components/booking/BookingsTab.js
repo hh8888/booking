@@ -391,8 +391,9 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
             setIsCreating(false);
             setEditItem(null);
           } else {
-            // Create a single new booking
-            await dbService.createItem(TABLES.BOOKINGS, dataToSave, 'Booking');
+            // Create a single new booking using BookingService (which includes email)
+            const bookingService = BookingService.getInstance();
+            await bookingService.createBooking(dataToSave);
             
             // Update local state
             const staffData = await fetchServices();

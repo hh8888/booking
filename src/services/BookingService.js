@@ -169,7 +169,12 @@ class BookingService {
   async createBooking(bookingData) {
     console.log('Creating:',bookingData.start_time);
     await this.validateBookingTime(bookingData.start_time);
-    return await this.dbService.createItem(TABLES.BOOKINGS, bookingData, 'Booking');
+    const newBooking = await this.dbService.createItem(TABLES.BOOKINGS, bookingData, 'Booking');
+    
+    // Send email notifications for the new booking
+    await this.triggerBookingCreatedEmail(newBooking.id);
+    
+    return newBooking;
   }
 
   async updateBooking(bookingData) {
@@ -278,6 +283,74 @@ class BookingService {
 
   async deleteBookings(bookingIds) {
     await this.dbService.deleteItems(TABLES.BOOKINGS, bookingIds, 'Booking');
+  }
+
+  // Add new method to trigger email notifications for booking creation
+  async triggerBookingCreatedEmail(bookingId) {
+    try {
+      // Get the booking details to check customer and provider emails
+      const booking = await this.getBookingById(bookingId);
+      if (!booking) {
+        throw new Error('Booking not found');
+      }
+  
+      // Get customer and provider details to check their email addresses
+      const customerData = await this.dbService.fetchData(TABLES.USERS, 'created_at', false, { id: booking.customer_id });
+      const providerData = booking.provider_id ? await this.dbService.fetchData(TABLES.USERS, 'created_at', false, { id: booking.provider_id }) : [];
+      
+      const customer = customerData.length > 0 ? customerData[0] : null;
+      const provider = providerData.length > 0 ? providerData[0] : null;
+      
+      // Check if we should skip email sending based on fake email addresses
+      let shouldSkipCustomerEmail = false;
+      let shouldSkipProviderEmail = false;
+      
+      if (customer && isFakeEmail(customer.email)) {
+        shouldSkipCustomerEmail = true;
+        console.log('Skipping email notification for customer with fake email:', customer.email);
+      }
+      
+      if (provider && isFakeEmail(provider.email)) {
+        shouldSkipProviderEmail = true;
+        console.log('Skipping email notification for provider with fake email:', provider.email);
+      }
+      
+      // Determine if we should skip the entire email sending process
+      if (shouldSkipCustomerEmail && shouldSkipProviderEmail) {
+        console.log('Skipping all email notifications - both customer and provider have fake emails');
+        toast.info('Email notifications skipped for temporary email addresses');
+        return { success: true, skipped: true, reason: 'All recipients have temporary email addresses' };
+      }
+      
+      // Determine actual email recipients
+      let actualEmailRecipients = 'both';
+      if (shouldSkipCustomerEmail && !shouldSkipProviderEmail) {
+        actualEmailRecipients = 'provider';
+      } else if (!shouldSkipCustomerEmail && shouldSkipProviderEmail) {
+        actualEmailRecipients = 'customer';
+      }
+      
+      const { data, error } = await supabase.functions.invoke('send-booking-created-email', {
+        body: {
+          bookingId,
+          emailRecipients: actualEmailRecipients
+        }
+      });
+      
+      if (error) {
+        console.error('Edge Function error:', error);
+        toast.error(`Failed to send email notification: ${error.message}`);
+        throw new Error(`Failed to send email notification: ${error.message}`);
+      }
+      
+      console.log('Booking creation email notification sent successfully:', data);
+      toast.success('Email notification sent successfully!');
+      return data;
+    } catch (error) {
+      console.error('Failed to send booking creation email notification:', error);
+      // Show error toast but don't throw to prevent booking creation from failing
+      toast.error('Failed to send email notification');
+    }
   }
 }
 

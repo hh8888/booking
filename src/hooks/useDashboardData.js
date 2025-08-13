@@ -469,7 +469,7 @@ export const useDashboardData = () => {
               
               // Show toast notification for the change
               if (payload.eventType === 'INSERT') {
-                toast.info('New booking created');
+                // Remove this line: toast.info('New booking created');
               } else if (payload.eventType === 'UPDATE') {
                 toast.info('Booking updated');
               } else if (payload.eventType === 'DELETE') {
