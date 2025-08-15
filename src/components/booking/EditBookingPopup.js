@@ -609,6 +609,25 @@ export default function EditBookingPopup({
         throw new Error('Please provide valid date and time');
       }
       
+      // ADD TIME SLOT AVAILABILITY VALIDATION
+      // Check if the selected time slot is available
+      const selectedTimeSlot = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      
+      // Get the selected service to check if it has staff_id
+      const selectedService = services.find(service => service.id === bookingDataWithLocation.service_id);
+      const serviceHasStaff = selectedService?.staff_id && selectedService.staff_id.trim() !== '';
+      
+      // Only validate time slots for services with assigned staff
+      if (serviceHasStaff) {
+        if (availableTimeSlots.length === 0) {
+          throw new Error('No time slots are available for the selected date, provider, and location combination. Please choose a different date or provider.');
+        }
+        
+        if (!availableTimeSlots.includes(selectedTimeSlot)) {
+          throw new Error(`The selected time ${DateTimeFormatter.getInstance().to12HourFormat(hour.toString().padStart(2, '0'))}:${minute.toString().padStart(2, '0')} is not available. Please select from the available time slots.`);
+        }
+      }
+      
       startDate.setHours(hour, minute, 0, 0);
       const isoStartTime = startDate.toISOString();
       
@@ -657,9 +676,6 @@ export default function EditBookingPopup({
       }
       
       const existingBookings = await dbService.fetchData(TABLES.BOOKINGS, 'start_time', false, bookingFilters);
-      
-      // Get the selected service to check if it has assigned staff
-      const selectedService = services.find(service => service.id === bookingDataWithLocation.service_id);
       
       // Add debug logging
       console.log('Debug - selectedService:', selectedService);

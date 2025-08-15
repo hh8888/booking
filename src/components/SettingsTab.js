@@ -55,6 +55,7 @@ export default function SettingsTab() {
       options: [
         { value: USER_ROLES.CUSTOMER, label: t('users.customer') },
         { value: USER_ROLES.STAFF, label: t('users.staff') },
+        { value: USER_ROLES.MANAGER, label: t('users.manager') },
         { value: USER_ROLES.ADMIN, label: t('settings.administrator') }
       ],
       description: t('settings.defaultUserRoleDesc')

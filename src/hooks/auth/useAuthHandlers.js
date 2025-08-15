@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { USER_ROLES, ERROR_MESSAGES, TABLES } from '../../constants';
 import { useLanguage } from '../../contexts/LanguageContext';
 import DatabaseService from '../../services/DatabaseService';
+import { isFakeEmail } from '../../utils/validationUtils';
 
 export const useAuthHandlers = (authState, validateForm, validateSignInForm, validateEmail, validatePhoneNumber, startResendTimer) => {
   const { t } = useLanguage();
@@ -118,24 +119,45 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
         email: authState.email,
         password: authState.password,
       });
-
+  
       if (signInError) throw signInError;
-
-      if (!data.user.confirmed_at) {
+  
+      // Check if this is a fake email user
+      const isFakeEmailUser = isFakeEmail(authState.email);
+      
+      // For real email users, check confirmation status
+      if (!isFakeEmailUser && !data.user.confirmed_at) {
         authState.setError('Please check your email to validate your account before signing in.');
         return;
       }
-
-      // Update last_sign_in timestamp
-      const { error: updateError } = await supabase
-        .from(TABLES.USERS)
-        .update({ last_sign_in: new Date().toISOString() })
-        .eq('id', data.user.id);
-
-      if (updateError) {
-        console.warn('Could not update last_sign_in:', updateError.message);
+      
+      // For fake email users, we skip the confirmed_at check since they can't receive emails
+      // but we should verify they exist in our users table with email_verified = true
+      // above is not true, fake email user is not verified
+      if (isFakeEmailUser) {
+        // const { data: userData, error: userError } = await supabase
+        //   .from(TABLES.USERS)
+        //   .select('email_verified')
+        //   .eq('id', data.user.id)
+        //   .single();
+          
+        // if (userError || !userData?.email_verified) {
+        //   authState.setError('Account verification required. Please contact support.');
+        //   return;
+        // }
+      } else {
+  
+        // Update last_sign_in timestamp
+        const { error: updateError } = await supabase
+          .from(TABLES.USERS)
+          .update({ last_sign_in: new Date().toISOString() })
+          .eq('id', data.user.id);
+    
+        if (updateError) {
+          console.warn('Could not update last_sign_in:', updateError.message);
+        }
       }
-
+  
       await checkUserRoleAndRedirect(data.user);
     } catch (err) {
       authState.setError(err.message);
