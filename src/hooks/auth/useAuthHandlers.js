@@ -104,7 +104,17 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
       toast.success('Registration successful!');
       
     } catch (err) {
-      authState.setError(err.message);
+      // Handle duplicate email errors with user-friendly message
+      if (err.message && (
+        err.message.includes('User already registered') ||
+        err.message.includes('already registered') ||
+        err.message.includes('duplicate key value violates unique constraint') ||
+        err.message.includes('users_pkey')
+      )) {
+        authState.setError(ERROR_MESSAGES.DUPLICATE_EMAIL);
+      } else {
+        authState.setError(err.message);
+      }
     } finally {
       authState.setIsLoading(false);
     }
