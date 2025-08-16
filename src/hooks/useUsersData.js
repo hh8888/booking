@@ -28,7 +28,7 @@ export function useUsersData(options = {}) {
       
       // Apply role filtering if specified
       const filteredUsers = roleFilter 
-        ? allUsers.filter(user => roleFilter.includes(user.role))
+        ? allUsers.filter(user => user.role && roleFilter.includes(user.role))
         : allUsers;
         
       setUsers(filteredUsers);

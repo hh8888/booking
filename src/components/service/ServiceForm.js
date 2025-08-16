@@ -72,7 +72,7 @@ useEffect(() => {
   // Handle staff multi-selection
   const handleStaffChange = (staffId) => {
     setFormData(prev => {
-      const currentStaffIds = [...(prev.staff_ids || [])];
+      const currentStaffIds = Array.isArray(prev.staff_ids) ? [...prev.staff_ids] : [];
       
       // If already selected, remove it; otherwise add it
       if (currentStaffIds.includes(staffId)) {
@@ -161,7 +161,7 @@ useEffect(() => {
               <input
                 type="checkbox"
                 id={`staff-${staff.id}`}
-                checked={formData.staff_ids?.includes(staff.id) || false}
+                checked={Array.isArray(formData.staff_ids) && formData.staff_ids.includes(staff.id)}
                 onChange={() => handleStaffChange(staff.id)}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />

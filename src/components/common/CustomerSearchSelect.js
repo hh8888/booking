@@ -19,7 +19,7 @@ const CustomerSearchSelect = ({
   useEffect(() => {
     if (searchTerm) {
       const filtered = customers.filter(customer =>
-        customer.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         customer.phone?.includes(searchTerm)
       );

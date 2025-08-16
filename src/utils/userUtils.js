@@ -136,15 +136,15 @@ export const filterUsersByRole = (users, roleFilter) => {
   }
 
   if (roleFilter === 'staff_admin') {
-    return users.filter(user => isStaffOrAdmin(user.role));
+    return users.filter(user => user.role && isStaffOrAdmin(user.role));
   }
   
   if (roleFilter === 'staff_manager') {
-    return users.filter(user => ROLE_GROUPS.STAFF_AND_MANAGER.includes(user.role));
+    return users.filter(user => user.role && ROLE_GROUPS.STAFF_AND_MANAGER.includes(user.role));
   }
 
   if (Array.isArray(roleFilter)) {
-    return users.filter(user => roleFilter.includes(user.role));
+    return users.filter(user => user.role && roleFilter.includes(user.role));
   }
 
   return users.filter(user => user.role === roleFilter);

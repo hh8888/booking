@@ -266,7 +266,7 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
     // Ensure duration is a valid number
     if (typeof duration === 'number' && !isNaN(duration)) {
       durationInMinutes = duration;
-    } else if (typeof duration === 'string') {
+    } else if (typeof duration === 'string' && duration) {
       // Handle PostgreSQL interval format
       if (duration.includes(':')) {
         // If duration is in time format (HH:MM:SS), convert to minutes
@@ -283,15 +283,15 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
         let minutes = 0;
         
         // Extract hours
-        const hourMatch = duration.match(/(d+)\s+hour/i);
+        const hourMatch = duration.match(/(\\d+)\\s+hour/i);
         if (hourMatch) minutes += parseInt(hourMatch[1]) * 60;
         
         // Extract minutes
-        const minuteMatch = duration.match(/(d+)\s+minute/i);
+        const minuteMatch = duration.match(/(\\d+)\\s+minute/i);
         if (minuteMatch) minutes += parseInt(minuteMatch[1]);
         
         // Extract seconds (convert to fraction of minute)
-        const secondMatch = duration.match(/(d+)\s+second/i);
+        const secondMatch = duration.match(/(d+)\\s+second/i);
         if (secondMatch) minutes += parseInt(secondMatch[1]) / 60;
         
         durationInMinutes = minutes;
@@ -643,12 +643,11 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
             recurring_count: 0
           });
         }}
-        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 my-4"
+        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 mb-4"
       >
-{t('bookings.createNewBooking')}
+        {t('bookings.createNewBooking')}
       </button>
-
-
+      
       {/* Refresh button */}
       <button
         onClick={async () => {
@@ -694,18 +693,18 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
           await initData();
           console.log('Bookings data refreshed successfully');
         }}
-        className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 my-4 ml-2"
+        className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 mb-4 ml-2"
       >
-{t('common.refresh')}
+        {t('common.refresh')}
       </button>
 
       {/* Delete Selected button */}
       <button
         onClick={handleDeleteSelected}
-        className={`${selectedRows.length === 0 ? 'bg-gray-400 hover:bg-gray-500' : 'bg-red-500 hover:bg-red-600'} text-white px-4 py-2 rounded-lg my-4 ml-2`}
+        className={`${selectedRows.length === 0 ? 'bg-gray-400 hover:bg-gray-500' : 'bg-red-500 hover:bg-red-600'} text-white px-4 py-2 rounded-lg mb-4 ml-2`}
         disabled={selectedRows.length === 0}
       >
-{t('bookings.cancelSelected')}
+        {t('bookings.cancelSelected')}
       </button>
       {/* Filter Controls */}
       <div className="flex flex-wrap gap-4 mb-4 items-center">

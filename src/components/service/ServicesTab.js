@@ -180,8 +180,8 @@ function ServicesTab({ users, handleError }) {
         if (staffFilter === 'unassigned') {
           return !service.staff_ids || service.staff_ids.length === 0;
         }
-        // Ensure staff_ids is an array and contains selected staff ID
-        return service.staff_ids && Array.isArray(service.staff_ids) && service.staff_ids.includes(staffFilter);
+        // Safer null check - ensure staff_ids is an array and contains selected staff ID
+        return Array.isArray(service.staff_ids) && service.staff_ids.includes(staffFilter);
       });
 
   if (loading) return <div>{t('common.loading')}</div>;
