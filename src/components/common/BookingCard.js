@@ -31,6 +31,9 @@ const BookingCard = ({
   const isUpcoming = isUpcomingBooking(booking) || bookingDate > new Date();
   const canEdit = showActions && isUpcoming && isPendingBooking(booking);
   
+  // Check if booking is in the past
+  const isPastBooking = bookingDate < new Date() && !isUpcoming;
+  
   // Check if current user can see staff comments
   const canViewStaffComments = currentUser && (
     currentUser.role === USER_ROLES.STAFF || 
@@ -180,7 +183,7 @@ const BookingCard = ({
           )}
         </div>
         
-        {showActions && (
+        {showActions && !isPastBooking && (
           <div className="flex gap-2 ml-4 w-20 justify-end">
             {canEdit ? (
               <>
