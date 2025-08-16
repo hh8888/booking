@@ -12,7 +12,13 @@ export default function EmailTestSettings() {
     testType: 'status', // New field for test type
     oldStatus: 'pending',
     newStatus: 'confirmed',
-    isLoading: false
+    isLoading: false,
+    customEmailAddresses: '' // New field for custom email addresses
+  });
+  const [bookingEmailAddresses, setBookingEmailAddresses] = useState({
+    customer: '',
+    provider: '',
+    display: ''
   });
 
   // Load available bookings when component mounts
@@ -23,8 +29,9 @@ export default function EmailTestSettings() {
           .from(TABLES.BOOKINGS)
           .select(`
             id,
-            customer:customer_id(full_name),
-            service:service_id(name)
+            customer:customer_id(full_name, email),
+            service:service_id(name),
+            provider:provider_id(full_name, email)
           `)
           .order('created_at', { ascending: false })
           .limit(50);
@@ -40,6 +47,41 @@ export default function EmailTestSettings() {
       loadBookings();
     }
   }, [isExpanded]);
+
+  // Update email addresses when booking selection changes
+  useEffect(() => {
+    if (emailTestData.bookingId) {
+      const selectedBooking = availableBookings.find(b => b.id === emailTestData.bookingId);
+      if (selectedBooking) {
+        const customerEmail = selectedBooking.customer?.email || '';
+        const providerEmail = selectedBooking.provider?.email || '';
+        
+        let displayEmails = '';
+        if (emailTestData.emailRecipients === 'both') {
+          displayEmails = [customerEmail, providerEmail].filter(email => email).join(', ');
+        } else if (emailTestData.emailRecipients === 'customer') {
+          displayEmails = customerEmail;
+        } else if (emailTestData.emailRecipients === 'provider') {
+          displayEmails = providerEmail;
+        }
+        
+        setBookingEmailAddresses({
+          customer: customerEmail,
+          provider: providerEmail,
+          display: displayEmails
+        });
+        
+        // Update custom email addresses field with the booking emails
+        setEmailTestData(prev => ({
+          ...prev,
+          customEmailAddresses: displayEmails
+        }));
+      }
+    } else {
+      setBookingEmailAddresses({ customer: '', provider: '', display: '' });
+      setEmailTestData(prev => ({ ...prev, customEmailAddresses: '' }));
+    }
+  }, [emailTestData.bookingId, emailTestData.emailRecipients, availableBookings]);
 
   const testEmailSend = async () => {
     if (!emailTestData.bookingId) {
@@ -58,7 +100,8 @@ export default function EmailTestSettings() {
         requestBody = {
           bookingId: emailTestData.bookingId,
           emailRecipients: emailTestData.emailRecipients,
-          isTest: true
+          isTest: true,
+          customEmailAddresses: emailTestData.customEmailAddresses // Include custom emails
         };
       } else {
         // Test booking status email
@@ -68,7 +111,8 @@ export default function EmailTestSettings() {
           oldStatus: emailTestData.oldStatus,
           newStatus: emailTestData.newStatus,
           emailRecipients: emailTestData.emailRecipients,
-          isTest: true
+          isTest: true,
+          customEmailAddresses: emailTestData.customEmailAddresses // Include custom emails
         };
       }
 
@@ -167,6 +211,28 @@ export default function EmailTestSettings() {
               </select>
             </div>
             
+            {/* Email Addresses Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Addresses
+                <span className="text-xs text-gray-500 ml-1">(from booking, editable for override)</span>
+              </label>
+              <input
+                type="text"
+                value={emailTestData.customEmailAddresses}
+                onChange={(e) => setEmailTestData(prev => ({ ...prev, customEmailAddresses: e.target.value }))}
+                placeholder="Enter email addresses separated by commas"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {bookingEmailAddresses.display && (
+                <p className="text-xs text-gray-500 mt-1">
+                  From booking: {bookingEmailAddresses.customer && `Customer: ${bookingEmailAddresses.customer}`}
+                  {bookingEmailAddresses.customer && bookingEmailAddresses.provider && ', '}
+                  {bookingEmailAddresses.provider && `Provider: ${bookingEmailAddresses.provider}`}
+                </p>
+              )}
+            </div>
+            
             {/* Conditional fields for status change emails */}
             {emailTestData.testType === 'status' && (
               <>
@@ -229,7 +295,7 @@ export default function EmailTestSettings() {
           
           <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
             <p className="text-sm text-yellow-800">
-              <strong>Note:</strong> This will send {emailTestData.testType === 'created' ? 'booking created confirmation' : 'booking status change'} emails to the selected recipients (customer and/or provider) associated with the chosen booking.
+              <strong>Note:</strong> This will send {emailTestData.testType === 'created' ? 'booking created confirmation' : 'booking status change'} emails to the specified recipients. You can override the email addresses from the booking by editing the &ldquo;Email Addresses&rdquo; field above.
             </p>
           </div>
         </div>
