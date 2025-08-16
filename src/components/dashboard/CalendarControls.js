@@ -15,24 +15,27 @@ const CalendarControls = ({
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="relative mb-4"> {/* Added mb-4 for spacing below controls */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="absolute top-0 right-0 p-2 focus:outline-none text-gray-600 hover:text-gray-800 z-10" /* Added text colors and z-index */
-        aria-label={isOpen ? t('calendar.hideControls') : t('calendar.showControls')}
-      >
-        <svg
-          className={`w-5 h-5 transform transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} /* Increased icon size */
-          fill="currentColor"
-          viewBox="0 0 20 20"
+    <div className="mb-4">
+      {/* Arrow button positioned above the controls */}
+      <div className="flex justify-end mb-2">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="p-2 focus:outline-none text-gray-600 hover:text-gray-800"
+          aria-label={isOpen ? t('calendar.hideControls') : t('calendar.showControls')}
         >
-          <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-        </svg>
-      </button>
-      {/* Ensure the container for controls has some top margin if button is absolute */}
-      {/* Or, better, make the layout flow normally */}
-      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isOpen ? 'max-h-96 opacity-100 mt-10' : 'max-h-0 opacity-0 mt-0'}`}> {/* Added transition and mt-10 when open*/}
-        <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:gap-4 sm:pt-0"> {/* Added pt-2 for spacing from toggle */}
+          <svg
+            className={`w-5 h-5 transform transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+          </svg>
+        </button>
+      </div>
+      
+      {/* Controls container */}
+      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
           <button
             onClick={() => setShowAvailability(!showAvailability)}
             className={`px-4 py-2 text-sm rounded transition-colors ${
