@@ -418,13 +418,17 @@ const CustomerDashboard = () => {
       <div className="max-w-6xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+          {/* Title on first row */}
+          <div className="mb-4">
+            <h1 className="text-xl md:text-2xl font-bold text-gray-800">{businessName}</h1>
+          </div>
+          
+          {/* Location and User Info on second row */}
+          <div className="flex justify-between items-center mb-4">
             <div>
-              <h1 className="text-xl md:text-2xl font-bold text-gray-800">{businessName}</h1>
-              <p className="text-gray-600">{t('customer.welcomeMessage', { name: customerData.full_name && !customerData.full_name.includes('@') ? customerData.full_name : (customerData.full_name ? customerData.full_name.split('@')[0] : t('customer.welcome')) })}</p>
               <LocationSelector />
             </div>
-            <div className="flex items-center space-x-3 mt-4 sm:mt-0">
+            <div className="flex items-center space-x-3">
               <SessionIndicator />
               <UserDropdown 
                 userEmail={userEmail}
@@ -434,6 +438,11 @@ const CustomerDashboard = () => {
                 onProfileUpdate={handleProfileUpdate}
               />
             </div>
+          </div>
+          
+          {/* Welcome message */}
+          <div className="mb-4">
+            <p className="text-gray-600">{t('customer.welcomeMessage', { name: customerData.full_name && !customerData.full_name.includes('@') ? customerData.full_name : (customerData.full_name ? customerData.full_name.split('@')[0] : t('customer.welcome')) })}</p>
           </div>
         </div>
 
