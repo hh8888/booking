@@ -182,7 +182,7 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
       authState.setError(validation.error);
       return;
     }
-
+  
     authState.setIsLoading(true);
     authState.setError('');
     
@@ -190,9 +190,9 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(authState.email, {
         redirectTo: `${window.location.origin}/#/reset-password`,
       });
-
+  
       if (resetError) throw resetError;
-
+  
       authState.setResetPasswordSent(true);
       authState.setError('Password reset email sent! Please check your inbox.');
     } catch (err) {
@@ -212,7 +212,7 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
     authState.setIsLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(authState.email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/#/reset-password`,
       });
       
       if (error) throw error;
