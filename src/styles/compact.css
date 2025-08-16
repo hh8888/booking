@@ -71,6 +71,31 @@
   padding: 0.5rem !important;
 }
 
+/* Dashboard Statistics compact mode - NEW */
+.compact-mode .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3 {
+  gap: 0.5rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.compact-mode .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3 .bg-white {
+  padding: 0.75rem !important;
+}
+
+.compact-mode .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3 h3 {
+  font-size: 0.875rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.compact-mode .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3 .text-3xl {
+  font-size: 1.5rem !important;
+  line-height: 1.2 !important;
+}
+
+.compact-mode .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3 .text-sm {
+  font-size: 0.75rem !important;
+  margin-top: 0.125rem !important;
+}
+
 /* Booking list compact mode */
 .compact-mode .booking-item {
   padding: 0.375rem !important;
