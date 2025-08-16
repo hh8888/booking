@@ -14,6 +14,8 @@ import ResetPassword from './ResetPassword';
 import Footer from './components/common/Footer';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { LanguageProvider } from './contexts/LanguageContext';
+// Add this import at the top
+import { CompactModeProvider } from './contexts/CompactModeContext';
 
 // Use the new combined Dashboard component
 const Dashboard = lazy(() => import('./Dashboard'));
@@ -66,30 +68,32 @@ function App() {
 
   return (
     <LanguageProvider>
-      <Router>
-        <Suspense fallback={<LoadingSpinner />}>
-          <Routes>
-            <Route path="/" element={<Auth />} />
-            <Route path="/admin" element={<Dashboard />} />
-            <Route path="/staff" element={<Dashboard />} />
-            <Route path="/booking" element={<CustomerDashboard />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/auth" element={<Auth />} />
-          </Routes>
-          <Footer />
-          </Suspense>
-        <ToastContainer
-          position="top-right"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-        />
-      </Router>
+      <CompactModeProvider>
+        <Router>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              <Route path="/" element={<Auth />} />
+              <Route path="/admin" element={<Dashboard />} />
+              <Route path="/staff" element={<Dashboard />} />
+              <Route path="/booking" element={<CustomerDashboard />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/auth" element={<Auth />} />
+            </Routes>
+            <Footer />
+            </Suspense>
+          <ToastContainer
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+          />
+        </Router>
+      </CompactModeProvider>
     </LanguageProvider>
   );
 }

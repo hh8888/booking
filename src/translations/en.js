@@ -1,3 +1,4 @@
+// Add to the userDropdown section
 export default {
   // Common UI elements
   common: {
@@ -119,7 +120,8 @@ export default {
     setAvailability: 'Set my availability',
     myProfile: 'My Profile',
     logout: 'Log out',
-    language: 'Language'
+    language: 'Language',
+    compactMode: 'Compact Mode',
   },
 
   // Language switcher

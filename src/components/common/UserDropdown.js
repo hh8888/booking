@@ -5,10 +5,12 @@ import StaffDateAvailabilityForm from '../service/StaffDateAvailabilityForm';
 import UserProfileForm from './UserProfileForm';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useCompactMode } from '../../contexts/CompactModeContext';
 import { USER_ROLES, ERROR_MESSAGES } from '../../constants';
 
 const UserDropdown = ({ userEmail, userRole, userName, currentUserId, onProfileUpdate }) => {
   const { t } = useLanguage();
+  const { isCompactMode, toggleCompactMode } = useCompactMode();
   const [isOpen, setIsOpen] = useState(false);
   const [showAvailabilityForm, setShowAvailabilityForm] = useState(false);
   const [showProfileForm, setShowProfileForm] = useState(false);
@@ -107,6 +109,28 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId, onProfileU
         {isOpen && (
           <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
             <div className="py-1">
+              {/* Compact Mode Toggle */}
+              <button
+                onClick={toggleCompactMode}
+                className="flex items-center justify-between w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200"
+              >
+                <div className="flex items-center">
+                  <svg className="mr-3 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                  </svg>
+                  {t('userDropdown.compactMode')}
+                </div>
+                <div className="flex items-center">
+                  <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+                    isCompactMode ? 'bg-blue-600' : 'bg-gray-300'
+                  }`}>
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition-transform duration-200 ${
+                      isCompactMode ? 'translate-x-6' : 'translate-x-1'
+                    }`} />
+                  </div>
+                </div>
+              </button>
+              
               {(userRole === USER_ROLES.STAFF || userRole === USER_ROLES.ADMIN || userRole === USER_ROLES.MANAGER) && (
                 <button
                   onClick={handleSetAvailability}
@@ -131,7 +155,7 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId, onProfileU
               {/* Language Switcher */}
               <LanguageSwitcher isInDropdown={true} />
               
-              <hr className="my-1" />
+              <div className="border-t border-gray-100 my-1"></div>
               <button
                 onClick={handleSignOut}
                 className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50 hover:text-red-900 transition-colors duration-200"

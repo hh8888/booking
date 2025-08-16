@@ -22,7 +22,7 @@ const LanguageSwitcher = ({ isInDropdown = false }) => {
     // Render as dropdown menu items when inside UserDropdown
     return (
       <>
-        <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider border-t border-gray-100">
+        <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
           {t('userDropdown.language')}
         </div>
         {languages.map((lang) => (

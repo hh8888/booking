@@ -1,3 +1,6 @@
+/* Add this import at the top */
+@import './styles/compact.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

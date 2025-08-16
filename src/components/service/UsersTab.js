@@ -203,7 +203,7 @@ const getAvailableRoleOptions = (currentUserRole) => {
         <>
           <button
             onClick={() => setShowCreateUserForm(true)}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 my-4"
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 mb-4"
           >
             {t('users.addNewUser')}
           </button>
@@ -214,14 +214,14 @@ const getAvailableRoleOptions = (currentUserRole) => {
               await fetchUsers();
               console.log('Users data refreshed successfully');
             }}
-            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 my-4 ml-2"
+            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 mb-4 ml-2"
           >
             {t('common.refresh')}
           </button>
 
           <button
             onClick={handleDeleteSelected}
-            className={`${selectedRows.length === 0 ? 'bg-gray-400 hover:bg-gray-500' : 'bg-red-500 hover:bg-red-600'} text-white px-4 py-2 rounded-lg my-4 ml-2`}
+            className={`${selectedRows.length === 0 ? 'bg-gray-400 hover:bg-gray-500' : 'bg-red-500 hover:bg-red-600'} text-white px-4 py-2 rounded-lg mb-4 ml-2`}
             disabled={selectedRows.length === 0}
           >
             {t('users.deleteSelected')}
@@ -234,7 +234,7 @@ const getAvailableRoleOptions = (currentUserRole) => {
         <>
           <button
             onClick={() => setShowCreateUserForm(true)}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 my-4"
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 mb-4"
           >
             {t('users.addNewCustomer')}
           </button>
@@ -245,14 +245,14 @@ const getAvailableRoleOptions = (currentUserRole) => {
               await fetchUsers();
               console.log('Users data refreshed successfully');
             }}
-            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 my-4 ml-2"
+            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 mb-4 ml-2"
           >
             {t('common.refresh')}
           </button>
         </>
       )}
       {/* Role filter dropdown and search filter - Update this section */}
-      <div className="my-4 flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex items-center">
           <label className="mr-2 font-medium">{t('users.filterByRole')}</label>
           <select

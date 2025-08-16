@@ -121,7 +121,8 @@ export default {
     setAvailability: '设置我的可用时间',
     myProfile: '我的资料',
     logout: '退出登录',
-    language: '语言'
+    language: '语言',
+    compactMode: '紧凑模式'
   },
 
   // Language switcher

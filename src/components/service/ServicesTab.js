@@ -195,7 +195,7 @@ function ServicesTab({ users, handleError }) {
           setEditItem(null); // Reset form data for new service
           setIsCreating(true); // Open the popup
         }}
-        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 my-4"
+        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 mb-4"
       >
         {t('services.addNewService')}
       </button>
@@ -209,20 +209,20 @@ function ServicesTab({ users, handleError }) {
           await initData();
           console.log('Users data refreshed successfully');
         }}
-        className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 my-4 ml-2"
+        className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 mb-4 ml-2"
       >
         {t('common.refresh')}
       </button>
       <button
         onClick={handleDeleteSelected}
-        className={`${selectedRows.length === 0 ? 'bg-gray-400 hover:bg-gray-500' : 'bg-red-500 hover:bg-red-600'} text-white px-4 py-2 rounded-lg my-4 ml-2`}
+        className={`${selectedRows.length === 0 ? 'bg-gray-400 hover:bg-gray-500' : 'bg-red-500 hover:bg-red-600'} text-white px-4 py-2 rounded-lg mb-4 ml-2`}
         disabled={selectedRows.length === 0}
       >
         {t('users.deleteSelected')}
       </button>
 
       {/* Staff filter */}
-      <div className="my-4">
+      <div className="mb-4">
         <label className="mr-2 font-medium">{t('services.filterByStaff')}</label>
         <select
           value={staffFilter}
