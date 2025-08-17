@@ -112,9 +112,12 @@ const useDashboardUser = () => {
             // Don't call fetchUserInfo at all - user data is already loaded
           }
         } else {
-          // No user in session, set loading to false
-          console.log('useDashboardUser - No user in session');
+          // No user in session, redirect to login
+          console.log('useDashboardUser - No user in session, redirecting to login');
           setLoading(false);
+          // Add redirect to login page
+          window.location.href = '/';
+          return;
         }
       } else if (event === 'SIGNED_OUT') {
         console.log('useDashboardUser - Clearing user data due to sign out');
