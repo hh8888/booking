@@ -425,7 +425,6 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
         // dataToSave.updated_at = new Date(Date.now()).toISOString();
         if (isCreating) {
           if (isCreating && itemData.recurring_type && itemData.recurring_count > 0) {
-            
             // Update local state
             const staffData = await fetchServices();
             const customerData = await fetchCustomers();
@@ -437,16 +436,16 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
             const bookingService = BookingService.getInstance();
             await bookingService.createBooking(dataToSave);
             
-            // Update local state
-            const staffData = await fetchServices();
+            // IMPORTANT: Refresh customers first, then bookings
             const customerData = await fetchCustomers();
-            await fetchBookings(staffData, customerData);
+            const staffData = await fetchServices();
+            const providerData = await fetchProviders(); // Add this line
+            await fetchBookings(staffData, customerData, providerData); // Pass all data
             setIsCreating(false);
             setEditItem(null);
           }
-        
-
-        } else {
+        }
+        else {
           // Update existing booking
           if (!dataToSave.id) {
             throw new Error('Missing booking ID for update');
