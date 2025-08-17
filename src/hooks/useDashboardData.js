@@ -6,6 +6,7 @@ import StaffAvailabilityService from '../services/StaffAvailabilityService';
 import { toast } from 'react-toastify';
 // Add this import
 import { supabase } from '../supabaseClient';
+import { handleBookingRealtimeToast } from '../utils/realtimeBookingToastUtils';
 
 // Helper function to format time strings
 const formatTime = (timeString) => {
@@ -466,17 +467,18 @@ export const useDashboardData = () => {
               const customersData = await fetchCustomers();
               await fetchBookingsWithStaff(customersData);
               await fetchTableStats(); // Also refresh stats
+              await fetchStaffAvailability();
               
-              // Show toast notification for the change
-              if (payload.eventType === 'INSERT') {
-                // Remove this line: toast.info('New booking created');
-              } else if (payload.eventType === 'UPDATE') {
-                toast.info('Booking updated');
-              } else if (payload.eventType === 'DELETE') {
-                toast.info('Booking deleted');
-              }
+              // Use the new utility function for consistent toast notifications
+              handleBookingRealtimeToast(payload, {
+                isCustomerView: false,
+                autoClose: 4000,
+                includeLocation: false,
+                includeNotes: true
+              });
             } catch (error) {
               console.error('Error refreshing bookings after real-time update:', error);
+              toast.error('Failed to refresh booking data');
             }
           }
         )

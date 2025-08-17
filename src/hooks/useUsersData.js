@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react';
 import UserService from '../services/UserService';
 import { USER_ROLES } from '../constants';
+import { supabase } from '../supabaseClient';
+import { toast } from 'react-toastify';
+import { showUserUpdateToast, showUserCreatedToast, showUserDeletedToast } from '../utils/realtimeToastUtils';
+import React from 'react';
 
-/**
- * Custom hook to fetch and manage users data with filtering options
- * @param {Object} options - Configuration options
- * @param {Array<string>} options.roleFilter - Array of roles to filter by (e.g., [USER_ROLES.CUSTOMER, USER_ROLES.STAFF])
- * @param {boolean} options.autoFetch - Whether to automatically fetch on mount (default: true)
- * @returns {Object} { users, loading, error, networkError, refetch, retryFetch }
- */
 export function useUsersData(options = {}) {
   const { roleFilter = null, autoFetch = true } = options;
   
@@ -52,10 +49,55 @@ export function useUsersData(options = {}) {
       fetchUsers();
     }
   }, [autoFetch, roleFilter?.join(',')]);
+
+  // Add real-time subscription for user updates
+  useEffect(() => {
+    console.log('📡 Setting up real-time subscription for users table');
+    
+    const usersChannel = supabase
+      .channel('users-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'users'
+        },
+        async (payload) => {
+          console.log('📡 Real-time user change detected:', payload);
+          
+          try {
+            // Refresh users data when any user changes
+            await fetchUsers();
+            
+            // Enhanced toast notifications using utility functions
+            if (payload.eventType === 'INSERT') {
+              showUserCreatedToast(payload.new);
+            } else if (payload.eventType === 'UPDATE') {
+              showUserUpdateToast(payload.old || {}, payload.new, {
+                title: 'User Profile Updated',
+                icon: 'ℹ️',
+                toastType: 'info'
+              });
+            } else if (payload.eventType === 'DELETE') {
+              showUserDeletedToast(payload.old);
+            }
+          } catch (error) {
+            console.error('Error refreshing users after real-time update:', error);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🧹 Cleaning up users real-time subscription');
+      supabase.removeChannel(usersChannel);
+    };
+  }, []);
   
   return {
     users,
-    setUsers, // Allow external updates
+    setUsers,
     loading,
     error,
     networkError,

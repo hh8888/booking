@@ -1,6 +1,8 @@
 import { useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { toast } from 'react-toastify';
+import { showUserUpdateToast, USER_FIELDS_CONFIG } from '../utils/realtimeToastUtils';
+import { handleBookingRealtimeToast } from '../utils/realtimeBookingToastUtils';
 
 const useCustomerRealtime = ({ customerData, refreshBookings, setCustomerData }) => {
   // Real-time subscription for customer bookings
@@ -25,14 +27,13 @@ const useCustomerRealtime = ({ customerData, refreshBookings, setCustomerData })
           try {
             await refreshBookings();
             
-            // Show appropriate toast message
-            if (payload.eventType === 'INSERT') {
-              toast.success('Your new booking has been created!');
-            } else if (payload.eventType === 'UPDATE') {
-              toast.info('Your booking has been updated');
-            } else if (payload.eventType === 'DELETE') {
-              toast.info('Your booking has been cancelled');
-            }
+            // Use the new utility function for consistent toast notifications
+            handleBookingRealtimeToast(payload, {
+              isCustomerView: true,
+              autoClose: 5000,
+              includeLocation: true,
+              includeNotes: true
+            });
           } catch (error) {
             console.error('Error refreshing customer bookings after real-time update:', error);
           }
@@ -42,16 +43,16 @@ const useCustomerRealtime = ({ customerData, refreshBookings, setCustomerData })
 
     return () => {
       console.log('🧹 Cleaning up customer bookings real-time subscription');
-      supabase.removeChannel(customerBookingsChannel);
+      customerBookingsChannel.unsubscribe();
     };
   }, [customerData?.id, refreshBookings]);
 
   // Real-time subscription for customer user data
   useEffect(() => {
     if (!customerData?.id) return;
-
+  
     console.log('📡 Setting up real-time subscription for customer user data:', customerData.id);
-    
+  
     const customerUserChannel = supabase
       .channel(`customer-user-${customerData.id}`)
       .on(
@@ -69,7 +70,14 @@ const useCustomerRealtime = ({ customerData, refreshBookings, setCustomerData })
             if (payload.new) {
               console.log('👤 Updating customer data from real-time subscription:', payload.new);
               setCustomerData(payload.new);
-              toast.info('Your profile has been updated');
+              
+              // Use the utility function for detailed toast
+              showUserUpdateToast(payload.old || {}, payload.new, {
+                title: 'Your profile has been updated!',
+                icon: '👤',
+                toastType: 'success',
+                fallbackMessage: '👤 Your profile has been updated!'
+              });
             }
           } catch (error) {
             console.error('Error updating customer data after real-time update:', error);
