@@ -155,3 +155,38 @@ button {
   overflow-y: auto;
 }
 
+/* Updated CSS to fix UserDropdown mobile positioning - keep right-aligned but prevent off-screen */
+@media (max-width: 640px) {
+  /* Fix UserDropdown positioning on mobile - keep right-aligned */
+  .relative .absolute.right-0 {
+    right: 0 !important;
+    left: auto !important;
+    transform: none !important;
+    width: auto !important;
+    min-width: 200px !important;
+    max-width: calc(100vw - 1rem) !important;
+  }
+  
+  /* Ensure dropdown content fits within viewport */
+  .relative .absolute.right-0 > div {
+    max-width: calc(100vw - 2rem) !important;
+  }
+  
+  /* Adjust dropdown positioning to prevent overflow */
+  .relative {
+    position: static !important;
+  }
+  
+  .relative .absolute {
+    position: fixed !important;
+    right: 0.5rem !important;
+    z-index: 9999 !important;
+  }
+}
+
+/* Ensure dropdown doesn't overflow viewport */
+.relative .absolute {
+  position: fixed !important;
+  z-index: 9999 !important;
+}
+

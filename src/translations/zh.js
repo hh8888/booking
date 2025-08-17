@@ -671,7 +671,7 @@ export default {
   // Customer Dashboard
   customer: {
     welcome: '欢迎',
-    myBookings: '我的预约',
+    myBookings: '预约',
     bookService: '预约服务',
     myProfile: '我的资料',
     bookingHistory: '预约历史',

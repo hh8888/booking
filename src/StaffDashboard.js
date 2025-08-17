@@ -27,7 +27,7 @@ export default function StaffDashboard() {
   const { businessName } = useBusinessInfo();
   const { userEmail, userRole, userName, currentUserId } = useDashboardUser(); // Now using default import
   const { users, setUsers, loading, networkError, retryFetch } = useUsersData({
-    roleFilter: ['customer', 'staff'] // Staff dashboard only shows customers and staff
+    roleFilter: ['customer', 'staff', 'manager'] // Added 'manager' to include managers in provider list
   });
   
 

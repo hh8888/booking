@@ -101,7 +101,7 @@ export default {
     services: 'Services',
     reports: 'Reports',
     settings: 'Settings',
-    myBookings: 'My Bookings',
+    myBookings: 'Bookings', // Changed from 'My Bookings' to 'Bookings'
     customers: 'Customers',
     myProfile: 'My Profile',
     staffPortal: 'Staff Portal'
