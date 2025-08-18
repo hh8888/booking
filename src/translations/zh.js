@@ -596,7 +596,10 @@ export default {
       bookingCancelled: '预约取消成功',
       passwordReset: '密码重置邮件已发送',
       profileUpdated: '资料更新成功',
-      verificationEmailSent: '验证邮件已发送到用户'
+      verificationEmailSent: '验证邮件已发送到用户',
+      bookingCreatedCustomer: '您的预约已成功创建！',
+      bookingCancelledCustomer: 'Y您的预约已被取消！',
+      bookingCompleted: '预约已成功完成！',
     },
     error: {
       general: '发生错误，请重试。',
@@ -617,6 +620,14 @@ export default {
       cancel: '确定要取消此预约吗？',
       logout: '确定要退出登录吗？',
       discardChanges: '确定要放弃更改吗？'
+    },
+    warning: {
+      deleted: '项目删除成功',
+      cancelled: '操作已取消',
+    },
+    info: {
+      updated: '信息已更新',
+      processing: '处理中...',
     }
   },
 

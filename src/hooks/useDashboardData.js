@@ -7,6 +7,8 @@ import { toast } from 'react-toastify';
 // Add this import
 import { supabase } from '../supabaseClient';
 import { handleBookingRealtimeToast } from '../utils/realtimeBookingToastUtils';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useMultilingualToast } from '../utils/multilingualToastUtils';
 
 // Helper function to format time strings
 const formatTime = (timeString) => {
@@ -42,6 +44,10 @@ export const useDashboardData = () => {
   const [staffColors, setStaffColors] = useState({});
   const [currentLocation, setCurrentLocation] = useState(null);
   const [businessHours, setBusinessHours] = useState(null);
+
+  // Move hook calls to top level
+  const { t } = useLanguage();
+  const { handleBookingRealtimeToast, showErrorToast } = useMultilingualToast(t);
 
   const fetchTableStats = useCallback(async () => {
     try {
@@ -121,6 +127,46 @@ export const useDashboardData = () => {
     }
   }, []);
 
+  // Add the missing fetchBusinessHours function
+  const fetchBusinessHours = useCallback(async () => {
+    try {
+      const dbService = DatabaseService.getInstance();
+      const businessHoursValue = await dbService.getSettingsByKey('system', 'businessHours');
+      
+      // Parse the business hours string into an object
+      if (businessHoursValue && typeof businessHoursValue === 'string') {
+        const [startTime, endTime] = businessHoursValue.split('-');
+        if (startTime && endTime) {
+          const parsedBusinessHours = {
+            startTime: startTime.trim(),
+            endTime: endTime.trim()
+          };
+          setBusinessHours(parsedBusinessHours);
+          return parsedBusinessHours;
+        }
+      }
+      
+      // Fallback to default business hours if parsing fails
+      const defaultBusinessHours = {
+        startTime: '09:00',
+        endTime: '17:00'
+      };
+      setBusinessHours(defaultBusinessHours);
+      return defaultBusinessHours;
+    } catch (error) {
+      console.error('Error fetching business hours:', error);
+      toast.error('Failed to fetch business hours');
+      
+      // Return default business hours on error
+      const defaultBusinessHours = {
+        startTime: '09:00',
+        endTime: '17:00'
+      };
+      setBusinessHours(defaultBusinessHours);
+      return defaultBusinessHours;
+    }
+  }, []);
+
   // Add staffData to state
   const [staffData, setStaffData] = useState([]);
 
@@ -181,7 +227,32 @@ export const useDashboardData = () => {
         
         const showStaffName = showStaffNameSetting === 'true';
         const title = showStaffName ? `${service?.name || 'Appointment'}-${staffName}` : service?.name || 'Appointment';
-
+  
+        // Add validation for start_time and end_time
+        if (!booking.start_time || !booking.end_time) {
+          console.warn('Invalid booking dates found:', {
+            bookingId: booking.id,
+            start_time: booking.start_time,
+            end_time: booking.end_time
+          });
+          return null; // Skip this booking
+        }
+  
+        // Validate that dates can be properly parsed
+        const startDate = new Date(booking.start_time);
+        const endDate = new Date(booking.end_time);
+        
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          console.warn('Invalid date objects created for booking:', {
+            bookingId: booking.id,
+            start_time: booking.start_time,
+            end_time: booking.end_time,
+            startDate,
+            endDate
+          });
+          return null; // Skip this booking
+        }
+  
         // Define colors based on booking status
         const getStatusColor = (status) => {
           switch (status) {
@@ -197,13 +268,13 @@ export const useDashboardData = () => {
               return colors[booking.provider_id] || '#666'; // fallback to staff color
           }
         };
-
+  
         const statusColor = getStatusColor(booking.status);
         
         // Check if service has no staff_id for special styling
         const hasNoStaffId = !service?.staff_id || service.staff_id === null || service.staff_id.trim() === '';
         const borderStyle = hasNoStaffId ? '2px dashed #dc2626' : '#1e40af'; // Red dashed border for no staff, blue solid for others
-
+  
         return ({
           id: booking.id,
           title: title,
@@ -212,7 +283,7 @@ export const useDashboardData = () => {
           backgroundColor: statusColor,
           borderColor: borderStyle,
           // Add tooltip content to the title attribute for built-in tooltips
-          tooltip: `Service: ${service?.name || 'Appointment'}\nCustomer: ${customerName}\nStaff: ${staffName}\nTime: ${new Date(booking.start_time).toLocaleString()} - ${new Date(booking.end_time).toLocaleString()}\nStatus: ${booking.status || 'pending'}${booking.notes ? '\nNotes: ' + booking.notes : ''}`,
+          tooltip: `Service: ${service?.name || 'Appointment'}\nCustomer: ${customerName}\nStaff: ${staffName}\nTime: ${startDate.toLocaleString()} - ${endDate.toLocaleString()}\nStatus: ${booking.status || 'pending'}${booking.notes ? '\nNotes: ' + booking.notes : ''}`,
           extendedProps: {
             staffId: booking.provider_id,
             staffName: staffName,
@@ -230,7 +301,9 @@ export const useDashboardData = () => {
         });
       });
 
-      setBookings(calendarEvents);
+      // Filter out null entries before setting bookings
+      const validCalendarEvents = calendarEvents.filter(Boolean);
+      setBookings(validCalendarEvents);
     } catch (error) {
       console.error('Error fetching bookings:', error);
       toast.error('Failed to fetch bookings');
@@ -403,91 +476,89 @@ export const useDashboardData = () => {
 
   useEffect(() => {
     const initData = async () => {
-      // Initialize LocationService and get current location
-      const locationService = LocationService.getInstance();
-      const dbService = DatabaseService.getInstance();
-      
-      // Initialize locations if not already done
-      await locationService.initializeLocations(dbService);
-      
-      // Set current location
-      const selectedLocation = locationService.getSelectedLocation();
-      setCurrentLocation(selectedLocation);
-      
-      // Add listener for location changes
-      // Comment out the location change listener (around lines 451-468)
-      // const handleLocationChange = async (location) => {
-      //   setCurrentLocation(location);
-      //   
-      //   // Reload all data when location changes
-      //   try {
-      //     console.log('Location changed to:', location.name, 'Reloading data...');
-      //     await fetchTableStats();
-      //     const customersData = await fetchCustomers();
-      //     await fetchServices();
-      //     await fetchBookingsWithStaff(customersData);
-      //     await fetchStaffAvailability();
-      //   } catch (error) {
-      //     console.error('Error reloading data after location change:', error);
-      //     toast.error('Failed to reload data for new location');
-      //   }
-      // };
-      // locationService.addLocationChangeListener(handleLocationChange);
-      const businessHoursStr = await dbService.getSettingsByKey('system', 'businessHours');
-      
-      if (businessHoursStr) {
-        const [start, end] = businessHoursStr.split('-');
-        setBusinessHours({
-          startTime: `${start}:00`,
-          endTime: `${end}:00`
-        });
-      }
-
-      await fetchTableStats();
-      const customersData = await fetchCustomers();
-      await fetchServices();
-      await fetchBookingsWithStaff(customersData);
-      await fetchStaffAvailability();
-      
-      // Add real-time subscription for bookings
-      const bookingsChannel = supabase
-        .channel('bookings-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
-            schema: 'public',
-            table: 'bookings'
-          },
-          async (payload) => {
-            console.log('📡 Real-time booking change detected:', payload);
-            
-            // Refresh bookings data when any booking changes
-            try {
-              const customersData = await fetchCustomers();
-              await fetchBookingsWithStaff(customersData);
-              await fetchTableStats(); // Also refresh stats
-              await fetchStaffAvailability();
+      try {
+        setLoading(true);
+        
+        const locationService = LocationService.getInstance();
+        const currentLocationId = locationService.getSelectedLocationId();
+        setCurrentLocation(currentLocationId);
+        
+        await fetchTableStats();
+        const customersData = await fetchCustomers();
+        await fetchServices();
+        await fetchBusinessHours(); // This will now work
+        await fetchBookingsWithStaff(customersData);
+        await fetchStaffAvailability();
+        
+        // Add real-time subscription for bookings
+        // Remove the hook calls from here since they're now at the top level
+        const bookingsChannel = supabase
+          .channel('bookings-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+              schema: 'public',
+              table: 'bookings'
+            },
+            async (payload) => {
+              console.log('📡 Real-time booking change detected:', payload);
               
-              // Use the new utility function for consistent toast notifications
-              handleBookingRealtimeToast(payload, {
-                isCustomerView: false,
-                autoClose: 4000,
-                includeLocation: false,
-                includeNotes: true
-              });
-            } catch (error) {
-              console.error('Error refreshing bookings after real-time update:', error);
-              toast.error('Failed to refresh booking data');
+              // Refresh bookings data when any booking changes
+              try {
+                const customersData = await fetchCustomers();
+                await fetchBookingsWithStaff(customersData);
+                await fetchTableStats(); // Also refresh stats
+                await fetchStaffAvailability();
+                
+                // Use the multilingual utility function for consistent toast notifications
+                handleBookingRealtimeToast(payload, {
+                  isCustomerView: false,
+                  autoClose: 4000,
+                  includeLocation: false,
+                  includeNotes: true
+                });
+              } catch (error) {
+                console.error('Error refreshing bookings after real-time update:', error);
+                showErrorToast('general');
+              }
             }
+          )
+          .subscribe();
+        
+        // Add location change listener
+        const handleLocationChange = async (newLocation) => {
+          console.log('🌍 Dashboard location change detected:', {
+            newLocationId: newLocation?.id,
+            newLocationName: newLocation?.name
+          });
+          
+          setCurrentLocation(newLocation?.id || null);
+          
+          // Refetch bookings and staff availability for the new location
+          try {
+            const customersData = await fetchCustomers();
+            await fetchBookingsWithStaff(customersData);
+            await fetchStaffAvailability();
+            console.log('✅ Dashboard data refreshed for new location');
+          } catch (error) {
+            console.error('❌ Error refreshing dashboard data for location change:', error);
+            showErrorToast('general');
           }
-        )
-        .subscribe();
-      
-      // Cleanup function
-      return () => {
-        //locationService.removeLocationChangeListener(handleLocationChange);
-      };
+        };
+        
+        // Add listener for location changes
+        const removeLocationListener = locationService.addLocationChangeListener(handleLocationChange);
+        
+        // Cleanup function
+        return () => {
+          removeLocationListener();
+          bookingsChannel.unsubscribe();
+        };
+      } catch (error) {
+        console.error('Error in initData:', error);
+        setLoading(false);
+      }
     };
     initData();
   }, []); // ← Empty dependency array since all functions are stable

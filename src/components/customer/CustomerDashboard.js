@@ -21,6 +21,7 @@ import useCustomerRealtime from '../../hooks/useCustomerRealtime';
 // Remove this line:
 // import useLocationManager from '../../hooks/useLocationManager';
 import { BOOKING_STATUS, TABLES, SUCCESS_MESSAGES, ERROR_MESSAGES, QUERY_FILTERS } from '../../constants';
+import { useMultilingualToast } from '../../utils/multilingualToastUtils';
 
 // Remove the useUser import at the top
 // import { useUser } from '../../hooks/useUser';
@@ -270,7 +271,7 @@ const CustomerDashboard = () => {
   useCustomerRealtime({
     customerData,
     refreshBookings,
-    setCustomerData
+    bookings // Add this line to pass current bookings
   });
 
   // Error state handling

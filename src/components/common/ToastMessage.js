@@ -9,7 +9,7 @@ const ToastMessage = () => {
 // Remove this duplicate import line
 // import { toast } from 'react-toastify';
 
-// 统一的toast配置
+// Unified toast configuration
 const defaultConfig = {
   position: "bottom-right",
   autoClose: 3000,
@@ -19,7 +19,7 @@ const defaultConfig = {
   draggable: true,
 };
 
-// 导出toast方法
+// Export toast methods
 export const showToast = {
   success: (message) => toast.success(message, defaultConfig),
   error: (message) => toast.error(message, defaultConfig),

@@ -254,11 +254,13 @@ export const showBookingUpdatedToast = (payload, options = {}) => {
  * @param {Object} options - Toast options
  */
 export const showBookingDeletedToast = (bookingData, options = {}) => {
+  console.log('🗑️ showBookingDeletedToast called with:', { bookingData, options });
+  
   const { 
     isCustomerView = false, 
     autoClose = 5000,
-    includeLocation = false,
-    includeNotes = false,
+    includeLocation = true,
+    includeNotes = true,
     useDetailedContent = true
   } = options;
   
@@ -268,8 +270,72 @@ export const showBookingDeletedToast = (bookingData, options = {}) => {
   
   const icon = '🗑️';
   
+  console.log('🗑️ Toast configuration:', {
+    title,
+    icon,
+    isCustomerView,
+    useDetailedContent,
+    bookingDataAvailable: !!bookingData
+  });
+  
   if (useDetailedContent && bookingData) {
-    const content = createDetailedBookingToastContent(title, [], icon, bookingData);
+    console.log('🗑️ Creating detailed content toast');
+    
+    // Create a list of booking details to show what was deleted
+    const deletedDetails = [];
+    
+    // Add booking date and time information
+    const dateTimeInfo = formatBookingDateTime(bookingData);
+    if (dateTimeInfo) {
+      deletedDetails.push(`📅 ${dateTimeInfo}`);
+    }
+    
+    // Add service information if available
+    if (bookingData.service_name) {
+      deletedDetails.push(`🔧 Service: ${bookingData.service_name}`);
+    }
+    
+    // Add customer information if available (for admin/staff view)
+    if (!isCustomerView && bookingData.customer_name) {
+      deletedDetails.push(`👤 Customer: ${bookingData.customer_name}`);
+    }
+    
+    // Add staff information if available
+    if (bookingData.staff_name) {
+      deletedDetails.push(`👨‍💼 Staff: ${bookingData.staff_name}`);
+    }
+    
+    // Add status information
+    if (bookingData.status) {
+      deletedDetails.push(`📊 Status: ${bookingData.status}`);
+    }
+    
+    // Add location information
+    if (includeLocation && bookingData.location) {
+      deletedDetails.push(`📍 Location: ${bookingData.location}`);
+    }
+    
+    // Add notes if available
+    if (includeNotes && bookingData.notes) {
+      deletedDetails.push(`📝 Notes: ${bookingData.notes}`);
+    }
+    
+    // Add booking ID for reference
+    if (bookingData.id) {
+      deletedDetails.push(`🆔 Booking ID: ${bookingData.id}`);
+    }
+    
+    // Add creation date if available
+    if (bookingData.created_at) {
+      const createdDate = new Date(bookingData.created_at).toLocaleDateString();
+      deletedDetails.push(`📅 Created: ${createdDate}`);
+    }
+    
+    console.log('🗑️ Deleted details:', deletedDetails);
+    
+    const content = createDetailedBookingToastContent(title, deletedDetails, icon, bookingData);
+    
+    console.log('🗑️ Showing detailed warning toast');
     toast.warning(content, {
       autoClose,
       closeOnClick: true,
@@ -277,6 +343,8 @@ export const showBookingDeletedToast = (bookingData, options = {}) => {
       draggable: true
     });
   } else {
+    console.log('🗑️ Creating simple string toast');
+    
     const bookingInfo = createBookingInfoString(bookingData, { 
       includeLocation, 
       includeNotes, 
@@ -285,6 +353,8 @@ export const showBookingDeletedToast = (bookingData, options = {}) => {
     
     const message = `${icon} ${title}${bookingInfo ? `\n${bookingInfo}` : ''}`;
     const fallbackMessage = `${icon} ${title}`;
+    
+    console.log('🗑️ Toast message:', bookingInfo ? message : fallbackMessage);
     
     toast.warning(bookingInfo ? message : fallbackMessage, {
       autoClose
@@ -299,32 +369,58 @@ export const showBookingDeletedToast = (bookingData, options = {}) => {
  */
 export const handleBookingRealtimeToast = (payload, options = {}) => {
   const { isCustomerView = false } = options;
+  
+  // Enhanced debugging
+  console.log('🔍 handleBookingRealtimeToast called with:', {
+    payload,
+    options,
+    isCustomerView,
+    payloadKeys: Object.keys(payload),
+    eventType: payload.eventType,
+    event: payload.event,
+    hasNew: !!payload.new,
+    hasOld: !!payload.old
+  });
+  
   const bookingData = payload.new || payload.old;
+  const eventType = payload.eventType || payload.event; // Support both formats
+  
+  console.log('🔍 Extracted data:', {
+    bookingData,
+    eventType,
+    bookingDataKeys: bookingData ? Object.keys(bookingData) : null
+  });
   
   if (!bookingData) {
+    console.log('⚠️ No booking data available, using fallback messages');
     // Fallback to basic messages if no booking data available
-    if (payload.eventType === 'INSERT') {
+    if (eventType === 'INSERT') {
       toast.success(isCustomerView ? '🎉 Your new booking has been created!' : '📅 New booking created');
-    } else if (payload.eventType === 'UPDATE') {
+    } else if (eventType === 'UPDATE') {
       toast.info(isCustomerView ? '📝 Your booking has been updated!' : '📝 Booking updated');
-    } else if (payload.eventType === 'DELETE') {
+    } else if (eventType === 'DELETE') {
+      console.log('🗑️ Showing DELETE fallback toast for customer:', isCustomerView);
       toast.warning(isCustomerView ? '🗑️ Your booking has been cancelled!' : '🗑️ Booking deleted');
     }
     return;
   }
   
   // Use specific toast functions for detailed notifications
-  switch (payload.eventType) {
+  console.log('📋 Using detailed toast for event:', eventType);
+  switch (eventType) {
     case 'INSERT':
+      console.log('➕ Calling showBookingCreatedToast');
       showBookingCreatedToast(bookingData, options);
       break;
     case 'UPDATE':
+      console.log('✏️ Calling showBookingUpdatedToast');
       showBookingUpdatedToast(payload, options);
       break;
     case 'DELETE':
+      console.log('🗑️ Calling showBookingDeletedToast with data:', bookingData);
       showBookingDeletedToast(bookingData, options);
       break;
     default:
-      console.warn('Unknown booking event type:', payload.eventType);
+      console.warn('❌ Unknown booking event type:', eventType, 'Full payload:', payload);
   }
 };

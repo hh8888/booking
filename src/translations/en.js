@@ -590,7 +590,10 @@ export default {
       bookingCancelled: 'Booking cancelled successfully',
       passwordReset: 'Password reset email sent',
       profileUpdated: 'Profile updated successfully',
-      verificationEmailSent: 'Verification email sent to user'
+      verificationEmailSent: 'Verification email sent to user',
+      bookingCreatedCustomer: 'Your booking has been created successfully!',
+      bookingCancelledCustomer: 'Your booking has been cancelled!',
+      bookingCompleted: 'Booking completed successfully!', 
     },
     error: {
       general: 'An error occurred. Please try again.',
@@ -611,6 +614,14 @@ export default {
       cancel: 'Are you sure you want to cancel this booking?',
       logout: 'Are you sure you want to log out?',
       discardChanges: 'Are you sure you want to discard your changes?'
+    },
+    warning: {
+      deleted: 'Item deleted successfully',
+      cancelled: 'Operation cancelled', 
+    },
+    info: {
+      updated: 'Information updated',
+      processing: 'Processing...', 
     }
   },
 

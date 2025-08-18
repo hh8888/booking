@@ -136,7 +136,8 @@ export const showUserUpdateToast = (oldData, newData, options = {}) => {
       ...options.toastOptions
     };
     
-    toast[toastType](<ToastContent />, toastOptions);
+    toast[toastType](<ToastContent title={title} />, toastOptions);
+
   } else {
     toast[toastType](fallbackMessage, {
       autoClose: 3000,
@@ -179,7 +180,8 @@ export const showUserCreatedToast = (userData, options = {}) => {
     ...options.toastOptions
   };
   
-  toast[toastType](<ToastContent />, toastOptions);
+  toast[toastType](<ToastContent title={title} />, toastOptions);
+
 };
 
 /**
@@ -215,5 +217,5 @@ export const showUserDeletedToast = (userData, options = {}) => {
     ...options.toastOptions
   };
   
-  toast[toastType](<ToastContent />, toastOptions);
+  toast[toastType](<ToastContent title={title} />, toastOptions);
 };
