@@ -65,12 +65,10 @@ export default function Dashboard() {
       // Debounce the scroll handler
       timeoutId = setTimeout(() => {
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const windowHeight = window.innerHeight;
-        const scrollThreshold = windowHeight * 0.1; // 10% of viewport height
         
-        // Add hysteresis to prevent bouncing
-        const upperThreshold = scrollThreshold + 20; // Add 20px buffer
-        const lowerThreshold = scrollThreshold - 20; // Subtract 20px buffer
+        // Use fixed thresholds instead of percentage-based
+        const upperThreshold = 50; // Scroll down threshold
+        const lowerThreshold = 30; // Scroll up threshold
         
         const shouldBeScrolled = isScrolled 
           ? scrollTop > lowerThreshold  // If already scrolled, use lower threshold
@@ -83,9 +81,9 @@ export default function Dashboard() {
           // Reset the updating flag after a short delay
           setTimeout(() => {
             isUpdating = false;
-          }, 100);
+          }, 150); // Increased delay to prevent rapid updates
         }
-      }, 10); // 10ms debounce
+      }, 16); // Increased debounce to ~60fps
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -96,7 +94,7 @@ export default function Dashboard() {
         clearTimeout(timeoutId);
       }
     };
-  }, [isScrolled]); // Include isScrolled in dependencies for hysteresis
+  }, []); // Remove isScrolled dependency to prevent re-registration
 
   // Add debugging logs for admin and manager
   useEffect(() => {
