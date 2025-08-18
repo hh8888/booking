@@ -184,8 +184,8 @@ button {
   }
 }
 
-/* Ensure dropdown doesn't overflow viewport */
-.relative .absolute {
+/* Ensure dropdown doesn't overflow viewport - but exclude input field buttons */
+.relative .absolute:not(button) {
   position: fixed !important;
   z-index: 9999 !important;
 }

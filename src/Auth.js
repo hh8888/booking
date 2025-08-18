@@ -11,6 +11,7 @@ import { toast } from 'react-toastify';
 import { USER_ROLES, ERROR_MESSAGES, SUCCESS_MESSAGES, TABLES } from './constants';
 import { filterUsersByRole } from './utils';
 import { useLanguage } from './contexts/LanguageContext';
+import { useCompactMode } from './contexts/CompactModeContext';
 
 // Import custom hooks
 import { useAuthState } from './hooks/auth/useAuthState';
@@ -26,6 +27,26 @@ import ExpiredLinkError from './components/auth/ExpiredLinkError';
 export default function Auth() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { isCompactMode, toggleCompactMode } = useCompactMode();
+  
+  // Override compact mode for login page
+  useEffect(() => {
+    let wasCompactMode = false;
+    
+    // If compact mode is currently enabled, disable it for the login page
+    if (isCompactMode) {
+      wasCompactMode = true;
+      toggleCompactMode(); // This will disable compact mode
+    }
+    
+    // Cleanup function to restore compact mode when leaving the auth page
+    return () => {
+      // Only restore compact mode if it was previously enabled
+      if (wasCompactMode && !isCompactMode) {
+        toggleCompactMode(); // This will re-enable compact mode
+      }
+    };
+  }, []); // Empty dependency array to run only on mount/unmount
   
   // Use custom hooks for state management
   const authState = useAuthState();
