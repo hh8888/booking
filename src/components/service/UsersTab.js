@@ -284,7 +284,7 @@ const getAvailableRoleOptions = (currentUserRole) => {
         data={filteredUsers}
         selectedRows={selectedRows}
         setSelectedRows={setSelectedRows}
-        onEdit={!staffMode ? setEditItem : null}
+        onEdit={setEditItem}
         onSetAvailability={(staff) => setSelectedStaffId(staff.id)}
         onResetPassword={!staffMode ? handleResetPassword : null}
         onViewHistory={handleViewHistory}
