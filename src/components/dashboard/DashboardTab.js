@@ -4,6 +4,7 @@ import DashboardStats from './DashboardStats';
 import BookingCalendar from './BookingCalendar';
 import CalendarControls from './CalendarControls';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useMultilingualToast } from '../../utils/multilingualToastUtils';
 // Remove this import line
 // import StaffLegend from './StaffLegend';
 import EventModal from './EventModal';
@@ -13,9 +14,11 @@ import DatabaseService from '../../services/DatabaseService';
 import BookingService from '../../services/BookingService';
 import { BOOKING_STATUS, USER_ROLES, TABLES, SUCCESS_MESSAGES, ERROR_MESSAGES } from '../../constants';
 import '../../styles/calendar.css';
+import ToastHistory from './ToastHistory';
 
 export default function DashboardTab() {
   const { t } = useLanguage();
+  const { showSuccessToast, showErrorToast } = useMultilingualToast();
   
   // UI state
   const [showAvailability, setShowAvailability] = useState(true);
@@ -75,84 +78,32 @@ export default function DashboardTab() {
   };
 
   const handleEditSave = async (bookingData) => {
-    console.log('=== DashboardTab handleEditSave START ===');
-    console.log('bookingData received:', bookingData);
-    
     try {
-      const dbService = DatabaseService.getInstance();
-      const bookingService = BookingService.getInstance();
+      console.log('=== DashboardTab handleEditSave START ===');
+      console.log('Received booking data:', bookingData);
       
-      // Remove extra display fields
-      const { service_name, customer_name, booking_time_formatted, created_at_formatted, show_recurring, start_date, start_time_hour, start_time_minute, bookings_pkey, ...dataToSave } = bookingData;
+      // Process the booking data
+      const dataToSave = {
+        ...bookingData,
+        location_id: currentLocation?.id || bookingData.location_id,
+        start_time: bookingData.start_time,
+        end_time: bookingData.end_time
+      };
       
-      console.log('Data after removing display fields:', dataToSave);
+      console.log('Data to save after processing:', dataToSave);
       
-      // Validate required fields
-      if (!dataToSave.customer_id) {
-        console.error('Invalid customer_id:', dataToSave.customer_id);
-        toast.error(ERROR_MESSAGES.INVALID_CUSTOMER);
-        return;
-      }
-      
-      if (!dataToSave.service_id) {
-        console.error('Missing service_id');
-        toast.error(ERROR_MESSAGES.INVALID_SERVICE);
-        return;
-      }
-      
-      if (!dataToSave.provider_id) {
-        console.error('Missing provider_id');
-        toast.error(ERROR_MESSAGES.INVALID_PROVIDER);
-        return;
-      }
-      
-      // Validate if customer exists
-      const customerExists = await dbService.fetchSpecificColumns(TABLES.USERS, 'id', { id: dataToSave.customer_id, role: USER_ROLES.CUSTOMER });
-      if (!customerExists || customerExists.length === 0) {
-        console.error('Customer not found in users table:', dataToSave.customer_id);
-        toast.error(ERROR_MESSAGES.INVALID_CUSTOMER);
-        return;
-      }
-      
-      // Calculate end_time based on duration
-      const startTime = new Date(dataToSave.start_time);
-      if (isNaN(startTime.getTime())) {
-        console.error('Invalid start time:', dataToSave.start_time);
-        toast.error(ERROR_MESSAGES.INVALID_START_TIME);
-        return;
-      }
-      
-      // Use duration from form data if available, otherwise get from service
-      let durationInMinutes;
-      if (dataToSave.duration && !isNaN(parseInt(dataToSave.duration))) {
-        durationInMinutes = parseInt(dataToSave.duration);
-        console.log('Using form duration:', durationInMinutes);
-      } else {
-        // Get service duration using BookingService instance
-        const selectedService = services.find(service => service.id === dataToSave.service_id);
-        durationInMinutes = bookingService.parseDuration(selectedService?.duration) || 60;
-        console.log('Using service duration:', durationInMinutes);
-      }
-      
-      // Calculate end time
-      const endTime = new Date(startTime.getTime() + durationInMinutes * 60000);
-      dataToSave.end_time = endTime.toISOString();
-      dataToSave.duration = durationInMinutes;
-      dataToSave.status = dataToSave.status || BOOKING_STATUS.PENDING;
-      
-      console.log('Final data to save:', dataToSave);
-      
-      // Check if this is an update (has ID) or create operation
-      if (dataToSave.id) {
+      if (bookingData.id) {
         // Update existing booking using BookingService
-        await bookingService.updateBooking(dataToSave);
+        await BookingService.updateBooking(dataToSave);
         console.log('Booking updated successfully');
-        // toast.success(SUCCESS_MESSAGES.BOOKING_UPDATED);
+        // Use multilingual success toast
+        showSuccessToast('updated');
       } else {
         // Create new booking using BookingService
-        await bookingService.createBooking(dataToSave);
+        await BookingService.createBooking(dataToSave);
         console.log('Booking created successfully');
-        // toast.success(SUCCESS_MESSAGES.BOOKING_CREATED);
+        // Use multilingual success toast
+        showSuccessToast('created');
       }
       
       // Refresh the dashboard data
@@ -170,7 +121,7 @@ export default function DashboardTab() {
     } catch (error) {
       console.error('=== DashboardTab handleEditSave ERROR ===');
       console.error('Error saving booking:', error);
-      toast.error(`${ERROR_MESSAGES.BOOKING_SAVE_ERROR}: ${error.message}`);
+      showErrorToast('general', { error: error.message });
     }
   };
 
@@ -512,7 +463,7 @@ export default function DashboardTab() {
           defaultProviderId={selectedEvent?.extendedProps?.staffId || null}
         />
       )}
-      
+      <ToastHistory />
     </div>
   );
 }

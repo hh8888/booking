@@ -52,6 +52,28 @@ const BookingCalendar = ({
   const getFilteredEvents = () => {
     let filteredEvents = bookings;
     
+    // First, filter out any events with invalid dates
+    filteredEvents = filteredEvents.filter(event => {
+      if (!event || !event.start || !event.end) {
+        console.warn('Event with missing start/end date filtered out:', event);
+        return false;
+      }
+      
+      const startDate = new Date(event.start);
+      const endDate = new Date(event.end);
+      
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        console.warn('Event with invalid dates filtered out:', {
+          event,
+          startDate,
+          endDate
+        });
+        return false;
+      }
+      
+      return true;
+    });
+    
     if (!showAvailability) {
       filteredEvents = filteredEvents.filter(event => 
         !event.classNames?.includes('availability-event')
