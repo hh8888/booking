@@ -50,9 +50,9 @@ export const createMultilingualToastUtils = (t) => {
     const { isCustomerView = false, useDetailedContent = true } = options;
     
     if (useDetailedContent) {
-      const content = createDetailedBookingToastContent(bookingData, t);
       const messageKey = isCustomerView ? 'bookingCreatedCustomer' : 'bookingCreated';
       const message = t(`messages.success.${messageKey}`);
+      const content = createDetailedBookingToastContent(message, [], '🎉', bookingData);
       
       toast.success(
         <div>
@@ -76,9 +76,9 @@ export const createMultilingualToastUtils = (t) => {
     if (useDetailedContent) {
       const changes = getFieldChanges(oldData, newData, BOOKING_FIELDS_CONFIG);
       if (changes.length > 0) {
-        const content = createDetailedBookingToastContent(newData, t, changes);
         const messageKey = isCustomerView ? 'bookingUpdatedCustomer' : 'bookingUpdated';
         const message = t(`messages.success.${messageKey}`);
+        const content = createDetailedBookingToastContent(message, changes, '📝', newData);
         
         toast.info(
           <div>
@@ -104,9 +104,9 @@ export const createMultilingualToastUtils = (t) => {
     const { isCustomerView = false, useDetailedContent = true } = options;
     
     if (useDetailedContent) {
-      const content = createDetailedBookingToastContent(bookingData, t);
       const messageKey = isCustomerView ? 'bookingCancelledCustomer' : 'bookingDeleted';
       const message = t(`messages.success.${messageKey}`);
+      const content = createDetailedBookingToastContent(message, [], '🗑️', bookingData);
       
       toast.warning(
         <div>
