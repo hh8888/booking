@@ -39,10 +39,11 @@ class LocationService {
 
       // console.log('Locations fetched:', this.locations);
       
-      // Set initial selected location if not already set
-      if (!this.selectedLocation && this.locations.length > 0) {
-        this.setSelectedLocation(this.locations[0]);
-      }
+      // Remove automatic default location setting
+      // Let LocationSelector handle URL-based initialization
+      // if (!this.selectedLocation && this.locations.length > 0) {
+      //   this.setSelectedLocation(this.locations[0]);
+      // }
     } catch (error) {
       console.error('Error initializing locations:', error);
     }

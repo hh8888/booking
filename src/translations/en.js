@@ -659,6 +659,8 @@ export default {
     postCode: 'Post Code',
     birthday: 'Birthday',
     gender: 'Gender',
+    preferredLocation: 'Preferred Location',
+    selectLocation: 'Select Location',
     memberSince: 'Member Since',
     editProfile: 'Edit Profile',
     updateProfile: 'Update Profile',

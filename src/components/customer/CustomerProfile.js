@@ -1,8 +1,39 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import LocationService from '../../services/LocationService';
+import DatabaseService from '../../services/DatabaseService';
 
 const CustomerProfile = ({ customerData }) => {
   const { t } = useLanguage();
+  const [locations, setLocations] = useState([]);
+  
+  // Fetch locations for displaying last_location name
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const locationService = LocationService.getInstance();
+        const dbService = DatabaseService.getInstance();
+        
+        // Initialize LocationService with database service
+        await locationService.initializeLocations(dbService);
+        
+        // Get locations from LocationService
+        const data = locationService.getLocations();
+        setLocations(data);
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+      }
+    };
+    
+    fetchLocations();
+  }, []);
+  
+  // Helper function to get location name by ID
+  const getLocationNameById = (locationId) => {
+    if (!locationId) return t('common.notProvided');
+    const location = locations.find(loc => loc.id === locationId);
+    return location ? location.name : t('common.notProvided');
+  };
   
   // Add defensive check
   if (!customerData) {
@@ -32,6 +63,10 @@ const CustomerProfile = ({ customerData }) => {
         <div>
           <label className="text-sm font-medium text-gray-500">{t('profile.postCode')}</label>
           <p className="text-gray-900">{customerData.post_code || t('common.notProvided')}</p>
+        </div>
+        <div>
+          <label className="text-sm font-medium text-gray-500">{t('common.location')}</label>
+          <p className="text-gray-900">{getLocationNameById(customerData.last_location)}</p>
         </div>
         <div>
           <label className="text-sm font-medium text-gray-500">{t('profile.memberSince')}</label>

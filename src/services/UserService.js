@@ -231,7 +231,7 @@ class UserService {
     try {
       const { data, error } = await supabase
         .from(TABLES.USERS)
-        .select('full_name, email, phone_number, birthday, post_code, gender')
+        .select('full_name, email, phone_number, birthday, post_code, gender, last_location')
         .eq('id', userId)
         .single();
 

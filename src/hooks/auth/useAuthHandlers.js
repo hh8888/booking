@@ -5,6 +5,7 @@ import { USER_ROLES, ERROR_MESSAGES, TABLES } from '../../constants';
 import { useLanguage } from '../../contexts/LanguageContext';
 import DatabaseService from '../../services/DatabaseService';
 import { isFakeEmail } from '../../utils/validationUtils';
+import LocationService from '../../services/LocationService'; // Add this import
 
 export const useAuthHandlers = (authState, validateForm, validateSignInForm, validateEmail, validatePhoneNumber, startResendTimer) => {
   const { t } = useLanguage();
@@ -166,6 +167,45 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
         if (updateError) {
           console.warn('Could not update last_sign_in:', updateError.message);
         }
+      }
+  
+      // Fetch user's last_location and set it in LocationService
+      try {
+        const { data: userData, error: userError } = await supabase
+          .from(TABLES.USERS)
+          .select('last_location')
+          .eq('id', data.user.id)
+          .single();
+  
+        if (!userError && userData?.last_location !== null && userData?.last_location !== undefined) {
+          // Get LocationService instance
+          const locationService = LocationService.getInstance();
+          
+          // Get available locations
+          const locations = locationService.getLocations();
+          
+          // If locations are not loaded yet, initialize them first
+          if (!locations || locations.length === 0) {
+            const dbService = DatabaseService.getInstance();
+            await locationService.initializeLocations(dbService);
+          }
+          
+          // Set the user's last location
+          const updatedLocations = locationService.getLocations();
+          // Fix: Find location by ID instead of using array index
+          const userLocation = updatedLocations.find(loc => loc.id === userData.last_location);
+          if (userLocation) {
+            locationService.setSelectedLocation(userLocation);
+            console.log('Set user location to last_location:', userData.last_location, userLocation.name);
+          } else {
+            console.warn('Invalid last_location ID:', userData.last_location);
+          }
+        } else {
+          console.log('No last_location found for user or error fetching:', userError?.message);
+        }
+      } catch (locationError) {
+        console.warn('Could not set user location:', locationError.message);
+        // Don't fail the login process if location setting fails
       }
   
       await checkUserRoleAndRedirect(data.user);

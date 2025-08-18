@@ -64,26 +64,47 @@ export const useDashboardData = () => {
           : dbService.fetchData(TABLES.BOOKINGS)
       ]);
   
+      // Add debugging
+      console.log('📊 Dashboard Stats Debug:');
+      console.log('Total bookings fetched:', bookings.length);
+      console.log('Bookings data:', bookings.map(b => ({ id: b.id, start_time: b.start_time, location: b.location })));
+      
       const now = new Date();
       now.setHours(0, 0, 0, 0);
       
       const todayEnd = new Date(now);
       todayEnd.setHours(23, 59, 59, 999);
+      
+      console.log('Date comparison:');
+      console.log('Now (start of today):', now.toISOString());
+      console.log('Today end:', todayEnd.toISOString());
+      console.log('Current location filter:', currentLocationId);
   
       const todayBookings = bookings.filter(booking => {
         const bookingDate = new Date(booking.start_time);
-        return bookingDate >= now && bookingDate <= todayEnd;
+        const isToday = bookingDate >= now && bookingDate <= todayEnd;
+        console.log(`Booking ${booking.id}: ${booking.start_time} -> ${bookingDate.toISOString()} -> Today: ${isToday}`);
+        return isToday;
       }).length;
   
       const futureBookings = bookings.filter(booking => {
         const bookingDate = new Date(booking.start_time);
-        return bookingDate > todayEnd;
+        const isFuture = bookingDate > todayEnd;
+        console.log(`Booking ${booking.id}: ${booking.start_time} -> ${bookingDate.toISOString()} -> Future: ${isFuture}`);
+        return isFuture;
       }).length;
   
       const pastBookings = bookings.filter(booking => {
         const bookingDate = new Date(booking.start_time);
-        return bookingDate < now;
+        const isPast = bookingDate < now;
+        console.log(`Booking ${booking.id}: ${booking.start_time} -> ${bookingDate.toISOString()} -> Past: ${isPast}`);
+        return isPast;
       }).length;
+      
+      console.log('Final counts:');
+      console.log('Today bookings:', todayBookings);
+      console.log('Future bookings:', futureBookings);
+      console.log('Past bookings:', pastBookings);
   
       setTableStats({
         users: usersCount,
@@ -527,6 +548,7 @@ export const useDashboardData = () => {
           .subscribe();
         
         // Add location change listener
+        // Add location change listener
         const handleLocationChange = async (newLocation) => {
           console.log('🌍 Dashboard location change detected:', {
             newLocationId: newLocation?.id,
@@ -539,6 +561,7 @@ export const useDashboardData = () => {
           try {
             const customersData = await fetchCustomers();
             await fetchBookingsWithStaff(customersData);
+            await fetchTableStats(); // ← ADD THIS LINE!
             await fetchStaffAvailability();
             console.log('✅ Dashboard data refreshed for new location');
           } catch (error) {

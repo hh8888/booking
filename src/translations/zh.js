@@ -597,6 +597,7 @@ export default {
       passwordReset: '密码重置邮件已发送',
       profileUpdated: '资料更新成功',
       verificationEmailSent: '验证邮件已发送到用户',
+
       bookingCreatedCustomer: '您的预约已成功创建！',
       bookingCancelledCustomer: 'Y您的预约已被取消！',
       bookingCompleted: '预约已成功完成！',
@@ -676,7 +677,9 @@ export default {
     female: '女',
     other: '其他',
     saving: '保存中...',
-    saveChanges: '保存更改'
+    saveChanges: '保存更改',
+    preferredLocation: '偏好位置',
+    selectLocation: '选择位置',
   },
 
   // Customer Dashboard
