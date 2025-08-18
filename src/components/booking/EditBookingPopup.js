@@ -180,8 +180,8 @@ export default function EditBookingPopup({
                   if (parseInt(endHour) < parseInt(startHour)) {
                     availEnd.setDate(availEnd.getDate() + 1);
                   }
-                  // Check if the entire service duration fits within available hours
-                  return slotTime >= availStart && slotEndTime <= availEnd;
+                  // Only check if the slot starts within business hours
+                  return slotTime >= availStart && slotTime < availEnd;
                 });
 
                 // 检查时间槽是否被占用 - improved conflict detection
@@ -407,7 +407,8 @@ export default function EditBookingPopup({
         // 触发provider_id的onChange事件
         if (defaultProviderId) {
           setLoadingAvailability(true);
-          const availabilityData = await fetchProviderAvailability(defaultProviderId);
+          const currentLocationId = defaultBooking.location || LocationService.getInstance().getSelectedLocationId();
+          const availabilityData = await fetchProviderAvailability(defaultProviderId, currentLocationId);
           setSelectedProviderAvailability(availabilityData);
           setLoadingAvailability(false);
         }
@@ -449,7 +450,7 @@ export default function EditBookingPopup({
         // 手动触发provider_id的onChange事件
         if (formattedBooking.provider_id) {
           setLoadingAvailability(true);
-          const availabilityData = await fetchProviderAvailability(formattedBooking.provider_id);
+          const availabilityData = await fetchProviderAvailability(formattedBooking.provider_id, formattedBooking.location);
           setSelectedProviderAvailability(availabilityData);
           setLoadingAvailability(false);
         }
@@ -1034,8 +1035,9 @@ export default function EditBookingPopup({
                   setLoadingAvailability(true);
                   
                   try {
-                    // Fetch provider availability
-                    const availabilityData = await fetchProviderAvailability(value);
+                    // Fetch provider availability with current location
+                    const currentLocationId = editItem?.location || LocationService.getInstance().getSelectedLocationId();
+                    const availabilityData = await fetchProviderAvailability(value, currentLocationId);
                     setSelectedProviderAvailability(availabilityData);
                     
                     // Fetch services linked to this provider from service_staff table
