@@ -19,7 +19,22 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
   const [currentLocationName, setCurrentLocationName] = useState('');
   const [showMobileTimeModal, setShowMobileTimeModal] = useState(false);
   const [mobileEditDate, setMobileEditDate] = useState(null);
+  // Add state to cache working hours settings
+  const [workingHoursSettings, setWorkingHoursSettings] = useState([]);
 
+  // Helper function to get working hours for a specific date
+  const getWorkingHoursForDate = (date) => {
+    const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to 0 = Monday, 6 = Sunday
+    const workingHours = workingHoursSettings[dayIndex];
+
+    if (!workingHours || workingHours === 'closed') {
+      return { start: '09:00', end: '17:00', isClosed: true };
+    }
+
+    const [start, end] = workingHours.split('-');
+    return { start: start || '09:00', end: end || '17:00', isClosed: false };
+  };
 
   useEffect(() => {
     const initData = async () => {
@@ -41,6 +56,18 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
         defaultStartTime = start;
         defaultEndTime = end;
       }
+
+      // Load working hours settings
+      const workingHours = await Promise.all([
+        dbService.getSettingsByKey('working_hours', 'mondayHours'),
+        dbService.getSettingsByKey('working_hours', 'tuesdayHours'),
+        dbService.getSettingsByKey('working_hours', 'wednesdayHours'),
+        dbService.getSettingsByKey('working_hours', 'thursdayHours'),
+        dbService.getSettingsByKey('working_hours', 'fridayHours'),
+        dbService.getSettingsByKey('working_hours', 'saturdayHours'),
+        dbService.getSettingsByKey('working_hours', 'sundayHours')
+      ]);
+      setWorkingHoursSettings(workingHours);
 
       await fetchAvailability(defaultStartTime, defaultEndTime);
       generateCalendarDates(currentMonth);
@@ -169,11 +196,13 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
       const newIsAvailable = !isCurrentlyAvailable;
       handleAvailabilityChange(dateStr, 'is_available', newIsAvailable);
 
-      // If making available, ensure times are set
+      // If making available, ensure times are set using working hours
       if (newIsAvailable && (!schedule.start_time || !schedule.end_time)) {
-        // Set default times if they're empty
-        if (!schedule.start_time) handleAvailabilityChange(dateStr, 'start_time', '09:00');
-        if (!schedule.end_time) handleAvailabilityChange(dateStr, 'end_time', '17:00');
+        const date = new Date(dateStr + 'T00:00:00');
+        const workingHours = getWorkingHoursForDate(date);
+        
+        if (!schedule.start_time) handleAvailabilityChange(dateStr, 'start_time', workingHours.start);
+        if (!schedule.end_time) handleAvailabilityChange(dateStr, 'end_time', workingHours.end);
       }
     }
   };
@@ -249,28 +278,14 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
       if (currentMonthDateStrs.includes(schedule.date)) {
         // Get working hours for this specific date
         const date = new Date(schedule.date + 'T00:00:00');
-        const dayOfWeek = date.getDay();
-        const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-
-        // Use working hours as default times when marking as available
-        const getDefaultTimes = async () => {
-          const dbService = DatabaseService.getInstance();
-          const dayKeys = ['mondayHours', 'tuesdayHours', 'wednesdayHours', 'thursdayHours', 'fridayHours', 'saturdayHours', 'sundayHours'];
-          const workingHours = await dbService.getSettingsByKey('working_hours', dayKeys[dayIndex]);
-
-          if (workingHours && workingHours !== 'closed') {
-            const [start, end] = workingHours.split('-');
-            return { start: start || '09:00', end: end || '17:00' };
-          }
-          return { start: '09:00', end: '17:00' };
-        };
+        const workingHours = getWorkingHoursForDate(date);
 
         return {
           ...schedule,
           is_available: newAvailabilityState,
-          // Set default times if marking as available and times are missing
-          start_time: newAvailabilityState && !schedule.start_time ? schedule.start_time || '09:00' : schedule.start_time,
-          end_time: newAvailabilityState && !schedule.end_time ? schedule.end_time || '17:00' : schedule.end_time
+          // Set working hours as default times when marking as available
+          start_time: newAvailabilityState && !schedule.start_time ? workingHours.start : schedule.start_time,
+          end_time: newAvailabilityState && !schedule.end_time ? workingHours.end : schedule.end_time
         };
       }
       return schedule;
@@ -303,12 +318,16 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
 
     setAvailability(prev => prev.map(schedule => {
       if (columnDateStrs.includes(schedule.date)) {
+        // Get working hours for this specific date
+        const date = new Date(schedule.date + 'T00:00:00');
+        const workingHours = getWorkingHoursForDate(date);
+
         return {
           ...schedule,
           is_available: newAvailabilityState,
-          // Set default times if marking as available and times are missing
-          start_time: newAvailabilityState && !schedule.start_time ? '09:00' : schedule.start_time,
-          end_time: newAvailabilityState && !schedule.end_time ? '17:00' : schedule.end_time
+          // Always set working hours when marking as available, regardless of existing times
+          start_time: newAvailabilityState ? workingHours.start : schedule.start_time,
+          end_time: newAvailabilityState ? workingHours.end : schedule.end_time
         };
       }
       return schedule;
@@ -335,15 +354,16 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
     // Toggle all future dates in the week
     futureDates.forEach(date => {
       const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      const workingHours = getWorkingHoursForDate(date);
 
       if (hasAvailableDate) {
         // If any date is available, mark all as unavailable
         handleAvailabilityChange(dateStr, 'is_available', false);
       } else {
-        // If no dates are available, mark all as available with default times
+        // If no dates are available, mark all as available with working hours
         handleAvailabilityChange(dateStr, 'is_available', true);
-        handleAvailabilityChange(dateStr, 'start_time', '09:00');
-        handleAvailabilityChange(dateStr, 'end_time', '17:00');
+        handleAvailabilityChange(dateStr, 'start_time', workingHours.start);
+        handleAvailabilityChange(dateStr, 'end_time', workingHours.end);
       }
     });
   };
@@ -450,9 +470,13 @@ const StaffDateAvailabilityForm = ({ staffId, onClose }) => {
             {/* Day of week headers */}
             <div className="flex items-center gap-1 mb-2">
               <div className="grid grid-cols-7 gap-1 flex-1">
-                {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, dayIndex) => {
+                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, dayIndex) => {
                   // Check if all dates in this column (day of week) are marked as available
-                  const columnDates = calendarDates.filter((date, index) => index % 7 === dayIndex);
+                  const columnDates = calendarDates.filter((date, index) => {
+                    const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+                    const adjustedDayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to 0 = Monday, 6 = Sunday
+                    return adjustedDayIndex === dayIndex;
+                  });
                   const futureDatesInColumn = columnDates.filter(date => date >= new Date(new Date().setHours(0, 0, 0, 0)));
                   const availableDatesInColumn = futureDatesInColumn.filter(date => {
                     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
