@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { showToast } from './ToastMessage';
+import { toast } from 'react-toastify'; // 添加这个导入
 import LoadingSpinner from './LoadingSpinner';
 import { ERROR_MESSAGES } from '../../constants';
-import { useLanguage } from '../../contexts/LanguageContext'; // Add this import
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, loadingAvailability = false, validationMessage = '', setValidationMessage }) => {
-  const { t } = useLanguage(); // Add this line
+  const { t } = useLanguage();
+  
   const [formData, setFormData] = useState({});
 
   // Initialize form data when component mounts or data changes
@@ -80,10 +81,11 @@ const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, l
         if (value === undefined || value === null || value === '' || (typeof value === 'string' && value.trim() === '')) {
           newErrors[field.key] = true;
           hasErrors = true;
-          const msg = `${field.label || field.key} ${ERROR_MESSAGES.FIELD_REQUIRED}`;
+          const fieldLabel = field.label || field.key;
+          const msg = `${fieldLabel}: ${t('forms.required')}`;
           if (!firstErrorMessage) firstErrorMessage = msg;
           if (!setValidationMessage) {
-            showToast.error(msg);
+            toast.error(msg);
           }
         }
       }
@@ -98,10 +100,10 @@ const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, l
         if (isNaN(date.getTime())) {
           newErrors[field.key] = true;
           hasErrors = true;
-          const msg = ERROR_MESSAGES.INVALID_DATE;
+          const msg = t('forms.invalidDate');
           if (!firstErrorMessage) firstErrorMessage = msg;
           if (!setValidationMessage) {
-            showToast.error(msg);
+            toast.error(msg);
           }
         }
       }

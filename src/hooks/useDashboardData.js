@@ -9,6 +9,7 @@ import { supabase } from '../supabaseClient';
 import { handleBookingRealtimeToast } from '../utils/realtimeBookingToastUtils';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useMultilingualToast } from '../utils/multilingualToastUtils';
+import { userHasLocation } from '../utils/userUtils';
 
 // Helper function to format time strings
 const formatTime = (timeString) => {
@@ -83,21 +84,21 @@ export const useDashboardData = () => {
       const todayBookings = bookings.filter(booking => {
         const bookingDate = new Date(booking.start_time);
         const isToday = bookingDate >= now && bookingDate <= todayEnd;
-        console.log(`Booking ${booking.id}: ${booking.start_time} -> ${bookingDate.toISOString()} -> Today: ${isToday}`);
+        // console.log(`Booking ${booking.id}: ${booking.start_time} -> ${bookingDate.toISOString()} -> Today: ${isToday}`);
         return isToday;
       }).length;
   
       const futureBookings = bookings.filter(booking => {
         const bookingDate = new Date(booking.start_time);
         const isFuture = bookingDate > todayEnd;
-        console.log(`Booking ${booking.id}: ${booking.start_time} -> ${bookingDate.toISOString()} -> Future: ${isFuture}`);
+        // console.log(`Booking ${booking.id}: ${booking.start_time} -> ${bookingDate.toISOString()} -> Future: ${isFuture}`);
         return isFuture;
       }).length;
   
       const pastBookings = bookings.filter(booking => {
         const bookingDate = new Date(booking.start_time);
         const isPast = bookingDate < now;
-        console.log(`Booking ${booking.id}: ${booking.start_time} -> ${bookingDate.toISOString()} -> Past: ${isPast}`);
+        // console.log(`Booking ${booking.id}: ${booking.start_time} -> ${bookingDate.toISOString()} -> Past: ${isPast}`);
         return isPast;
       }).length;
       
@@ -202,20 +203,25 @@ export const useDashboardData = () => {
         currentLocationId 
           ? dbService.fetchData(TABLES.BOOKINGS, 'created_at', false, { location: currentLocationId })
           : dbService.fetchData(TABLES.BOOKINGS),
-        dbService.fetchData(TABLES.USERS, 'created_at', false, { role: { in: ['staff', 'manager'] } }, ['id', 'full_name']),
+        dbService.fetchData(TABLES.USERS, 'created_at', false, { role: { in: ['staff', 'manager'] } }, ['id', 'full_name', 'locations']),
         dbService.fetchData(TABLES.SERVICES),
         dbService.getSettingsByKey('booking', 'showStaffName'),
         // Fetch customers data if not provided
         customersData || dbService.fetchData(TABLES.USERS, 'created_at', false, { role: 'customer' }, ['id', 'full_name'])
       ]);
-
+  
       console.log('Bookings filtered by location:', currentLocationId, bookingsData.length);
-
+  
       // Use the provided customersData or the fetched one
       const actualCustomersData = customersData || fetchedCustomersData;
   
-      // Set the staff data from the fetched result
-      setStaffData(staffDataResult);
+      // Filter staff data by location using the same logic as fetchStaffAvailability
+      const filteredStaffData = currentLocationId 
+        ? staffDataResult.filter(staff => userHasLocation(staff, currentLocationId))
+        : staffDataResult;
+  
+      // Set the filtered staff data
+      setStaffData(filteredStaffData);
   
       // Predefined color array
       const predefinedColors = [
@@ -337,19 +343,25 @@ export const useDashboardData = () => {
       const locationService = LocationService.getInstance();
       const currentLocationId = locationService.getSelectedLocationId();
       
-      const [staffData, availabilityData] = await Promise.all([
-        dbService.fetchData(TABLES.USERS, 'created_at', false, { role: { in: ['staff', 'manager'] } }, ['id', 'full_name']),
+      const [allStaffData, availabilityData] = await Promise.all([
+        // Fetch all staff and managers with locations field
+        dbService.fetchData(TABLES.USERS, 'created_at', false, { role: { in: ['staff', 'manager'] } }, ['id', 'full_name', 'locations']),
         // Filter availability data by current location AND is_available=true
         currentLocationId 
           ? dbService.fetchData('staff_availability', 'created_at', false, { 
               location: currentLocationId,
-              is_available: true  // Add this filter
+              is_available: true
             })
           : dbService.fetchData('staff_availability', 'created_at', false, {
-              is_available: true  // Add this filter
+              is_available: true
             })
       ]);
-  
+      
+      // Filter staff by location using the new utility function
+      const staffData = currentLocationId 
+        ? allStaffData.filter(staff => userHasLocation(staff, currentLocationId))
+        : allStaffData;
+
       console.log('Staff data:', staffData);
       console.log('Availability data:', availabilityData);
       console.log('Filtered by location:', currentLocationId);

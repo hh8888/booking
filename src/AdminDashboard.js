@@ -21,6 +21,8 @@ import { useUsersData } from './hooks/useUsersData';
 import { useLanguage } from './contexts/LanguageContext';
 import { USER_ROLES, TABLES } from './constants';
 import { toast } from 'react-toastify';
+// Keep the full hook for admins who can access reports
+import { useConnectedUsersTracker } from './hooks/useConnectedUsersTracker';
 
 export default function AdminDashboard() {
   const { t } = useLanguage();
@@ -36,6 +38,10 @@ export default function AdminDashboard() {
   // Use custom hooks for shared logic
   const { businessName } = useBusinessInfo();
   const { userEmail, userRole, userName, currentUserId, lastLocation, loading: userLoading, error: userError } = useDashboardUser();
+  
+  // Use full session tracking with data fetching for reports access
+  useConnectedUsersTracker(currentUserId, userRole, userName);
+  
   const { users, setUsers, loading: usersLoading, networkError, retryFetch, error: usersError } = useUsersData();
 
   // Add debugging logs

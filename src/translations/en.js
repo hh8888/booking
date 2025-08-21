@@ -91,6 +91,7 @@ export default {
     description: 'Description',
     notProvided: 'Not provided',
     noResults: 'No results found',
+    deleting: 'Deleting'
   },
 
   // Navigation
@@ -369,7 +370,43 @@ export default {
     generateReport: 'Generate Report',
     exportReport: 'Export Report',
     noData: 'No data available for the selected period',
-    failedToGetStatistics: 'Failed to get booking statistics'
+    failedToGetStatistics: 'Failed to get booking statistics',
+    // Connected Users Report translations
+    connectedUsers: 'Connected Users',
+    connectedUsersByRole: 'Connected Users by Role',
+    userDistribution: 'User Distribution',
+    connectedUsersList: 'Connected Users List',
+    currentlyActiveUsers: 'Currently active users in the system',
+    totalConnected: 'Total Connected',
+    lastActivity: 'Last Activity',
+    activeNow: 'Active now',
+    minutesAgo: '{minutes}m ago',
+    hoursAgo: '{hours}h ago',
+    noConnectedUsers: 'No Connected Users',
+    noActiveUsersFound: 'No active users found at the moment',
+    // Disconnected Users Report translations
+    disconnectedUsers: 'Disconnected Users',
+    disconnectedUsersList: 'Disconnected Users List',
+    totalDisconnected: 'Total Disconnected',
+    sessionStartTime: 'Session Start',
+    sessionEndTime: 'Session End',
+    sessionDuration: 'Duration',
+    deleteSession: 'Delete Session',
+    deleteSelectedSessions: 'Delete Selected Sessions',
+    confirmDeleteSession: 'Are you sure you want to delete this session?',
+    confirmDeleteSelectedSessions: 'Are you sure you want to delete the selected sessions?',
+    sessionDeletedSuccessfully: 'Session deleted successfully',
+    sessionsDeletedSuccessfully: 'Sessions deleted successfully',
+    failedToDeleteSession: 'Failed to delete session',
+    noDisconnectedUsers: 'No Disconnected Users',
+    noDisconnectedUsersFound: 'No disconnected users found',
+    recentlyDisconnectedUsers: 'Recently disconnected users from the system',
+    disconnectedUsersDescription: 'List of users who have disconnected from the system recently',
+    clearAllDisconnectedSessions: 'Clear all',
+    clearAllDisconnectedSessionsTooltip: 'Delete all disconnected user sessions',
+    confirmClearAllDisconnectedSessions: 'Are you sure you want to delete all disconnected user sessions? This action cannot be undone.',
+    allDisconnectedSessionsCleared: 'All disconnected sessions have been cleared successfully'
+
   },
 
   // Settings
@@ -661,6 +698,9 @@ export default {
     gender: 'Gender',
     preferredLocation: 'Preferred Location',
     selectLocation: 'Select Location',
+    bookingLocations: 'Booking Locations',
+    bookingLocationsPlaceholder: 'Enter comma-separated location names (e.g., New York, Los Angeles, Chicago)',
+    bookingLocationsHelp: 'Enter location names separated by commas',
     memberSince: 'Member Since',
     editProfile: 'Edit Profile',
     updateProfile: 'Update Profile',

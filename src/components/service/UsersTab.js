@@ -357,6 +357,7 @@ const getAvailableRoleOptions = (currentUserRole) => {
             ] },
             { key: 'birthday', label: t('formLabels.birthday'), type: 'date' },
             { key: 'post_code', label: t('formLabels.postCode'), type: 'text' },
+            { key: 'locations', label: t('profile.bookingLocations'), type: 'textarea', placeholder: t('profile.bookingLocationsPlaceholder'), help: t('profile.bookingLocationsHelp') },
             // Conditionally show role field based on staffMode and user permissions
             ...(staffMode ? [
               { key: 'role', label: t('formLabels.role'), type: 'select', options: [

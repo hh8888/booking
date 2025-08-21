@@ -89,7 +89,7 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
           authState.setIsLoading(false);
           authState.setIsVerifying(false);
           authState.setShowTimeoutPrompt(true);
-        }, 30000);
+        }, 60000);
         
         authState.setVerificationTimeout(timeoutId);
       }

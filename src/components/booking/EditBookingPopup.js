@@ -325,12 +325,10 @@ export default function EditBookingPopup({
             available: false
           });
         } else {
-          // Check availability using cached data instead of making individual API calls
-          const isAvailable = service.isTimeSlotAvailableInData(
-            availabilityData,
-            date,
-            '09:00', // Business start time
-            '17:00'  // Business end time
+          // Check if there's ANY availability for this date instead of checking specific time slots
+          const dateStr = date.toLocaleDateString("en-CA"); // Format: YYYY-MM-DD
+          const isAvailable = availabilityData.some(slot => 
+            slot.date === dateStr && slot.is_available
           );
           
           availabilityPromises.push({
@@ -877,7 +875,7 @@ export default function EditBookingPopup({
     } catch (error) {
       console.error('=== EditBookingPopup handleSave ERROR ===');
       console.error('Error saving booking:', error);
-      toast.error(error.message);
+      toast.error(ERROR_MESSAGES.BOOKING_SAVE_ERROR);
     } finally {
       setLoading(false);
     }
@@ -1087,7 +1085,7 @@ export default function EditBookingPopup({
                     }
                   } catch (error) {
                     console.error('Error fetching provider services:', error);
-                    toast.error('Failed to load services for selected provider');
+                    toast.error(ERROR_MESSAGES.FAILED_FETCH_SERVICES);
                     setFilteredServices([]);
                   } finally {
                     setLoadingAvailability(false);
@@ -1327,7 +1325,7 @@ export default function EditBookingPopup({
                       }
                       
                       if (hasConflict) {
-                        toast.error(t('editBooking.overlapDetected') + `: ${conflictSlots.join(', ')}`);
+                        toast.error(t('editBooking.overlapDetected', { slots: conflictSlots.join(', ') }));
                         return;
                       }
                       

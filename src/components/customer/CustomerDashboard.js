@@ -18,19 +18,16 @@ import { useBusinessInfo } from '../../hooks/useBusinessInfo';
 import { useLanguage } from '../../contexts/LanguageContext';
 import useDashboardUser from '../../hooks/useDashboardUser';
 import useCustomerRealtime from '../../hooks/useCustomerRealtime';
-// Remove this line:
-// import useLocationManager from '../../hooks/useLocationManager';
+// Add this import
+import { useConnectedUsersTracker } from '../../hooks/useConnectedUsersTracker';
 import { BOOKING_STATUS, TABLES, SUCCESS_MESSAGES, ERROR_MESSAGES, QUERY_FILTERS } from '../../constants';
 import { useMultilingualToast } from '../../utils/multilingualToastUtils';
-
-// Remove the useUser import at the top
-// import { useUser } from '../../hooks/useUser';
+// Add import
+import { useServerSessionTracker } from '../../hooks/useServerSessionTracker';
 
 const CustomerDashboard = () => {
   console.log('🔄 CustomerDashboard: Component render started');
   
-  // Remove this line
-  // const { user, loading: userLoading } = useUser();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [customerData, setCustomerData] = useState(null);
@@ -45,6 +42,15 @@ const CustomerDashboard = () => {
   const { businessName } = useBusinessInfo();
   // Get all user data from useDashboardUser
   const { userEmail, userRole, userName, currentUserId, loading: userLoading } = useDashboardUser();
+  
+  // Add lightweight session tracking (no data fetching)
+  useServerSessionTracker(currentUserId, userRole, userName);
+  
+  // Remove this line:
+  // useConnectedUsersTracker(currentUserId, userRole, userName);
+  
+  // Add session tracking for connected users report
+  useConnectedUsersTracker(currentUserId, userRole, userName);
   
   console.log('🔄 CustomerDashboard: State values:', {
     userLoading,

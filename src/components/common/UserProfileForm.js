@@ -18,7 +18,8 @@ const UserProfileForm = ({ userId, onClose }) => {
     birthday: '',
     post_code: '',
     gender: '',
-    last_location: null
+    last_location: null,
+    locations: ''
   });
 
   const userService = UserService.getInstance();
@@ -64,7 +65,8 @@ const UserProfileForm = ({ userId, onClose }) => {
         birthday: data.birthday || '',
         post_code: data.post_code || '',
         gender: data.gender || '',
-        last_location: data.last_location || null
+        last_location: data.last_location || null,
+        locations: data.locations || ''
       });
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -87,7 +89,8 @@ const UserProfileForm = ({ userId, onClose }) => {
         birthday: userData.birthday || null, // Convert empty string to null
         post_code: userData.post_code,
         gender: userData.gender,
-        last_location: userData.last_location
+        last_location: userData.last_location,
+        locations: userData.locations
       };
       
       console.log('Update data:', updateData);
@@ -273,6 +276,28 @@ const UserProfileForm = ({ userId, onClose }) => {
             <div className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
               {getLocationNameById(userData.last_location)}
             </div>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('profile.bookingLocations')}
+          </label>
+          {isEditing ? (
+            <textarea
+              value={userData.locations}
+              onChange={(e) => handleInputChange('locations', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              rows="3"
+              placeholder={t('profile.bookingLocationsPlaceholder')}
+            />
+          ) : (
+            <div className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-700">
+              {userData.locations || t('profile.notSet')}
+            </div>
+          )}
+          {isEditing && (
+            <p className="text-xs text-gray-500 mt-1">{t('profile.bookingLocationsHelp')}</p>
           )}
         </div>
 

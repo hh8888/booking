@@ -86,12 +86,11 @@ export default {
     email: '邮箱',
     phone: '电话',
     address: '地址',
-    city: '城市',
-    country: '国家',
     notes: '备注',
     description: '描述',
     notProvided: '未提供',
-    noResults: '无结果'
+    noResults: '无结果',
+    deleting: '删除中'
   },
 
   // Navigation
@@ -369,7 +368,47 @@ export default {
     generateReport: '生成报表',
     exportReport: '导出报表',
     noData: '所选期间无数据',
-    failedToGetStatistics: '获取预约统计失败'
+    failedToGetStatistics: '获取预约统计失败',
+    // Connected Users Report translations
+    connectedUsers: '连接用户',
+    connectedUsersByRole: '按角色连接用户',
+    userDistribution: '用户分布',
+    connectedUsersList: '连接用户列表',
+    currentlyActiveUsers: '当前活跃用户',
+    totalConnected: '总连接',
+    lastActivity: '最后活动',
+    activeNow: '现在活跃',
+    minutesAgo: '{minutes}分钟前',
+    hoursAgo: '{hours}小时前',
+    noConnectedUsers: '无连接用户',
+    noActiveUsersFound: '未找到活跃用户',
+    // Disconnected Users Report translations
+    disconnectedUsers: '断开连接用户',
+    disconnectedUsersList: '断开连接用户列表',
+    totalDisconnected: '总断开连接',
+    sessionStartTime: '会话开始时间',
+    sessionEndTime: '会话结束时间',
+    sessionDuration: '会话持续时间',
+    deleteSession: '删除会话',
+    deleteSelectedSessions: '删除选中会话',
+    confirmDeleteSession: '确定要删除此会话吗？',
+    confirmDeleteSelectedSessions: '确定要删除选中会话吗？',
+    sessionDeletedSuccessfully: '会话删除成功',
+    sessionsDeletedSuccessfully: '会话删除成功',
+    failedToDeleteSession: '删除会话失败',
+    noDisconnectedUsers: '无断开连接用户',
+    noDisconnectedUsersFound: '未找到断开连接用户',
+    recentlyDisconnectedUsers: '最近断开连接用户',
+    disconnectedUsersDescription: '最近断开连接用户列表',
+    clearAllDisconnectedSessions: '清除所有',
+    clearAllDisconnectedSessionsTooltip: '删除所有断开连接用户会话',
+    confirmClearAllDisconnectedSessions: '确定要删除所有断开连接用户会话吗？此操作无法撤销。',
+    allDisconnectedSessionsCleared: '所有断开连接会话已成功清除',
+    failedToClearDisconnectedSessions: '清除断开连接会话失败'
+
+
+
+
   },
 
   // Settings
@@ -470,6 +509,11 @@ export default {
     selectCustomer: '选择客户',
     location: '地点',
     selectLocation: '选择地点',
+    bookingLocations: '预约地点',
+    bookingLocationsDesc: '客户可以预约的地点，用逗号分隔',
+    bookingLocationsHelp: '输入地点名称，用逗号分隔',
+
+
     provider: '服务提供者',
     selectProvider: '选择服务提供者',
     dateAvailability: '日期可用性',
@@ -680,6 +724,12 @@ export default {
     saveChanges: '保存更改',
     preferredLocation: '偏好位置',
     selectLocation: '选择位置',
+    bookingLocations: '预约位置',
+    bookingLocationsDesc: '客户可以预约的位置，用逗号分隔',
+    bookingLocationsHelp: '输入位置名称，用逗号分隔',
+    bookingLocationsPlaceholder: '输入位置名称，用逗号分隔',
+
+
   },
 
   // Customer Dashboard

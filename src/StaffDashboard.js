@@ -11,10 +11,12 @@ import UserDropdown from './components/common/UserDropdown';
 import SessionIndicator from './components/common/SessionIndicator';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { useBusinessInfo } from './hooks/useBusinessInfo';
-import useDashboardUser from './hooks/useDashboardUser'; // Changed from named to default import
+import useDashboardUser from './hooks/useDashboardUser';
 import { useUsersData } from './hooks/useUsersData';
 import { useLanguage } from './contexts/LanguageContext';
 import { USER_ROLES } from './constants';
+import { useConnectedUsersTracker } from './hooks/useConnectedUsersTracker';
+// Removed unused import: import { useServerSessionTracker } from './hooks/useSessionTracker';
 
 export default function StaffDashboard() {
   const { t } = useLanguage();
@@ -25,7 +27,15 @@ export default function StaffDashboard() {
   
   // Use custom hooks for shared logic
   const { businessName } = useBusinessInfo();
-  const { userEmail, userRole, userName, currentUserId } = useDashboardUser(); // Now using default import
+  const { userEmail, userRole, userName, currentUserId } = useDashboardUser();
+  
+  // Change this to use server-side session tracking:
+  // Remove this line entirely:
+  // useServerSessionTracker(currentUserId, userRole, userName);
+  
+  // Keep only this (it handles both session creation and data fetching):
+  useConnectedUsersTracker(currentUserId, userRole, userName);
+  
   const { users, setUsers, loading, networkError, retryFetch } = useUsersData({
     roleFilter: ['customer', 'staff', 'manager'] // Added 'manager' to include managers in provider list
   });

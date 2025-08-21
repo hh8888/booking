@@ -2,160 +2,252 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 
 /**
- * Custom hook to track and monitor multiple browser sessions for the same user
- * Uses sessionStorage to identify unique browser windows/tabs
- * @returns {Object} { activeSessions, currentSessionId, updateSessionActivity }
+ * Server-side session tracker for dashboards that don't need to fetch connected users data
+ * Only creates and maintains user sessions without the overhead of fetching all users
  */
-export function useSessionTracker() {
-  const [activeSessions, setActiveSessions] = useState([]);
-  const [currentSessionId, setCurrentSessionId] = useState(null);
+export function useServerSessionTracker(currentUserId, userRole, userName) {
+  const sessionIdRef = useRef(null);
   const intervalRef = useRef(null);
-  const lastUpdateRef = useRef(Date.now());
 
-  // Generate or retrieve session ID for current window/tab
+  // Generate unique session ID and create session
   useEffect(() => {
-    let sessionId = sessionStorage.getItem('browser_session_id');
-    
-    if (!sessionId) {
-      // Generate unique session ID for this browser window/tab
-      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      sessionStorage.setItem('browser_session_id', sessionId);
-    }
-    
-    setCurrentSessionId(sessionId);
-    
-    // Store session info in localStorage with current timestamp
-    const sessionInfo = {
-      id: sessionId,
-      lastActivity: Date.now(),
-      userAgent: navigator.userAgent,
-      windowName: window.name || 'Main Window',
-      url: window.location.href
-    };
-    
-    updateSessionInStorage(sessionId, sessionInfo);
-  }, []);
-
-  // Function to update session activity
-  const updateSessionActivity = () => {
-    if (currentSessionId) {
-      const sessionInfo = {
-        id: currentSessionId,
-        lastActivity: Date.now(),
-        userAgent: navigator.userAgent,
-        windowName: window.name || 'Main Window',
-        url: window.location.href
-      };
+    if (currentUserId) {
+      const sessionId = `${currentUserId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      sessionIdRef.current = sessionId;
       
-      updateSessionInStorage(currentSessionId, sessionInfo);
-      lastUpdateRef.current = Date.now();
+      // Create initial session record
+      createUserSession(sessionId);
     }
-  };
+  }, [currentUserId]);
 
-  // Update session in localStorage
-  const updateSessionInStorage = (sessionId, sessionInfo) => {
+  const createUserSession = async (sessionId) => {
     try {
-      const existingSessions = JSON.parse(localStorage.getItem('active_browser_sessions') || '{}');
-      existingSessions[sessionId] = sessionInfo;
-      localStorage.setItem('active_browser_sessions', JSON.stringify(existingSessions));
+      await supabase
+        .from('user_sessions')
+        .insert({
+          session_id: sessionId,
+          user_id: currentUserId,
+          user_name: userName,
+          user_role: userRole,
+          last_activity: new Date().toISOString(),
+          browser_info: navigator.userAgent,
+          is_active: true
+        });
     } catch (error) {
-      console.error('Error updating session storage:', error);
+      console.error('Error creating user session:', error);
     }
   };
 
-  // Clean up expired sessions and update active sessions list
-  const cleanupAndUpdateSessions = () => {
-    try {
-      const existingSessions = JSON.parse(localStorage.getItem('active_browser_sessions') || '{}');
-      const now = Date.now();
-      const sessionTimeout = 30000; // 30 seconds timeout
-      const activeSessions = [];
-      
-      Object.keys(existingSessions).forEach(sessionId => {
-        const session = existingSessions[sessionId];
-        if (now - session.lastActivity < sessionTimeout) {
-          activeSessions.push({
-            ...session,
-            isCurrentSession: sessionId === currentSessionId,
-            timeAgo: Math.floor((now - session.lastActivity) / 1000)
-          });
-        } else {
-          // Remove expired session
-          delete existingSessions[sessionId];
-        }
-      });
-      
-      // Update localStorage with cleaned sessions
-      localStorage.setItem('active_browser_sessions', JSON.stringify(existingSessions));
-      setActiveSessions(activeSessions);
-    } catch (error) {
-      console.error('Error cleaning up sessions:', error);
+  const updateSessionActivity = async () => {
+    if (sessionIdRef.current) {
+      try {
+        await supabase
+          .from('user_sessions')
+          .update({ 
+            last_activity: new Date().toISOString(),
+            is_active: true 
+          })
+          .eq('session_id', sessionIdRef.current);
+      } catch (error) {
+        console.error('Error updating session activity:', error);
+      }
     }
   };
 
-  // Set up periodic session updates and cleanup
+  // Set up periodic updates (without fetching)
   useEffect(() => {
-    if (currentSessionId) {
-      // Update session activity every 10 seconds
+    if (currentUserId) {
+      // Update activity every 30 seconds (no fetching)
       intervalRef.current = setInterval(() => {
         updateSessionActivity();
-        cleanupAndUpdateSessions();
-      }, 10000);
-      
-      // Initial cleanup
-      cleanupAndUpdateSessions();
-      
-      // Listen for storage changes from other tabs
-      const handleStorageChange = (e) => {
-        if (e.key === 'active_browser_sessions') {
-          cleanupAndUpdateSessions();
-        }
-      };
-      
-      window.addEventListener('storage', handleStorageChange);
-      
+      }, 60000);
+
       // Update activity on user interaction
-      const handleUserActivity = () => {
-        const now = Date.now();
-        // Throttle updates to avoid excessive localStorage writes
-        if (now - lastUpdateRef.current > 5000) {
-          updateSessionActivity();
-        }
-      };
+      const handleActivity = () => updateSessionActivity();
       
-      window.addEventListener('click', handleUserActivity);
-      window.addEventListener('keydown', handleUserActivity);
-      window.addEventListener('scroll', handleUserActivity);
-      
-      // Cleanup on window unload
-      const handleUnload = () => {
-        try {
-          const existingSessions = JSON.parse(localStorage.getItem('active_browser_sessions') || '{}');
-          delete existingSessions[currentSessionId];
-          localStorage.setItem('active_browser_sessions', JSON.stringify(existingSessions));
-        } catch (error) {
-          console.error('Error cleaning up session on unload:', error);
+      window.addEventListener('click', handleActivity);
+      window.addEventListener('keydown', handleActivity);
+      window.addEventListener('scroll', handleActivity);
+
+      // Cleanup session on page unload
+      const handleUnload = async () => {
+        if (sessionIdRef.current) {
+          await supabase
+            .from('user_sessions')
+            .update({ is_active: false })
+            .eq('session_id', sessionIdRef.current);
         }
       };
       
       window.addEventListener('beforeunload', handleUnload);
-      
+
       return () => {
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
         }
-        window.removeEventListener('storage', handleStorageChange);
-        window.removeEventListener('click', handleUserActivity);
-        window.removeEventListener('keydown', handleUserActivity);
-        window.removeEventListener('scroll', handleUserActivity);
+        window.removeEventListener('click', handleActivity);
+        window.removeEventListener('keydown', handleActivity);
+        window.removeEventListener('scroll', handleActivity);
         window.removeEventListener('beforeunload', handleUnload);
+        handleUnload();
       };
     }
-  }, [currentSessionId]);
+  }, [currentUserId]);
+
+  // Return minimal interface (no data fetching)
+  return {
+    sessionId: sessionIdRef.current
+  };
+}
+
+
+/**
+ * Client-side session tracker for multi-window/tab session management
+ * Used by SessionIndicator component
+ */
+export function useSessionTracker() {
+  const [activeSessions, setActiveSessions] = useState([]);
+  const [currentSessionId, setCurrentSessionId] = useState(null);
+  const sessionIdRef = useRef(null);
+  const intervalRef = useRef(null);
+
+  // Generate unique session ID for this window/tab
+  useEffect(() => {
+    // Use sessionStorage for per-tab unique ID
+    let sessionId = sessionStorage.getItem('session_id');
+    if (!sessionId) {
+      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      sessionStorage.setItem('session_id', sessionId);
+    }
+    
+    sessionIdRef.current = sessionId;
+    setCurrentSessionId(sessionId);
+    
+    // Register this session
+    registerSession(sessionId);
+  }, []);
+
+  const registerSession = (sessionId) => {
+    const sessions = getStoredSessions();
+    const newSession = {
+      id: sessionId,
+      lastActivity: Date.now(),
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      windowName: document.title || 'Main Window',
+      isCurrentSession: true
+    };
+    
+    sessions[sessionId] = newSession;
+    localStorage.setItem('active_sessions', JSON.stringify(sessions));
+    updateActiveSessions();
+  };
+
+  const getStoredSessions = () => {
+    try {
+      const stored = localStorage.getItem('active_sessions');
+      return stored ? JSON.parse(stored) : {};
+    } catch (error) {
+      console.error('Error parsing stored sessions:', error);
+      return {};
+    }
+  };
+
+  const updateSessionActivity = () => {
+    if (sessionIdRef.current) {
+      const sessions = getStoredSessions();
+      if (sessions[sessionIdRef.current]) {
+        sessions[sessionIdRef.current].lastActivity = Date.now();
+        sessions[sessionIdRef.current].url = window.location.href;
+        localStorage.setItem('active_sessions', JSON.stringify(sessions));
+        updateActiveSessions();
+      }
+    }
+  };
+
+  const updateActiveSessions = () => {
+    const sessions = getStoredSessions();
+    const now = Date.now();
+    const thirtySecondsAgo = now - 30000;
+    
+    // Filter out expired sessions
+    const activeSessions = Object.values(sessions).filter(session => 
+      session.lastActivity > thirtySecondsAgo
+    );
+    
+    // Mark current session
+    const sessionsWithCurrent = activeSessions.map(session => ({
+      ...session,
+      isCurrentSession: session.id === sessionIdRef.current,
+      timeAgo: Math.floor((now - session.lastActivity) / 1000)
+    }));
+    
+    setActiveSessions(sessionsWithCurrent);
+    
+    // Clean up expired sessions from storage
+    const cleanedSessions = {};
+    activeSessions.forEach(session => {
+      cleanedSessions[session.id] = sessions[session.id];
+    });
+    localStorage.setItem('active_sessions', JSON.stringify(cleanedSessions));
+  };
+
+  const cleanupSession = () => {
+    if (sessionIdRef.current) {
+      const sessions = getStoredSessions();
+      delete sessions[sessionIdRef.current];
+      localStorage.setItem('active_sessions', JSON.stringify(sessions));
+    }
+  };
+
+  // Set up periodic updates and activity tracking
+  useEffect(() => {
+    // Update activity every 5 seconds
+    intervalRef.current = setInterval(() => {
+      updateSessionActivity();
+    }, 5000);
+
+    // Initial update
+    updateActiveSessions();
+
+    // Track user activity
+    const handleActivity = () => updateSessionActivity();
+    
+    window.addEventListener('click', handleActivity);
+    window.addEventListener('keydown', handleActivity);
+    window.addEventListener('scroll', handleActivity);
+    window.addEventListener('focus', updateActiveSessions);
+
+    // Listen for storage changes from other tabs
+    const handleStorageChange = (e) => {
+      if (e.key === 'active_sessions') {
+        updateActiveSessions();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    // Cleanup on page unload
+    const handleUnload = () => {
+      cleanupSession();
+    };
+    window.addEventListener('beforeunload', handleUnload);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      window.removeEventListener('click', handleActivity);
+      window.removeEventListener('keydown', handleActivity);
+      window.removeEventListener('scroll', handleActivity);
+      window.removeEventListener('focus', updateActiveSessions);
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('beforeunload', handleUnload);
+      cleanupSession();
+    };
+  }, []);
 
   return {
     activeSessions,
-    currentSessionId,
-    updateSessionActivity
+    currentSessionId
   };
 }

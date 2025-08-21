@@ -1,6 +1,7 @@
 // User-related utility functions
 
 import { USER_ROLES, ROLE_GROUPS } from '../constants/userConstants';
+import LocationService from '../services/LocationService';
 
 /**
  * Check if user has admin role
@@ -246,4 +247,31 @@ export const getUsersByRoleGroup = (users, groupName) => {
     return [];
   }
   return users.filter(user => roleGroup.includes(user.role));
+};
+
+/**
+ * Check if user's locations field includes the current location
+ * @param {Object} user - User object with locations field
+ * @param {string|number} locationId - Current location ID to check
+ * @returns {boolean} True if user's locations includes the current location
+ */
+export const userHasLocation = (user, locationId) => {
+  if (!user || !user.locations || !locationId) {
+    return false;
+  }
+  
+  // Convert locationId to location name using LocationService
+  const locationService = LocationService.getInstance();
+  const locationName = locationService.getLocationNameById(locationId);
+  
+  // If location name is not found, return false
+  if (!locationName || locationName === 'Unknown Location') {
+    return false;
+  }
+  
+  // Split comma-separated locations, trim whitespace, and convert to lowercase
+  const userLocations = user.locations.split(',').map(loc => loc.trim().toLowerCase());
+  
+  // Check if the location name (lowercase) is included in user's locations
+  return userLocations.includes(locationName.toLowerCase());
 };

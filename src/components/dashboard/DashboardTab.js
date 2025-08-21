@@ -85,7 +85,7 @@ export default function DashboardTab() {
       // Process the booking data
       const dataToSave = {
         ...bookingData,
-        location_id: currentLocation?.id || bookingData.location_id,
+        location: currentLocation?.id || bookingData.location,
         start_time: bookingData.start_time,
         end_time: bookingData.end_time
       };
@@ -94,13 +94,15 @@ export default function DashboardTab() {
       
       if (bookingData.id) {
         // Update existing booking using BookingService
-        await BookingService.updateBooking(dataToSave);
+        const bookingService = BookingService.getInstance();
+        await bookingService.updateBooking(dataToSave);
         console.log('Booking updated successfully');
         // Use multilingual success toast
         showSuccessToast('updated');
       } else {
         // Create new booking using BookingService
-        await BookingService.createBooking(dataToSave);
+        const bookingService = BookingService.getInstance();
+        await bookingService.createBooking(dataToSave);
         console.log('Booking created successfully');
         // Use multilingual success toast
         showSuccessToast('created');
