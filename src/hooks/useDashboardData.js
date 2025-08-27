@@ -567,7 +567,7 @@ export const useDashboardData = () => {
             newLocationName: newLocation?.name
           });
           
-          setCurrentLocation(newLocation?.id || null);
+          setCurrentLocation(newLocation || null); // Store the full location object, not just the ID
           
           // Refetch bookings and staff availability for the new location
           try {

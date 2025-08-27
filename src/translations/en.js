@@ -168,6 +168,8 @@ export default {
     showBookings: 'Show Bookings',
     showPastEvents: 'Show Past Events',
     showNonWorkingHours: 'Show Non-Working Hours',
+    showNonAvailableStaff: 'Show Non-Available Staff',
+    hideNonAvailableStaff: 'Hide Non-Available Staff',
     year: 'Year',
     date: 'Date',
     time: 'Time',

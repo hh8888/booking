@@ -15,6 +15,7 @@ const BookingCalendar = ({
   showBookings,
   showPast,
   showNonWorkingHours,
+  showNonAvailableStaff,
   businessHours,
   onDateClick,
   onEventClick,
@@ -22,11 +23,12 @@ const BookingCalendar = ({
   handleEventDidMount,
   staffData,
   staffColors,
-  services // Add services prop
+  services
 }) => {
   const { t } = useLanguage();
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [calendarRef, setCalendarRef] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [currentViewDates, setCurrentViewDates] = useState(null);
 
   // Handle window resize for responsive behavior
   useEffect(() => {
@@ -131,10 +133,22 @@ const BookingCalendar = ({
   const timeSlotLimits = getTimeSlotLimits();
 
   // Create resources for staff members
+  // Helper function to check if an event is within the current view's date range
+  const isEventInCurrentView = (event) => {
+    if (!currentViewDates || !event.start) return true;
+    
+    const eventStart = new Date(event.start);
+    const eventEnd = event.end ? new Date(event.end) : eventStart;
+    
+    // Check if event overlaps with current view date range
+    return eventStart <= currentViewDates.end && eventEnd >= currentViewDates.start;
+  };
+
+  // Get resources (staff) for the calendar
   const getResources = () => {
     const resources = [];
     
-    // Add generic column for bookings without assigned staff
+    // Add generic resource for unassigned bookings
     resources.push({
       id: 'generic',
       title: 'Unassigned',
@@ -143,7 +157,33 @@ const BookingCalendar = ({
     
     // Add staff resources
     if (staffData && staffData.length > 0) {
-      const staffResources = staffData.map(staff => ({
+      let filteredStaffData = staffData;
+      
+      // Filter out non-available staff if toggle is off
+      if (!showNonAvailableStaff) {
+        // Get all filtered events
+        const allFilteredEvents = getFilteredEvents();
+        
+        // Filter events to only those in current view
+        const currentViewEvents = allFilteredEvents.filter(isEventInCurrentView);
+        
+        // Get staff IDs that have events in the current view
+        const staffWithEvents = new Set();
+        
+        currentViewEvents.forEach(event => {
+          const staffId = event.extendedProps?.staffId || event.extendedProps?.providerId;
+          if (staffId) {
+            staffWithEvents.add(staffId.toString());
+          }
+        });
+        
+        // Only show staff that have events in the current view
+        filteredStaffData = staffData.filter(staff => 
+          staffWithEvents.has(staff.id.toString())
+        );
+      }
+      
+      const staffResources = filteredStaffData.map(staff => ({
         id: staff.id.toString(),
         title: staff.full_name,
         eventColor: staffColors[staff.id] || '#4C7F50'
@@ -264,6 +304,12 @@ const BookingCalendar = ({
           initialView={getInitialView()}
           firstDay={1}
           headerToolbar={getHeaderToolbar()}
+          titleFormat={{
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            weekday: 'long'
+          }}
           resources={getResources()}
           events={getFilteredEventsWithResources()}
           eventContent={renderEventContent}
@@ -293,6 +339,13 @@ const BookingCalendar = ({
           // Mobile-specific slot settings
           slotDuration={isMobile ? '01:00:00' : '00:30:00'}
           slotLabelInterval={isMobile ? '02:00:00' : '01:00:00'}
+          // Track current view dates
+          datesSet={(dateInfo) => {
+            setCurrentViewDates({
+              start: dateInfo.start,
+              end: dateInfo.end
+            });
+          }}
           // Enable built-in tooltips
           eventMouseEnter={(info) => {
             // FullCalendar will automatically show tooltip using the event's title property

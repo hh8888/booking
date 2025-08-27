@@ -9,7 +9,9 @@ const CalendarControls = ({
   showPast,
   setShowPast,
   showNonWorkingHours,
-  setShowNonWorkingHours
+  setShowNonWorkingHours,
+  showNonAvailableStaff,
+  setShowNonAvailableStaff
 }) => {
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
@@ -75,6 +77,16 @@ const CalendarControls = ({
             }`}
           >
             {showNonWorkingHours ? t('calendar.hideNonWorkingHours') : t('calendar.showNonWorkingHours')}
+          </button>
+          <button
+            onClick={() => setShowNonAvailableStaff(!showNonAvailableStaff)}
+            className={`px-4 py-2 text-sm rounded transition-colors ${
+              showNonAvailableStaff 
+                ? 'bg-gray-200 text-gray-800 hover:bg-gray-300' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {showNonAvailableStaff ? t('calendar.hideNonAvailableStaff') : t('calendar.showNonAvailableStaff')}
           </button>
         </div>
       </div>

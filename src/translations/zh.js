@@ -167,6 +167,8 @@ export default {
     showBookings: '显示预订',
     showPastEvents: '显示过往事件',
     showNonWorkingHours: '显示非工作时间',
+    showNonAvailableStaff: '显示不可用员工',
+    hideNonAvailableStaff: '隐藏不可用员工',
     year: '年',
     date: '日期',
     time: '时间',
@@ -243,9 +245,9 @@ export default {
     providerTBD: '服务提供者待定',
     createNewBooking: '创建新预约',
     cancelSelected: '删除选中',
-    statusFilter: '状态筛选',
-    timeFilter: '时间筛选',
-    userFilter: '用户筛选',
+    statusFilter: '状态',
+    timeFilter: '时间',
+    userFilter: '用户',
     allStatuses: '所有状态',
     pending: '待确认',
     confirmed: '已确认',
@@ -273,7 +275,7 @@ export default {
     noBookingsYet: '暂无预约',
     startByCreating: '开始创建您的第一个预约',
     provider: '服务提供者',
-    providerFilter: '服务提供者筛选',
+    providerFilter: '服务提供者',
     allProviders: '所有服务提供者',
     minutes: '分钟',
     editBookingTitle: '编辑预约',
@@ -288,7 +290,7 @@ export default {
     customerNotesPlaceholder: '输入备注',
     search: '搜索',
     searchPlaceholder: '按客户、服务或备注搜索...',
-    locationFilter: '位置筛选',
+    locationFilter: '位置',
     allLocations: '所有位置'
   },
 
@@ -299,7 +301,7 @@ export default {
     addNewUser: '添加新用户',
     addNewCustomer: '添加新客户',
     deleteSelected: '删除选中',
-    filterByRole: '按角色筛选：',
+    filterByRole: '角色：',
     allUsers: '所有用户',
     admin: '管理员',
     staff: '员工',
@@ -333,7 +335,7 @@ export default {
     title: '服务管理',
     manageServices: '管理服务',
     addNewService: '添加新服务',
-    filterByStaff: '按员工筛选：',
+    filterByStaff: '员工：',
     allStaff: '所有员工',
     unassigned: '未分配',
     newService: '新建服务',
@@ -810,8 +812,7 @@ export default {
       resendIn: '{time} 后重新发送',
       sending: '发送中...',
       resendCode: '重新发送验证码',
-      sendingOtp: '发送验证码中...',
-      sendOtpTo: '发送验证码到 {action}'
+      sendingOtpTo: '发送验证码到 {action}'
     }
   }
 };

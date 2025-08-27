@@ -25,6 +25,7 @@ export default function DashboardTab() {
   const [showBookings, setShowBookings] = useState(true);
   const [showNonWorkingHours, setShowNonWorkingHours] = useState(false);
   const [showPast, setShowPast] = useState(true);
+  const [showNonAvailableStaff, setShowNonAvailableStaff] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEditPopup, setShowEditPopup] = useState(false);
@@ -404,6 +405,8 @@ export default function DashboardTab() {
             setShowPast={setShowPast}
             showNonWorkingHours={showNonWorkingHours}
             setShowNonWorkingHours={setShowNonWorkingHours}
+            showNonAvailableStaff={showNonAvailableStaff}
+            setShowNonAvailableStaff={setShowNonAvailableStaff}
           />
         </div>
         
@@ -416,6 +419,7 @@ export default function DashboardTab() {
           showBookings={showBookings}
           showPast={showPast}
           showNonWorkingHours={showNonWorkingHours}
+          showNonAvailableStaff={showNonAvailableStaff}
           businessHours={businessHours}
           onDateClick={handleDateClick}
           onEventClick={handleEventClick}
