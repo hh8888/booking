@@ -78,7 +78,31 @@
 }
 
 .compact-mode .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3 .bg-white {
-  padding: 0.75rem !important;
+  padding: 0.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  min-height: auto !important;
+}
+
+.compact-mode .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3 h3 {
+  font-size: 0.875rem !important;
+  margin-bottom: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+.compact-mode .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3 .text-3xl {
+  font-size: 1.25rem !important;
+  line-height: 1 !important;
+  margin: 0 0.5rem !important;
+  flex-shrink: 0 !important;
+}
+
+.compact-mode .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3 .text-sm {
+  font-size: 0.75rem !important;
+  margin-top: 0 !important;
+  text-align: right !important;
+  flex-shrink: 0 !important;
 }
 
 .compact-mode .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3 h3 {
