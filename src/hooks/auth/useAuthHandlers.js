@@ -73,16 +73,22 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
     authState.setIsLoading(true);
     
     try {
+      const isFakeEmailAddress = isFakeEmail(authState.email);
+      
       const { data, error: signUpError } = await supabase.auth.signUp({ 
         email: authState.email, 
         password: authState.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth`
+          emailRedirectTo: isFakeEmailAddress ? undefined : `${window.location.origin}/auth`,
+          // Skip email confirmation for fake emails
+          data: {
+            skip_confirmation: isFakeEmailAddress
+          }
         }
       });
       
       if (signUpError) throw signUpError;
-
+  
       const { error: userError } = await supabase
         .from(TABLES.USERS)
         .insert([{
@@ -94,15 +100,22 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
           gender: authState.gender || null,
           phone_number: authState.mobile || null,
           role: USER_ROLES.CUSTOMER,
-          email_verified: false,
+          email_verified: isFakeEmailAddress, // Mark fake emails as verified
         }]);
-
+  
       if (userError) throw userError;
       
-      authState.setConfirmationMessage('Please check your email for the confirmation link.');
+      // Show different messages based on email type
+      if (isFakeEmailAddress) {
+        authState.setConfirmationMessage('Account created successfully! You can now sign in.');
+        toast.success('Registration successful! Account ready to use.');
+      } else {
+        authState.setConfirmationMessage('Please check your email for the confirmation link.');
+        toast.success('Registration successful!');
+      }
+      
       authState.setIsSignUp(false);
       authState.clearForm();
-      toast.success('Registration successful!');
       
     } catch (err) {
       // Handle duplicate email errors with user-friendly message
