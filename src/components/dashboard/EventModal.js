@@ -61,7 +61,7 @@ const EventModal = ({ selectedEvent, onClose, onEdit, onConfirm, bookings }) => 
                 <span className="ml-2 text-gray-900">{extendedProps?.customerEmail || 'Not provided'}</span>
               </div>
               <div>
-                <span className="font-medium text-gray-700">Customer Mobile:</span>
+                <span className="font-medium text-gray-700">Customer Phone:</span>
                 <span className="ml-2 text-gray-900">{extendedProps?.customerPhone || 'Not provided'}</span>
               </div>
               <div>

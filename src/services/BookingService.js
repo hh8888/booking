@@ -62,6 +62,7 @@ class BookingService {
         ...booking,
         service_name: service?.name || '',
         customer_name: customer?.full_name || '',
+        customer_phone: customer?.phone_number || '',
         provider_name: provider?.full_name || '',
         booking_time_formatted: localStartTime,
         created_at_formatted: localCreatedAt,

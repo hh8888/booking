@@ -139,7 +139,7 @@ export const useDashboardData = () => {
   const fetchCustomers = useCallback(async () => {
     try {
       const dbService = DatabaseService.getInstance();
-      const data = await dbService.fetchSpecificColumns(TABLES.USERS, 'id, full_name', { role: 'customer' });
+      const data = await dbService.fetchSpecificColumns(TABLES.USERS, 'id, full_name,email,phone_number', { role: 'customer' });
       setCustomers(data);
       return data;
     } catch (error) {
@@ -513,8 +513,8 @@ export const useDashboardData = () => {
         setLoading(true);
         
         const locationService = LocationService.getInstance();
-        const currentLocationId = locationService.getSelectedLocationId();
-        setCurrentLocation(currentLocationId);
+        const currentLocationObj = locationService.getSelectedLocation();
+        setCurrentLocation(currentLocationObj);
         
         await fetchTableStats();
         const customersData = await fetchCustomers();
