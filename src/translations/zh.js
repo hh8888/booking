@@ -472,6 +472,8 @@ export default {
     bookingTimeSlotIntervalDesc: '预约时间选择的最小间隔',
     advanceBookingDays: '提前预约天数',
     advanceBookingDaysDesc: '允许提前预约的最大天数',
+    bookingEditTimeLimit: '预约编辑时间限制（小时）',
+    bookingEditTimeLimitDesc: '预约开始时间前不允许编辑的时间限制（小时）',
     minutes5: '5分钟',
     minutes15: '15分钟',
     minutes30: '30分钟',
@@ -640,10 +642,10 @@ export default {
       created: '创建成功',
       bookingConfirmed: '预约确认成功',
       bookingCancelled: '预约取消成功',
+      bookingDeleted: '预约删除成功',
       passwordReset: '密码重置邮件已发送',
       profileUpdated: '资料更新成功',
       verificationEmailSent: '验证邮件已发送到用户',
-
       bookingCreatedCustomer: '您的预约已成功创建！',
       bookingCancelledCustomer: 'Y您的预约已被取消！',
       bookingCompleted: '预约已成功完成！',
@@ -660,7 +662,9 @@ export default {
       signOutError: '退出登录时出错',
       unexpectedSignOutError: '退出登录时发生意外错误',
       pleaseLogin: '请登录以访问您的仪表板',
-      duplicateEmail: '该邮箱地址已被注册，请使用其他邮箱地址。'
+      duplicateEmail: '该邮箱地址已被注册，请使用其他邮箱地址。',
+      bookingEditTimeLimit: '此预约无法编辑，因为距离预约时间不足{{hours}}小时。',
+      bookingEditTimeLimitPassed: '编辑此预约的时间限制已过。'
     },
     confirm: {
       delete: '确定要删除此项目吗？',

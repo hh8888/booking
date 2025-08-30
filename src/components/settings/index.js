@@ -6,6 +6,7 @@ import SystemSettings from './SystemSettings';
 import CustomerDashboardSettings from './CustomerDashboardSettings';
 import WorkingHoursSettings from './WorkingHoursSettings';
 import EmailTestSettings from './EmailTestSettings';
+import SmsTestSettings from './SmsTestSettings';
 import { SettingGroup } from './SettingGroup';
 
 export {
@@ -17,5 +18,6 @@ export {
   CustomerDashboardSettings,
   WorkingHoursSettings,
   EmailTestSettings,
+  SmsTestSettings,
   SettingGroup
 };

@@ -234,8 +234,9 @@ export default function DashboardTab() {
         const currentBooking = bookings.find(booking => booking.id === info.event.id);
         const currentStatus = currentBooking?.status || extendedProps.status || BOOKING_STATUS.PENDING;
         const currentNotes = currentBooking?.notes || extendedProps.notes || '';
+        const customerPhone = currentBooking?.customer_phone || extendedProps.customerPhone || '';
         
-        tooltipContent = `Service: ${extendedProps.serviceName || 'Unknown'}<br>Customer: ${extendedProps.customerName || 'Unknown'}<br>Staff: ${extendedProps.staffName || 'Unknown'}<br>Time: ${new Date(info.event.start).toLocaleString()} - ${new Date(info.event.end).toLocaleString()}<br>Location: ${extendedProps.locationName || 'Unknown'}<br>Status: ${currentStatus}${currentNotes ? '<br>Notes: ' + currentNotes : ''}`;
+        tooltipContent = `Service: ${extendedProps.serviceName || 'Unknown'}<br>Customer: ${extendedProps.customerName || 'Unknown'}${customerPhone ? '<br>Phone: ' + customerPhone : ''}<br>Staff: ${extendedProps.staffName || 'Unknown'}<br>Time: ${new Date(info.event.start).toLocaleString()} - ${new Date(info.event.end).toLocaleString()}<br>Location: ${extendedProps.locationName || 'Unknown'}<br>Status: ${currentStatus}${currentNotes ? '<br>Notes: ' + currentNotes : ''}`;
       }
       
       // Create tooltip element

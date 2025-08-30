@@ -157,3 +157,54 @@ export const validateBookingTime = (startTime, endTime) => {
     message: ''
   };
 };
+
+/**
+ * Check if a booking can be edited based on the time limit setting
+ * @param {Object} booking - The booking object
+ * @param {number} timeLimitHours - Time limit in hours before booking start time
+ * @returns {boolean} True if booking can be edited
+ */
+export const canEditBookingWithTimeLimit = (booking, timeLimitHours = 0) => {
+  if (!booking || !booking.start_time) {
+    return false;
+  }
+
+  const now = new Date();
+  const startTime = new Date(booking.start_time);
+  const timeLimitMs = timeLimitHours * 60 * 60 * 1000; // Convert hours to milliseconds
+  const cutoffTime = new Date(startTime.getTime() - timeLimitMs);
+
+  // Can edit if current time is before the cutoff time
+  return now < cutoffTime;
+};
+
+/**
+ * Get the time remaining until booking edit cutoff
+ * @param {Object} booking - The booking object
+ * @param {number} timeLimitHours - Time limit in hours before booking start time
+ * @returns {Object} Object with hours and minutes remaining, or null if past cutoff
+ */
+export const getTimeUntilEditCutoff = (booking, timeLimitHours = 0) => {
+  if (!booking || !booking.start_time) {
+    return null;
+  }
+
+  const now = new Date();
+  const startTime = new Date(booking.start_time);
+  const timeLimitMs = timeLimitHours * 60 * 60 * 1000;
+  const cutoffTime = new Date(startTime.getTime() - timeLimitMs);
+  const timeRemaining = cutoffTime.getTime() - now.getTime();
+
+  if (timeRemaining <= 0) {
+    return null; // Past cutoff
+  }
+
+  const hoursRemaining = Math.floor(timeRemaining / (60 * 60 * 1000));
+  const minutesRemaining = Math.floor((timeRemaining % (60 * 60 * 1000)) / (60 * 1000));
+
+  return {
+    hours: hoursRemaining,
+    minutes: minutesRemaining,
+    totalMinutes: Math.floor(timeRemaining / (60 * 1000))
+  };
+};

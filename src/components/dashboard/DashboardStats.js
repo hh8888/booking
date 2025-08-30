@@ -15,10 +15,10 @@ const DashboardStats = ({ tableStats, currentLocation, loading }) => {
 
   return (
     <>
-      <div className="flex items-center gap-2">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('dashboard.overview')}</h2>
+      <div className="flex items-center gap-2 mb-4">
+        <h2 className="text-xl font-semibold text-gray-800">{t('dashboard.overview')}</h2>
         {currentLocation && (
-          <span className="text-lg text-gray-600 mb-4">- {currentLocation.name}</span>
+          <span className="text-lg text-gray-600">- {currentLocation.name}</span>
         )}
       </div>
       

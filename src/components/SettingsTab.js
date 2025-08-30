@@ -5,6 +5,7 @@ import { supabase } from '../supabaseClient';
 import DatabaseService from '../services/DatabaseService';
 import { USER_ROLES, BOOKING_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES, TABLES, DEFAULT_BOOKING_STEPS } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSettings } from '../contexts/SettingsContext';
 import {
   DateTimeSettings,
   UserSettings,
@@ -13,11 +14,14 @@ import {
   SystemSettings,
   CustomerDashboardSettings,
   WorkingHoursSettings,
-  EmailTestSettings
+  EmailTestSettings,
+  SmsTestSettings,
+  SettingGroup
 } from './settings';
 
 export default function SettingsTab() {
   const { t, language } = useLanguage();
+  const { refreshSettings } = useSettings();
   
   // DateTime settings
   const [dateTimeSettings, setDateTimeSettings] = useState([
@@ -140,6 +144,15 @@ export default function SettingsTab() {
       min: 1,
       max: 365,
       description: t('settings.advanceBookingDaysDesc')
+    },
+    {
+      key: 'bookingEditTimeLimit',
+      label: t('settings.bookingEditTimeLimit'),
+      value: '24',
+      type: 'number',
+      min: 1,
+      max: 168,
+      description: t('settings.bookingEditTimeLimitDesc')
     }
   ]);
 
@@ -473,6 +486,9 @@ export default function SettingsTab() {
           value: formData[setting.key] || setting.value
         }));
       });
+
+      // Refresh global settings
+      await refreshSettings();
     } catch (error) {
       console.error('Error saving booking settings:', error);
       toast.error(`${ERROR_MESSAGES.SAVE_FAILED}: ${error.message}`);
@@ -831,8 +847,7 @@ export default function SettingsTab() {
            
       {/* Email Test Settings Group */}
       <EmailTestSettings />
-
-      
+      <SmsTestSettings />
     </div>
   );
 }

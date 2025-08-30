@@ -466,6 +466,8 @@ export default {
     bookingTimeSlotIntervalDesc: 'Minimum interval for booking time selection',
     advanceBookingDays: 'Advance Booking Days',
     advanceBookingDaysDesc: 'Maximum number of days allowed for advance booking',
+    bookingEditTimeLimit: 'Booking Edit Time Limit (hours)',
+    bookingEditTimeLimitDesc: 'Time limit in hours before booking start time when editing is no longer allowed',
     minutes5: '5 minutes',
     minutes15: '15 minutes',
     minutes30: '30 minutes',
@@ -627,6 +629,7 @@ export default {
       created: 'Created successfully',
       bookingConfirmed: 'Booking confirmed successfully',
       bookingCancelled: 'Booking cancelled successfully',
+      bookingDeleted: 'Booking deleted successfully',
       passwordReset: 'Password reset email sent',
       profileUpdated: 'Profile updated successfully',
       verificationEmailSent: 'Verification email sent to user',
@@ -646,7 +649,9 @@ export default {
       signOutError: 'Error signing out',
       unexpectedSignOutError: 'An unexpected error occurred while signing out',
       pleaseLogin: 'Please log in to access your dashboard',
-      duplicateEmail: 'This email address is already registered. Please use a different email address.'
+      duplicateEmail: 'This email address is already registered. Please use a different email address.',
+      bookingEditTimeLimit: 'This booking cannot be edited as it is within {{hours}} hours of the appointment time.',
+      bookingEditTimeLimitPassed: 'The time limit for editing this booking has passed.'
     },
     confirm: {
       delete: 'Are you sure you want to delete this item?',
@@ -794,8 +799,7 @@ export default {
       resendIn: 'Resend code in {time}',
       sending: 'Sending...',
       resendCode: 'Resend Code',
-      sendingOtp: 'Sending OTP...',
-      sendOtpTo: 'Send OTP to {action}'
+      sendingOtpTo: 'Send OTP to {action}'
     }
   }
 };

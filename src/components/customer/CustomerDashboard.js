@@ -37,6 +37,7 @@ const CustomerDashboard = () => {
   const [activeView, setActiveView] = useState('profile');
   const [editingBooking, setEditingBooking] = useState(null);
   const [showBookingForm, setShowBookingForm] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState(null);
   
   // Use custom hooks for shared logic
   const { businessName } = useBusinessInfo();
@@ -252,6 +253,10 @@ const CustomerDashboard = () => {
     
     const locationService = LocationService.getInstance();
     
+    // Get initial location
+    const initialLocation = locationService.getSelectedLocation();
+    setCurrentLocation(initialLocation);
+    
     // Add listener for location changes
     const removeListener = locationService.addLocationChangeListener(async (newLocation) => {
       console.log('🌍 Location change detected:', {
@@ -260,6 +265,7 @@ const CustomerDashboard = () => {
         customerDataId: customerData?.id
       });
       
+      setCurrentLocation(newLocation);
       console.log('🌍 Calling fetchCustomerBookings due to location change...');
       fetchCustomerBookings();
     });
@@ -427,7 +433,14 @@ const CustomerDashboard = () => {
         <div className="mb-8">
           {/* Title on first row */}
           <div className="mb-4">
-            <h1 className="text-xl md:text-2xl font-bold text-gray-800">{businessName}</h1>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-800">
+              {businessName}
+              {currentLocation && (
+                <span className="ml-2 text-blue-600 font-medium text-lg md:text-xl">
+                  - {currentLocation.name}
+                </span>
+              )}
+            </h1>
           </div>
           
           {/* Location and User Info on second row */}
@@ -449,7 +462,13 @@ const CustomerDashboard = () => {
           
           {/* Welcome message */}
           <div className="mb-4">
-            <p className="text-gray-600">{t('customer.welcomeMessage', { name: customerData.full_name && !customerData.full_name.includes('@') ? customerData.full_name : (customerData.full_name ? customerData.full_name.split('@')[0] : t('customer.welcome')) })}</p>
+            <p className="text-gray-600">
+              {t('customer.welcomeMessage', { 
+                name: customerData.full_name && !customerData.full_name.includes('@') 
+                  ? customerData.full_name 
+                  : (customerData.full_name ? customerData.full_name.split('@')[0] : t('customer.welcome')) 
+              })}
+            </p>
           </div>
         </div>
 
