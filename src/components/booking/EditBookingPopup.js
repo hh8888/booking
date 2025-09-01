@@ -1290,7 +1290,13 @@ export default function EditBookingPopup({
               key: "start_date",
               label: t('editBooking.dateTime'),
               type: "date",
-              required: true
+              required: true,
+              onChange: (value) => {
+                setEditItem(prev => ({
+                  ...prev,
+                  start_date: value
+                }));
+              }
             },
             { 
               inline: true,

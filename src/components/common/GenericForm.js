@@ -221,6 +221,9 @@ const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, l
             value={formData[field.key || field.name] || ''}
             onChange={(e) => {
               handleChange(e);
+              if (field.onChange) {
+                field.onChange(e.target.value);
+              }
             }}
             onBlur={(e) => {
               if (field.onChange) {
