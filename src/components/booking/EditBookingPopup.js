@@ -63,6 +63,9 @@ export default function EditBookingPopup({
   // Filter providers based on availability when checkbox is toggled
   useEffect(() => {
     const filterProviders = async () => {
+      console.log('=== Provider Filtering Debug ===');
+      console.log('All providers:', providers.map(p => ({ id: p.id, name: p.full_name, tags: p.tags })));
+      
       if (showAvailableProvidersOnly && editItem?.start_date) {
         setLoadingAvailability(true);
         try {
@@ -74,6 +77,19 @@ export default function EditBookingPopup({
           
           // Check availability for each provider
           for (const provider of providers) {
+            // Exclude providers with "non-bookable" tag
+            const hasNonBookableTag = provider.tags && provider.tags.split(',').map(tag => tag.trim()).includes('non-bookable');
+            console.log(`Provider ${provider.full_name} (${provider.id}):`, {
+              tags: provider.tags,
+              hasNonBookableTag,
+              tagsArray: provider.tags ? provider.tags.split(',').map(tag => tag.trim()) : []
+            });
+            
+            if (hasNonBookableTag) {
+              console.log(`Skipping provider ${provider.full_name} due to non-bookable tag`);
+              continue; // Skip providers with non-bookable tag
+            }
+            
             try {
               const providerAvailability = await fetchProviderAvailability(provider.id, currentLocationId, 30);
               const isAvailable = providerAvailability.some(dayData => 
@@ -89,6 +105,7 @@ export default function EditBookingPopup({
             }
           }
           
+          console.log('Available providers after filtering:', availableProviders.map(p => ({ id: p.id, name: p.full_name, tags: p.tags })));
           setFilteredProviders(availableProviders);
         } catch (error) {
           console.error('Error filtering providers:', error);
@@ -97,8 +114,19 @@ export default function EditBookingPopup({
           setLoadingAvailability(false);
         }
       } else {
-        // Show all providers when checkbox is unchecked
-        setFilteredProviders(providers);
+        // Show all providers when checkbox is unchecked, but still filter out non-bookable ones
+        const bookableProviders = providers.filter(provider => {
+          const hasNonBookableTag = provider.tags && provider.tags.split(',').map(tag => tag.trim()).includes('non-bookable');
+          console.log(`Provider ${provider.full_name} (${provider.id}) - unchecked mode:`, {
+            tags: provider.tags,
+            hasNonBookableTag,
+            tagsArray: provider.tags ? provider.tags.split(',').map(tag => tag.trim()) : [],
+            willBeIncluded: !hasNonBookableTag
+          });
+          return !hasNonBookableTag;
+        });
+        console.log('Bookable providers after filtering:', bookableProviders.map(p => ({ id: p.id, name: p.full_name, tags: p.tags })));
+        setFilteredProviders(bookableProviders);
       }
     };
     
@@ -397,7 +425,7 @@ export default function EditBookingPopup({
     const fetchProviders = async () => {
       try {
         const dbService = DatabaseService.getInstance();
-        const data = await dbService.fetchData(TABLES.USERS, 'created_at', false, { role: { in: [USER_ROLES.STAFF, USER_ROLES.MANAGER] } }, ['id', 'full_name']);
+        const data = await dbService.fetchData(TABLES.USERS, 'created_at', false, { role: { in: [USER_ROLES.STAFF, USER_ROLES.MANAGER] } }, ['id', 'full_name', 'tags']);
         setProviders(data);
         return data;
       } catch (error) {
@@ -1068,7 +1096,7 @@ export default function EditBookingPopup({
               key: "provider_id", 
               label: t('editBooking.provider'), 
               type: "select",
-              options: (showAvailableProvidersOnly ? filteredProviders : providers).map(provider => ({
+              options: filteredProviders.map(provider => ({
                 value: provider.id,
                 label: provider.full_name
               })),

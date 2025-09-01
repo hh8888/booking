@@ -603,7 +603,8 @@ export default {
     editService: 'Edit Service',
     editUser: 'Edit User',
     editItem: 'Edit Item',
-    createNewUser: 'Create New User'
+    createNewUser: 'Create New User',
+    tags: 'Tags'
   },
 
   // Forms

@@ -616,7 +616,8 @@ export default {
     editService: '编辑服务',
     editUser: '编辑用户',
     editItem: '编辑项目',
-    createNewUser: '创建新用户'
+    createNewUser: '创建新用户',
+    tags: '标签'
   },
 
   // Forms

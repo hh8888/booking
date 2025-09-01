@@ -92,7 +92,8 @@ const CreateUserPopup = ({ onClose, onUserCreated }) => {
             ] },
             { key: 'birthday', label: t('formLabels.birthday'), type: 'date' },
             { key: 'post_code', label: t('formLabels.postCode'), type: 'text' },
-            { key: 'locations', label: t('profile.bookingLocations'), type: 'textarea', placeholder: t('profile.bookingLocationsPlaceholder'), help: t('profile.bookingLocationsHelp') }
+            { key: 'locations', label: t('profile.bookingLocations'), type: 'textarea', placeholder: t('profile.bookingLocationsPlaceholder'), help: t('profile.bookingLocationsHelp') },
+            { key: 'tags', label: t('formLabels.tags'), type: 'text' }
           ]}
         />
         <div className="mt-2 text-sm text-gray-600">
