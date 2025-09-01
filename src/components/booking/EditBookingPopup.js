@@ -50,6 +50,8 @@ export default function EditBookingPopup({
   const [bookedSlots, setBookedSlots] = useState([]);
   const [allTimeSlots, setAllTimeSlots] = useState([]);
   const [showCreateUserForm, setShowCreateUserForm] = useState(false);
+  const [showAvailableProvidersOnly, setShowAvailableProvidersOnly] = useState(false);
+  const [filteredProviders, setFilteredProviders] = useState([]);
 
   // Check if current user can edit staff comments
   const canEditStaffComments = currentUser && (
@@ -57,6 +59,51 @@ export default function EditBookingPopup({
     currentUser.role === USER_ROLES.MANAGER || 
     currentUser.role === USER_ROLES.ADMIN
   );
+
+  // Filter providers based on availability when checkbox is toggled
+  useEffect(() => {
+    const filterProviders = async () => {
+      if (showAvailableProvidersOnly && editItem?.start_date) {
+        setLoadingAvailability(true);
+        try {
+          const selectedDate = new Date(editItem.start_date);
+          const dateString = selectedDate.toLocaleDateString('en-us', { month: "short", day: "numeric" });
+          const currentLocationId = editItem?.location || LocationService.getInstance().getSelectedLocationId();
+          
+          const availableProviders = [];
+          
+          // Check availability for each provider
+          for (const provider of providers) {
+            try {
+              const providerAvailability = await fetchProviderAvailability(provider.id, currentLocationId, 30);
+              const isAvailable = providerAvailability.some(dayData => 
+                dayData.date === dateString && dayData.available
+              );
+              if (isAvailable) {
+                availableProviders.push(provider);
+              }
+            } catch (error) {
+              console.error(`Error checking availability for provider ${provider.id}:`, error);
+              // Include provider if we can't check availability (conservative approach)
+              availableProviders.push(provider);
+            }
+          }
+          
+          setFilteredProviders(availableProviders);
+        } catch (error) {
+          console.error('Error filtering providers:', error);
+          setFilteredProviders(providers); // Fallback to all providers
+        } finally {
+          setLoadingAvailability(false);
+        }
+      } else {
+        // Show all providers when checkbox is unchecked
+        setFilteredProviders(providers);
+      }
+    };
+    
+    filterProviders();
+  }, [showAvailableProvidersOnly, providers, editItem?.start_date, editItem?.location]);
 
   // Initialize time options only once
   useEffect(() => {
@@ -1021,12 +1068,25 @@ export default function EditBookingPopup({
               key: "provider_id", 
               label: t('editBooking.provider'), 
               type: "select",
-              options: providers.map(provider => ({
+              options: (showAvailableProvidersOnly ? filteredProviders : providers).map(provider => ({
                 value: provider.id,
                 label: provider.full_name
               })),
               required: true,
               placeholder: t('editBooking.selectProvider'),
+              afterField: (
+                <div className="mt-2">
+                  <label className="flex items-center text-sm text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={showAvailableProvidersOnly}
+                      onChange={(e) => setShowAvailableProvidersOnly(e.target.checked)}
+                      className="mr-2"
+                    />
+                    {t('editBooking.showAvailableProvidersOnly')}
+                  </label>
+                </div>
+              ),
               onChange: async (value) => {
                 console.log('Provider selected:', value);
                 if (value) {

@@ -534,7 +534,8 @@ export default {
     thu: 'Thu',
     fri: 'Fri',
     sat: 'Sat',
-    sun: 'Sun'
+    sun: 'Sun',
+    showAvailableProvidersOnly: 'Show available providers only'
   },
 
   timeSlots: {

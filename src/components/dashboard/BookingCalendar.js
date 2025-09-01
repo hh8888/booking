@@ -215,7 +215,7 @@ const BookingCalendar = ({
       const service = services?.find(s => s.id === serviceId);
       
       let resourceId;
-      if (!service?.staff_id || service.staff_id === null) {
+      if (!service?.staff_ids || !Array.isArray(service.staff_ids) || service.staff_ids.length === 0) {
         // Service has no assigned staff - put in generic column
         resourceId = 'generic';
       } else if (staffId) {

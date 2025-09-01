@@ -3,8 +3,8 @@ import DatabaseService from '../services/DatabaseService';
 import { TABLES } from '../constants';
 import LocationService from '../services/LocationService';
 import StaffAvailabilityService from '../services/StaffAvailabilityService';
+import ServiceStaffService from '../services/ServiceStaffService';
 import { toast } from 'react-toastify';
-// Add this import
 import { supabase } from '../supabaseClient';
 import { handleBookingRealtimeToast } from '../utils/realtimeBookingToastUtils';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -125,8 +125,8 @@ export const useDashboardData = () => {
 
   const fetchServices = useCallback(async () => {
     try {
-      const dbService = DatabaseService.getInstance();
-      const data = await dbService.fetchData(TABLES.SERVICES);
+      const serviceStaffService = ServiceStaffService.getInstance();
+      const data = await serviceStaffService.getAllServicesWithStaff();
       setServices(data);
       return data;
     } catch (error) {

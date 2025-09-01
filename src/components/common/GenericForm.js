@@ -420,6 +420,11 @@ const GenericForm = ({ data, fields, onSave, onCancel, title, loading = false, l
                   {field.required && <span className="text-red-500 ml-1">*</span>}
                 </label>
                 {renderField(field)}
+                {field.afterField && (
+                  <div className="mt-2">
+                    {field.afterField}
+                  </div>
+                )}
               </div>
             );
           })}

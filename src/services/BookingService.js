@@ -170,7 +170,7 @@ class BookingService {
   async createBooking(bookingData) {
     console.log('Creating:',bookingData.start_time);
     await this.validateBookingTime(bookingData.start_time);
-    const newBooking = await this.dbService.createItem(TABLES.BOOKINGS, bookingData, 'Booking');
+    const newBooking = await this.dbService.createItem(TABLES.BOOKINGS, bookingData, '');
     
     // Send email notifications for the new booking
     await this.triggerBookingCreatedEmail(newBooking.id);

@@ -546,8 +546,9 @@ export default {
     wed: '周三',
     thu: '周四',
     fri: '周五',
-    sat: '周六',
-    sun: '周日'
+    sat: '周六', 
+    sun: '周日',
+    showAvailableProvidersOnly: '仅显示可用服务提供者'
   },
 
   timeSlots: {
