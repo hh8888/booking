@@ -631,6 +631,7 @@ export default {
       created: 'Created successfully',
       bookingConfirmed: 'Booking confirmed successfully',
       bookingCancelled: 'Booking cancelled successfully',
+      bookingUpdated: 'Booking updated successfully',
       bookingDeleted: 'Booking deleted successfully',
       passwordReset: 'Password reset email sent',
       profileUpdated: 'Profile updated successfully',

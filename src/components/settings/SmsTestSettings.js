@@ -27,9 +27,9 @@ export default function SmsTestSettings() {
           .from(TABLES.BOOKINGS)
           .select(`
             id,
-            customer:customer_id(full_name, phone),
+            customer:customer_id(full_name, phone_number),
             service:service_id(name),
-            provider:provider_id(full_name, phone)
+            provider:provider_id(full_name, phone_number)
           `)
           .order('created_at', { ascending: false })
           .limit(50);
@@ -118,28 +118,35 @@ export default function SmsTestSettings() {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="bg-white p-6 rounded-lg shadow-md mb-6">
       <div 
-        className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"
+        className="flex justify-between items-center mb-4 cursor-pointer" 
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div>
-          <h3 className="text-lg font-medium text-gray-900">SMS Test Settings</h3>
-          <p className="text-sm text-gray-500">Send test SMS messages using Twilio service</p>
+        <div className="flex items-center">
+          <svg
+            className={`w-5 h-5 mr-2 transform transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+          <h3 className="text-lg font-semibold text-gray-800">SMS Test</h3>
         </div>
-        <svg 
-          className={`w-5 h-5 text-gray-400 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
       </div>
       
       {isExpanded && (
-        <div className="p-4 border-t border-gray-200 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <p className="text-gray-600 mb-4">Test the booking SMS notification system using Twilio service</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             {/* Booking Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">

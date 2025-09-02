@@ -644,6 +644,7 @@ export default {
       created: '创建成功',
       bookingConfirmed: '预约确认成功',
       bookingCancelled: '预约取消成功',
+      bookingUpdated: '预约更新成功',
       bookingDeleted: '预约删除成功',
       passwordReset: '密码重置邮件已发送',
       profileUpdated: '资料更新成功',
