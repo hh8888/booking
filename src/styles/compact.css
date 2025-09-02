@@ -328,3 +328,59 @@
   padding: 0.25rem 0.5rem !important;
   font-size: 0.8rem !important;
 }
+
+/* Location selector compact mode */
+.compact-mode #location-select {
+  font-size: 0.75rem !important;
+  padding: 0.25rem 0.375rem !important;
+  border-width: 1px !important;
+  min-height: 1.75rem !important;
+  height: auto !important;
+}
+
+.compact-mode label[for="location-select"] {
+  font-size: 0.75rem !important;
+  margin-right: 0.375rem !important;
+  font-weight: 600 !important;
+}
+
+.compact-mode div:has(#location-select) {
+  margin-top: 0.125rem !important;
+}
+
+/* UserDropdown compact mode */
+.compact-mode .relative button {
+  padding: 0.25rem !important;
+}
+
+.compact-mode .relative button .text-left p {
+  font-size: 0.75rem !important;
+  line-height: 1.2 !important;
+}
+
+.compact-mode .relative button .text-xs {
+  font-size: 0.625rem !important;
+}
+
+.compact-mode .relative .absolute {
+  margin-top: 0.25rem !important;
+}
+
+.compact-mode .relative .absolute .py-1 {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.compact-mode .relative .absolute button {
+  padding: 0.125rem 0.25rem !important;
+  font-size: 0.75rem !important;
+}
+
+.compact-mode .relative .absolute .border-t {
+  margin-top: 0.125rem !important;
+  margin-bottom: 0.125rem !important;
+}
+
+.compact-mode .relative .space-x-2 > * + * {
+  margin-left: 0.125rem !important;
+}

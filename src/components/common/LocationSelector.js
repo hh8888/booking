@@ -132,15 +132,15 @@ const LocationSelector = () => {
   };
 
   return (
-    <div className="mt-2">
-      <label htmlFor="location-select" className="text-base font-bold text-gray-700 mr-2">
+    <div className="mt-2 transition-all duration-300 ease-in-out">
+      <label htmlFor="location-select" className="text-base font-bold text-gray-700 mr-2 transition-all duration-300 ease-in-out">
         {t('common.location')}
       </label>
       <select
         id="location-select"
         value={selectedLocationIndex || ''} // Handle null case
         onChange={(e) => handleLocationChange(e.target.value)}
-        className="text-base border-2 border-blue-500 rounded-md shadow-sm focus:border-blue-600 focus:ring-blue-500"
+        className="text-base border-2 border-blue-500 rounded-md shadow-sm focus:border-blue-600 focus:ring-blue-500 transition-all duration-300 ease-in-out"
       >
         {locations.map((location) => (
           <option key={location.id} value={location.id}>

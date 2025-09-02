@@ -75,15 +75,15 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId, onProfileU
 
   return (
     <>
-      <div className="relative" ref={dropdownRef}>
+      <div className="relative transition-all duration-300 ease-in-out" ref={dropdownRef}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg p-2 transition-colors duration-200"
+          className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg p-2 transition-all duration-300 ease-in-out"
         >
-          <UserCircleIcon className="h-8 w-8 text-gray-600" />
-          <div className="text-left">
-            <p className="text-sm font-medium">{displayName}</p>
-            <p className="text-xs text-gray-500 capitalize">({(() => {
+          <UserCircleIcon className="h-8 w-8 text-gray-600 transition-all duration-300 ease-in-out" />
+          <div className="text-left transition-all duration-300 ease-in-out">
+            <p className="text-sm font-medium transition-all duration-300 ease-in-out">{displayName}</p>
+            <p className="text-xs text-gray-500 capitalize transition-all duration-300 ease-in-out">({(() => {
               try {
                 // Add check to ensure userRole exists and is not empty
                 if (!userRole || userRole.trim() === '') {
@@ -103,12 +103,12 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId, onProfileU
               }
             })()})</p>
           </div>
-          <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+          <ChevronDownIcon className={`h-4 w-4 transition-all duration-300 ease-in-out ${isOpen ? 'rotate-180' : ''}`} />
         </button>
 
         {isOpen && (
-          <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-            <div className="py-1">
+          <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 transition-all duration-300 ease-in-out">
+            <div className="py-1 transition-all duration-300 ease-in-out">
               {/* Compact Mode Toggle */}
               <button
                 onClick={toggleCompactMode}
