@@ -171,7 +171,7 @@ export default function DashboardTab() {
       const shouldAllowFullText = eventDuration >= 30; // 30 minutes or longer
       
       const formattedTitle = shouldAllowFullText ? 
-        `${customerName} - ${staffName} - ${serviceName}` :
+        `${staffName} - ${customerName} - ${serviceName}` :
         `${truncateText(customerName, 15)} - ${truncateText(staffName, 10)} - ${truncateText(serviceName, 20)}`;
       
       return {
@@ -235,8 +235,8 @@ export default function DashboardTab() {
         const currentStatus = currentBooking?.status || extendedProps.status || BOOKING_STATUS.PENDING;
         const currentNotes = currentBooking?.notes || extendedProps.notes || '';
         const customerPhone = currentBooking?.customer_phone || extendedProps.customerPhone || '';
-        
-        tooltipContent = `Service: ${extendedProps.serviceName || 'Unknown'}<br>Customer: ${extendedProps.customerName || 'Unknown'}${customerPhone ? '<br>Phone: ' + customerPhone : ''}<br>Staff: ${extendedProps.staffName || 'Unknown'}<br>Time: ${new Date(info.event.start).toLocaleString()} - ${new Date(info.event.end).toLocaleString()}<br>Location: ${extendedProps.locationName || 'Unknown'}<br>Status: ${currentStatus}${currentNotes ? '<br>Notes: ' + currentNotes : ''}`;
+        //hover info on booking event
+        tooltipContent = `Service: ${extendedProps.serviceName || 'Unknown'}<br>Customer: ${extendedProps.customerName || 'Unknown'}${customerPhone ? '<br>Phone: ' + customerPhone : ''}<br>Time: ${new Date(info.event.start).toLocaleString()} - ${new Date(info.event.end).toLocaleString()}<br>Location: ${extendedProps.locationName || 'Unknown'}<br>Status: ${currentStatus}${currentNotes ? '<br>Notes: ' + currentNotes : ''}<br>Staff: ${extendedProps.staffName || 'Unknown'}`;
       }
       
       // Create tooltip element

@@ -426,8 +426,16 @@ export default function EditBookingPopup({
       try {
         const dbService = DatabaseService.getInstance();
         const data = await dbService.fetchData(TABLES.USERS, 'created_at', false, { role: { in: [USER_ROLES.STAFF, USER_ROLES.MANAGER] } }, ['id', 'full_name', 'tags']);
-        setProviders(data);
-        return data;
+        
+        // Sort providers alphabetically by first name
+        const sortedData = data.sort((a, b) => {
+          const firstNameA = a.full_name.split(' ')[0].toLowerCase();
+          const firstNameB = b.full_name.split(' ')[0].toLowerCase();
+          return firstNameA.localeCompare(firstNameB);
+        });
+        
+        setProviders(sortedData);
+        return sortedData;
       } catch (error) {
         console.error('Error fetching providers:', error);
         return [];
