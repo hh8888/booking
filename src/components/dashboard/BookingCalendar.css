@@ -65,6 +65,9 @@
   line-height: 1.2 !important;
   cursor: pointer;
   touch-action: manipulation;
+  margin-bottom: 1px !important;
+  min-height: 18px !important;
+  overflow: hidden !important;
 }
 
 .mobile-calendar .fc-event:hover {
@@ -113,6 +116,38 @@
   white-space: nowrap;
 }
 
+/* Mobile event overlap handling */
+.mobile-calendar .fc-event-main {
+  padding: 0.125rem !important;
+}
+
+.mobile-calendar .fc-timegrid-event {
+  margin-right: 1px !important;
+}
+
+.mobile-calendar .fc-timegrid-event.fc-event-mirror {
+  opacity: 0.8 !important;
+}
+
+/* List-item display mode for mobile */
+.mobile-calendar .fc-event.fc-event-list-item {
+  display: block !important;
+  width: calc(100% - 2px) !important;
+  margin-bottom: 2px !important;
+  margin-right: 2px !important;
+  border-radius: 0.25rem !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Improve stacked events visibility */
+.mobile-calendar .fc-timegrid-col-events {
+  margin-right: 2px !important;
+}
+
+.mobile-calendar .fc-timegrid-event-harness {
+  margin-right: 1px !important;
+}
+
 /* Extra small screens (phones in portrait) */
 @media (max-width: 640px) {
   .mobile-calendar .fc-header-toolbar h2 {
@@ -137,6 +172,14 @@
   .mobile-calendar .fc-event {
     font-size: 0.625rem !important;
     padding: 0.0625rem 0.125rem !important;
+    margin-bottom: 1px !important;
+    min-height: 18px !important;
+    margin-right: 1px !important;
+  }
+  
+  .mobile-calendar .fc-timegrid-event {
+    margin-right: 1px !important;
+    margin-bottom: 1px !important;
   }
   
   .mobile-calendar .fc-resource-area th,

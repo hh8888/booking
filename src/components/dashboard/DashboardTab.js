@@ -15,6 +15,7 @@ import BookingService from '../../services/BookingService';
 import { BOOKING_STATUS, USER_ROLES, TABLES, SUCCESS_MESSAGES, ERROR_MESSAGES } from '../../constants';
 import '../../styles/calendar.css';
 import ToastHistory from './ToastHistory';
+import DateTimeFormatter from '../../utils/DateTimeFormatter';
 
 export default function DashboardTab() {
   const { t } = useLanguage();
@@ -213,6 +214,8 @@ export default function DashboardTab() {
       info.el.removeEventListener('mouseleave', hideTooltip);
       info.el.removeEventListener('mousemove', updateTooltipPosition);
     };
+
+    const F = DateTimeFormatter.getInstance().formatTime.bind(DateTimeFormatter.getInstance());
   
     const showTooltip = (e) => {
       // Clear any pending hide timeout
@@ -236,7 +239,7 @@ export default function DashboardTab() {
         const currentNotes = currentBooking?.notes || extendedProps.notes || '';
         const customerPhone = currentBooking?.customer_phone || extendedProps.customerPhone || '';
         //hover info on booking event
-        tooltipContent = `Service: ${extendedProps.serviceName || 'Unknown'}<br>Customer: ${extendedProps.customerName || 'Unknown'}${customerPhone ? '<br>Phone: ' + customerPhone : ''}<br>Time: ${new Date(info.event.start).toLocaleString()} - ${new Date(info.event.end).toLocaleString()}<br>Location: ${extendedProps.locationName || 'Unknown'}<br>Status: ${currentStatus}${currentNotes ? '<br>Notes: ' + currentNotes : ''}<br>Staff: ${extendedProps.staffName || 'Unknown'}`;
+        tooltipContent = `Service: ${extendedProps.serviceName || 'Unknown'}<br>Customer: ${extendedProps.customerName || 'Unknown'}${customerPhone ? '<br>Phone: ' + customerPhone : ''}<br>Time: ${F(info.event.start)} - ${F(info.event.end)}<br>Location: ${extendedProps.locationName || 'Unknown'}<br>Status: ${currentStatus}${currentNotes ? '<br>Notes: ' + currentNotes : ''}<br>Staff: ${extendedProps.staffName || 'Unknown'}`;
       }
       
       // Create tooltip element

@@ -40,6 +40,7 @@ class DateTimeFormatter {
   }
 
   formatDateTime(dateTimeString) {
+    if(dateTimeString===undefined) return '';
     // Convert GMT time to local time for display
     const localDate = new Date(dateTimeString);
     if (isNaN(localDate.getTime())) return 'Invalid Date';
@@ -69,6 +70,13 @@ class DateTimeFormatter {
     }
 
     return result;
+  }
+
+  formatTime(dateTimeString) {
+    let dt = this.formatDateTime(dateTimeString);
+    let dts = dt.split(' ');
+    dts.shift();
+    return dts.join(' ');
   }
 
   formatDate(dateString) {

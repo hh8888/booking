@@ -328,10 +328,10 @@ const BookingCalendar = ({
           aspectRatio={isMobile ? 0.6 : 1.35}
           handleWindowResize={true}
           // Improve event display
-          eventDisplay="block"
+          eventDisplay={isMobile ? "list-item" : "block"}
           eventOverlap={false}
           slotEventOverlap={false}
-          eventMaxStack={isMobile ? 1 : 3}
+          eventMaxStack={isMobile ? 3 : 3}
           // Touch-friendly interactions
           longPressDelay={isMobile ? 200 : 1000}
           eventLongPressDelay={isMobile ? 200 : 1000}
