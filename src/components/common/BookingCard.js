@@ -43,18 +43,20 @@ const BookingCard = ({
   
   return (
     <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition duration-200">
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
         <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
             <h3 className="font-semibold text-gray-900">{booking.service_name}</h3>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getBookingStatusClass(booking.status)}`}>
-              {booking.status}
-            </span>
-            {showUpcomingBadge && isUpcoming && (
-              <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {t('bookings.upcoming')}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getBookingStatusClass(booking.status)}`}>
+                {booking.status}
               </span>
-            )}
+              {showUpcomingBadge && isUpcoming && (
+                <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  {t('bookings.upcoming')}
+                </span>
+              )}
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
@@ -184,36 +186,36 @@ const BookingCard = ({
         </div>
         
         {showActions && !isPastBooking && (
-          <div className="flex gap-2 ml-4 w-20 justify-end">
+          <div className="flex gap-2 sm:ml-4 sm:w-auto w-full justify-start sm:justify-end">
             {canEdit ? (
               <>
                 <button 
                   onClick={() => onEdit(booking)}
-                  className="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition duration-200 flex items-center gap-1"
+                  className="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition duration-200 flex items-center gap-1 min-w-0 flex-shrink-0"
                   title={t('bookings.editBookingTitle')}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
-                  <span className="text-sm">{t('common.edit')}</span>
+                  <span className="text-sm hidden sm:inline">{t('common.edit')}</span>
                 </button>
                 
                 <button 
                   onClick={() => onCancel(booking.id)}
-                  className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition duration-200 flex items-center gap-1"
+                  className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition duration-200 flex items-center gap-1 min-w-0 flex-shrink-0"
                   title={t('bookings.cancelBookingTitle')}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                  <span className="text-sm">{t('common.cancel')}</span>
+                  <span className="text-sm hidden sm:inline">{t('common.cancel')}</span>
                 </button>
               </>
             ) : (
               <>
                 <button 
                   disabled
-                  className="text-gray-300 p-2 rounded-lg cursor-not-allowed"
+                  className="text-gray-300 p-2 rounded-lg cursor-not-allowed flex-shrink-0"
                   title={t('bookings.editNotAvailable')}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -223,7 +225,7 @@ const BookingCard = ({
                 
                 <button 
                   disabled
-                  className="text-gray-300 p-2 rounded-lg cursor-not-allowed"
+                  className="text-gray-300 p-2 rounded-lg cursor-not-allowed flex-shrink-0"
                   title={t('bookings.cancelNotAvailable')}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
