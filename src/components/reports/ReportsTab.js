@@ -34,6 +34,8 @@ export default function ReportsTab() {
   const [activeReportTab, setActiveReportTab] = useState('bookings');
   const [weeklyBookings, setWeeklyBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedStaffId, setSelectedStaffId] = useState('all');
+  const [staffOptions, setStaffOptions] = useState([]);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]); // Start date
   const [endDate, setEndDate] = useState(() => {
     const date = new Date();
@@ -43,7 +45,7 @@ export default function ReportsTab() {
 
   useEffect(() => {
     fetchWeeklyBookings();
-  }, [startDate, endDate]); // Refetch data when date range changes
+  }, [startDate, endDate, selectedStaffId]); // Refetch data when date range or staff selection changes
 
   const fetchWeeklyBookings = async () => {
     try {
@@ -55,37 +57,96 @@ export default function ReportsTab() {
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999);
 
-      // Get booking data from database for specified date range
-      const bookings = await dbService.fetchData(
-        TABLES.BOOKINGS,
-        'start_time',
-        false,
-        {
-          start_time: {
-            gte: start.toISOString(),
-            lte: end.toISOString()
+      // Get booking data with related services and staff information
+      const [bookings, services, staff] = await Promise.all([
+        dbService.fetchData(
+          TABLES.BOOKINGS,
+          'start_time',
+          false,
+          {
+            start_time: {
+              gte: start.toISOString(),
+              lte: end.toISOString()
+            }
           }
-        }
-      );
+        ),
+        dbService.fetchData(TABLES.SERVICES),
+        dbService.fetchData(TABLES.USERS, 'full_name', false, { role: { in: ['staff', 'manager'] } })
+      ]);
 
-      // Group and count bookings by date
-      const bookingsByDate = {};
+      // Set staff options for filter (sorted alphabetically)
+      const sortedStaff = staff
+        .map(s => ({ id: s.id, name: s.full_name }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      
+      setStaffOptions([
+        { id: 'all', name: 'All Staff' },
+        ...sortedStaff
+      ]);
+
+      // Create date labels
       const dateLabels = [];
-
-      // Initialize data for date range
       let currentDate = new Date(start);
       while (currentDate <= end) {
         const dateStr = currentDate.toISOString().split('T')[0];
-        bookingsByDate[dateStr] = 0;
         dateLabels.push(dateStr);
         currentDate.setDate(currentDate.getDate() + 1);
       }
 
-      // Count bookings for each day
-      bookings.forEach(booking => {
+      // Filter bookings by selected staff if not 'all'
+      let filteredBookings = bookings;
+      if (selectedStaffId !== 'all') {
+        filteredBookings = bookings.filter(booking => booking.provider_id === selectedStaffId);
+      }
+
+      // Get unique service types (booking types)
+      const serviceTypes = new Set();
+      filteredBookings.forEach(booking => {
+        const service = services.find(s => s.id === booking.service_id);
+        const serviceName = service?.name || 'Unknown Service';
+        serviceTypes.add(serviceName);
+      });
+
+      const serviceTypesList = Array.from(serviceTypes).sort();
+      
+      // Generate colors for each combination
+      const colors = [
+        'rgba(59, 130, 246, 0.8)',   // Blue
+        'rgba(34, 197, 94, 0.8)',    // Green
+        'rgba(239, 68, 68, 0.8)',    // Red
+        'rgba(245, 158, 11, 0.8)',   // Yellow
+        'rgba(139, 92, 246, 0.8)',   // Purple
+        'rgba(236, 72, 153, 0.8)',   // Pink
+        'rgba(20, 184, 166, 0.8)',   // Teal
+        'rgba(251, 146, 60, 0.8)',   // Orange
+        'rgba(156, 163, 175, 0.8)',  // Gray
+        'rgba(99, 102, 241, 0.8)'    // Indigo
+      ];
+
+      // Initialize data structure for each service type and date
+      const chartData = {};
+      serviceTypesList.forEach((serviceType, index) => {
+        chartData[serviceType] = {
+          label: serviceType,
+          data: new Array(dateLabels.length).fill(0),
+          backgroundColor: colors[index % colors.length],
+          borderColor: colors[index % colors.length].replace('0.8', '1'),
+          borderWidth: 1
+        };
+      });
+
+      // Count bookings for each service type and date
+      filteredBookings.forEach(booking => {
         const dateStr = new Date(booking.start_time).toISOString().split('T')[0];
-        if (Object.prototype.hasOwnProperty.call(bookingsByDate, dateStr)) {
-          bookingsByDate[dateStr]++;
+        const dateIndex = dateLabels.indexOf(dateStr);
+        
+        if (dateIndex !== -1) {
+          const service = services.find(s => s.id === booking.service_id);
+          const serviceName = service?.name || 'Unknown Service';
+          
+          if (chartData[serviceName]) {
+            chartData[serviceName].data[dateIndex]++;
+          }
         }
       });
 
@@ -95,7 +156,7 @@ export default function ReportsTab() {
           const weekday = new Date(date).toLocaleDateString('en-US', { weekday: 'short' });
           return `${weekday} ${month}/${day}`;
         }),
-        data: dateLabels.map(date => bookingsByDate[date])
+        datasets: Object.values(chartData)
       });
     } catch (error) {
       console.error('Error fetching bookings:', error);
@@ -109,7 +170,15 @@ export default function ReportsTab() {
     responsive: true,
     plugins: {
       legend: {
-        display: false
+        display: true,
+        position: 'top',
+        labels: {
+          boxWidth: 12,
+          padding: 15,
+          font: {
+            size: 11
+          }
+        }
       },
       title: {
         display: true,
@@ -117,15 +186,37 @@ export default function ReportsTab() {
         font: {
           size: 16
         }
+      },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        callbacks: {
+          title: function(context) {
+            return context[0].label;
+          },
+          label: function(context) {
+            const label = context.dataset.label || '';
+            const value = context.parsed.y;
+            return `${label}: ${value} booking${value !== 1 ? 's' : ''}`;
+          }
+        }
       }
     },
     scales: {
+      x: {
+        stacked: true
+      },
       y: {
+        stacked: true,
         beginAtZero: true,
         ticks: {
           stepSize: 1
         }
       }
+    },
+    interaction: {
+      mode: 'index',
+      intersect: false
     }
   };
 
@@ -168,7 +259,7 @@ export default function ReportsTab() {
       {/* Report Content */}
       {activeReportTab === 'bookings' && (
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="mb-4 flex items-center space-x-4">
+          <div className="mb-4 flex items-center space-x-4 flex-wrap">
             <div className="flex items-center">
               <label htmlFor="startDate" className="mr-2 text-gray-700">{t('reports.startDate')}</label>
               <input
@@ -191,44 +282,26 @@ export default function ReportsTab() {
                 className="border border-gray-300 rounded px-2 py-1"
               />
             </div>
+            <div className="flex items-center">
+              <label htmlFor="staffFilter" className="mr-2 text-gray-700">Staff Filter:</label>
+              <select
+                id="staffFilter"
+                value={selectedStaffId}
+                onChange={(e) => setSelectedStaffId(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1"
+              >
+                {staffOptions.map(staff => (
+                  <option key={staff.id} value={staff.id}>
+                    {staff.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <Bar
             data={{
               labels: weeklyBookings.labels,
-              datasets: [
-                {
-                  data: weeklyBookings.data,
-                  backgroundColor: weeklyBookings.labels.map(dateStr => {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const [weekday, monthDay] = dateStr.split(' ');
-                    const [month, day] = monthDay.split('/');
-                    const date = new Date(new Date().getFullYear(), parseInt(month) - 1, parseInt(day));
-                    if (date.getTime() === today.getTime()) {
-                      return 'rgba(34, 197, 94, 0.5)'; // Green for today
-                    } else if (date < today) {
-                      return 'rgba(156, 163, 175, 0.5)'; // Grey for past
-                    } else {
-                      return 'rgba(59, 130, 246, 0.5)'; // Blue for future
-                    }
-                  }),
-                  borderColor: weeklyBookings.labels.map(dateStr => {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const [weekday, monthDay] = dateStr.split(' ');
-                    const [month, day] = monthDay.split('/');
-                    const date = new Date(new Date().getFullYear(), parseInt(month) - 1, parseInt(day));
-                    if (date.getTime() === today.getTime()) {
-                      return 'rgb(34, 197, 94)'; // Green for today
-                    } else if (date < today) {
-                      return 'rgb(156, 163, 175)'; // Grey for past
-                    } else {
-                      return 'rgb(59, 130, 246)'; // Blue for future
-                    }
-                  }),
-                  borderWidth: 1
-                }
-              ]
+              datasets: weeklyBookings.datasets || []
             }}
             options={{
               ...chartOptions,
@@ -236,7 +309,7 @@ export default function ReportsTab() {
                 ...chartOptions.plugins,
                 title: {
                   ...chartOptions.plugins.title,
-                  text: `Booking Statistics ${startDate} to ${endDate}`
+                  text: `Service Booking Statistics ${startDate} to ${endDate}${selectedStaffId !== 'all' ? ` - ${staffOptions.find(s => s.id === selectedStaffId)?.name || 'Selected Staff'}` : ''}`
                 }
               }
             }}
