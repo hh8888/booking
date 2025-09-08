@@ -3,6 +3,7 @@ import { UserCircleIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { supabase } from '../../supabaseClient';
 import StaffDateAvailabilityForm from '../service/StaffDateAvailabilityForm';
 import UserProfileForm from './UserProfileForm';
+import BlockTimeSlotForm from './BlockTimeSlotForm';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useCompactMode } from '../../contexts/CompactModeContext';
@@ -14,6 +15,7 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId, onProfileU
   const [isOpen, setIsOpen] = useState(false);
   const [showAvailabilityForm, setShowAvailabilityForm] = useState(false);
   const [showProfileForm, setShowProfileForm] = useState(false);
+  const [showBlockTimeSlotForm, setShowBlockTimeSlotForm] = useState(false);
   const dropdownRef = useRef(null);
 
   // Close dropdown when clicking outside
@@ -60,6 +62,11 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId, onProfileU
 
   const handleUpdateProfile = () => {
     setShowProfileForm(true);
+    setIsOpen(false);
+  };
+
+  const handleBlockTimeSlot = () => {
+    setShowBlockTimeSlotForm(true);
     setIsOpen(false);
   };
 
@@ -132,15 +139,26 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId, onProfileU
               </button>
               
               {(userRole === USER_ROLES.STAFF || userRole === USER_ROLES.ADMIN || userRole === USER_ROLES.MANAGER) && (
-                <button
-                  onClick={handleSetAvailability}
-                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200"
-                >
-                  <svg className="mr-3 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {t('userDropdown.setAvailability')}
-                </button>
+                <>
+                  <button
+                    onClick={handleSetAvailability}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200"
+                  >
+                    <svg className="mr-3 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {t('userDropdown.setAvailability')}
+                  </button>
+                  <button
+                    onClick={handleBlockTimeSlot}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200"
+                  >
+                    <svg className="mr-3 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
+                    </svg>
+                    {t('userDropdown.blockTimeSlot')}
+                  </button>
+                </>
               )}
               <button
                 onClick={handleUpdateProfile}
@@ -189,6 +207,19 @@ const UserDropdown = ({ userEmail, userRole, userName, currentUserId, onProfileU
             <UserProfileForm
               userId={currentUserId}
               onClose={handleProfileClose}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Block Time Slot Form Modal */}
+      {showBlockTimeSlotForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <BlockTimeSlotForm
+              staffId={currentUserId}
+              userRole={userRole}
+              onClose={() => setShowBlockTimeSlotForm(false)}
             />
           </div>
         </div>

@@ -1198,6 +1198,13 @@ export default function EditBookingPopup({
               label: t('editBooking.service'), 
               type: "select",
               options: (filteredServices.length > 0 ? filteredServices : services)
+                .filter(service => {
+                  // Hide services starting with "__" from customers (when hideCustomerSelection is true)
+                  if (hideCustomerSelection && service.name.startsWith('__')) {
+                    return false;
+                  }
+                  return true;
+                })
                 .sort((a, b) => {
                   // Check if service names start with "-" or "_"
                   const aStartsWithSpecial = a.name.startsWith('-') || a.name.startsWith('_');

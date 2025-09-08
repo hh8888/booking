@@ -321,7 +321,7 @@ export const useDashboardData = () => {
             customerId: booking.customer_id,
             serviceId: service?.id,
             status: booking.status || 'pending',
-            notes: booking.notes || 'No notes',
+            notes: booking.notes || '-',
             locationId: booking.location,
             locationName: booking.location ? LocationService.getInstance().getLocationNameById(booking.location) : 'N/A'
           }

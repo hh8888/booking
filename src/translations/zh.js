@@ -121,7 +121,31 @@ export default {
     myProfile: '我的资料',
     logout: '退出登录',
     language: '语言',
-    compactMode: '紧凑模式'
+    compactMode: '紧凑模式',
+    blockTimeSlot: '屏蔽时间段',
+  },
+  blockTimeSlot: {
+    title: '屏蔽时间段',
+    blockNewSlot: '屏蔽新时间段',
+    existingBlocks: '已屏蔽的时间段',
+    selectDate: '选择日期',
+    startTime: '开始时间',
+    endTime: '结束时间',
+    reason: '原因',
+    optional: '可选',
+    reasonPlaceholder: '输入屏蔽此时间段的原因...',
+    blockSlot: '屏蔽时间段',
+    blocking: '屏蔽中...',
+    unblock: '取消屏蔽',
+    noBlockedSlots: '没有屏蔽的时间段',
+    fillAllFields: '请填写所有必填字段',
+    invalidTimeRange: '结束时间必须晚于开始时间',
+    slotBlocked: '时间段屏蔽成功',
+    slotUnblocked: '时间段取消屏蔽成功',
+    errorBlocking: '屏蔽时间段时出错',
+    errorDeleting: '删除屏蔽时间段时出错',
+    errorFetchingSlots: '加载屏蔽时间段时出错',
+    confirmDelete: '确定要删除此屏蔽时间段吗？'
   },
 
   // Language switcher
@@ -649,8 +673,9 @@ export default {
       passwordReset: '密码重置邮件已发送',
       profileUpdated: '资料更新成功',
       verificationEmailSent: '验证邮件已发送到用户',
+      bookingCreated: '您的预约已成功创建！',
       bookingCreatedCustomer: '您的预约已成功创建！',
-      bookingCancelledCustomer: 'Y您的预约已被取消！',
+      bookingCancelledCustomer: '您的预约已被取消！',
       bookingCompleted: '预约已成功完成！',
     },
     error: {
