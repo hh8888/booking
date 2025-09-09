@@ -149,9 +149,16 @@ export default function EditBookingPopup({
   }, [booking, isCreating, hourOptions.length, minuteOptions.length]); // Use .length to avoid re-running when array contents change
 
   useEffect(() => {
+    const abortController = new AbortController();
+    
     const fetchAvailableTimeSlots = async () => {
       if (editItem?.provider_id && editItem?.start_date) {
         try {
+          // Reset time slots immediately to prevent stale data
+          setAvailableTimeSlots([]);
+          setBookedSlots([]);
+          setAllTimeSlots([]);
+          
           const dbService = DatabaseService.getInstance();
           const staffAvailabilityService = StaffAvailabilityService.getInstance();
           
@@ -161,6 +168,11 @@ export default function EditBookingPopup({
           
           // Use the location from editItem instead of LocationService
           const locationId = editItem.location || LocationService.getInstance().getSelectedLocationId();
+          
+          // Check if request was aborted
+          if (abortController.signal.aborted) {
+            return;
+          }
           
           const startDate = new Date(editItem.start_date);
           startDate.setHours(0, 0, 0, 0);
@@ -333,21 +345,29 @@ export default function EditBookingPopup({
             setAllTimeSlots(allSlots);
             setAvailableTimeSlots(availableSlots);
             setBookedSlots(bookedSlots);
-          } catch (error) {
+        } catch (error) {
+          if (!abortController.signal.aborted) {
             console.error('Error fetching available time slots:', error);
-            toast.error(ERROR_MESSAGES.FAILED_FETCH_TIME_SLOTS);
+            setAvailableTimeSlots([]);
           }
-        } else {
-          console.log('Missing provider_id or start_date:', {
-            provider_id: editItem?.provider_id,
-            start_date: editItem?.start_date
-          });
-          setAvailableTimeSlots([]);
         }
-      };
-      fetchAvailableTimeSlots();
+      } else {
+        console.log('Missing provider_id or start_date:', {
+          provider_id: editItem?.provider_id,
+          start_date: editItem?.start_date
+        });
+        setAvailableTimeSlots([]);
+      }
+    };
     
-    }, [editItem?.provider_id, editItem?.start_date, editItem?.location, editItem?.duration, hourOptions.length, minuteOptions.length]); // Remove hourOptions and minuteOptions from dependencies
+    fetchAvailableTimeSlots();
+    
+    // Cleanup function to abort ongoing requests
+    return () => {
+      abortController.abort();
+    };
+    
+  }, [editItem?.provider_id, editItem?.start_date, editItem?.location, editItem?.duration, editItem?.service_id, services, hourOptions.length, minuteOptions.length]);
 
   const fetchProviderAvailability = async (providerId, locationId = null, days = 30) => {
     // 获取服务提供者未来days天的可用时间，从最近的周一开始
@@ -958,7 +978,8 @@ export default function EditBookingPopup({
     } catch (error) {
       console.error('=== EditBookingPopup handleSave ERROR ===');
       console.error('Error saving booking:', error);
-      toast.error(ERROR_MESSAGES.BOOKING_SAVE_ERROR);
+      // Show the specific error message instead of generic one
+      toast.error(error.message || ERROR_MESSAGES.BOOKING_SAVE_ERROR);
     } finally {
       setLoading(false);
     }
@@ -1156,29 +1177,13 @@ export default function EditBookingPopup({
                     console.log('Available services for provider:', availableServices.map(s => ({ id: s.id, name: s.name, staff_id: s.staff_id })));
                     setFilteredServices(availableServices);
                     
-                    // Clear service selection if current service is not available for this provider
-                    if (editItem?.service_id) {
-                      const isCurrentServiceAvailable = availableServices.some(service => service.id === editItem.service_id);
-                      if (!isCurrentServiceAvailable) {
-                        console.log('Clearing service selection - current service not available for provider');
-                        setEditItem(prev => ({
-                          ...prev,
-                          provider_id: value,
-                          service_id: null // Clear service selection
-                        }));
-                      } else {
-                        console.log('Keeping current service selection');
-                        setEditItem(prev => ({
-                          ...prev,
-                          provider_id: value
-                        }));
-                      }
-                    } else {
-                      setEditItem(prev => ({
-                        ...prev,
-                        provider_id: value
-                      }));
-                    }
+                    // Always reset service selection when provider changes
+                    console.log('Resetting service selection due to provider change');
+                    setEditItem(prev => ({
+                      ...prev,
+                      provider_id: value,
+                      service_id: '' // Always clear service selection when provider changes
+                    }));
                   } catch (error) {
                     console.error('Error fetching provider services:', error);
                     toast.error(ERROR_MESSAGES.FAILED_FETCH_SERVICES);
