@@ -180,6 +180,7 @@ blockTimeSlot: {
 
   // Calendar
   calendar: {
+    staff_day: 'Mobile',
     day: 'Day',
     week: 'Week',
     month: 'Month',

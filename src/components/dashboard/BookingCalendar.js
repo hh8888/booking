@@ -28,20 +28,29 @@ const BookingCalendar = ({
   const { t } = useLanguage();
   const [calendarRef, setCalendarRef] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [isLandscapeMobile, setIsLandscapeMobile] = useState(
+    window.innerWidth <= 768 && window.innerWidth > window.innerHeight
+  );
   const [currentViewDates, setCurrentViewDates] = useState(null);
 
   // Handle window resize for responsive behavior
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
+      const landscapeMobile = mobile && window.innerWidth > window.innerHeight;
       setIsMobile(mobile);
+      setIsLandscapeMobile(landscapeMobile);
       
-      // Update calendar view based on screen size
+      // Update calendar view based on screen size and orientation
       if (calendarRef) {
         const calendarApi = calendarRef.getApi();
-        if (mobile && calendarApi.view.type === 'timeGridWeek') {
+        
+        // Always use resource view for landscape mobile
+        if (landscapeMobile && calendarApi.view.type !== 'resourceTimeGridDay') {
+          calendarApi.changeView('resourceTimeGridDay');
+        } else if (mobile && !landscapeMobile && calendarApi.view.type === 'timeGridWeek') {
           calendarApi.changeView('timeGridDay');
-        } else if (!mobile && calendarApi.view.type === 'timeGridDay') {
+        } else if (!mobile && (calendarApi.view.type === 'timeGridDay' || calendarApi.view.type === 'resourceTimeGridDay')) {
           calendarApi.changeView('timeGridWeek');
         }
       }
@@ -252,6 +261,9 @@ const BookingCalendar = ({
 
   // Mobile-optimized view selection
   const getInitialView = () => {
+    if (isLandscapeMobile) {
+      return 'resourceTimeGridDay';
+    }
     return isMobile ? 'timeGridDay' : 'timeGridWeek';
   };
 
@@ -274,6 +286,14 @@ const BookingCalendar = ({
       {isMobile && (
         <div className="mb-4 px-2">
           <div className="flex flex-wrap gap-2 justify-center">
+            {isMobile && (
+              <button 
+                className="px-4 py-3 text-sm font-medium bg-blue-500 text-white rounded-lg hover:bg-blue-600 active:bg-blue-700 transition-colors min-h-[44px] min-w-[60px] touch-manipulation"
+                onClick={() => handleViewChange('resourceTimeGridDay')}
+              >
+                {t('calendar.staff_day') || 'Staff Day'}
+              </button>
+            )}
             <button 
               className="px-4 py-3 text-sm font-medium bg-blue-500 text-white rounded-lg hover:bg-blue-600 active:bg-blue-700 transition-colors min-h-[44px] min-w-[60px] touch-manipulation"
               onClick={() => handleViewChange('timeGridDay')}

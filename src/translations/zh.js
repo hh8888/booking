@@ -176,6 +176,7 @@ export default {
 
   // Calendar
   calendar: {
+    staff_day: '手机',
     day: '日',
     week: '周',
     month: '月',
