@@ -212,7 +212,7 @@ const BookingCalendar = ({
       const staffId = event.extendedProps?.staffId || event.extendedProps?.providerId;
       
       // Handle availability events - they should always go to their staff's column
-      if (event.classNames?.includes('availability-event')) {
+      if (event.classNames?.includes('availability-event') || event.classNames?.includes('availability-allday')) {
         return {
           ...event,
           resourceId: staffId ? staffId.toString() : 'generic'
