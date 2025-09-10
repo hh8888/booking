@@ -10,6 +10,7 @@ import { handleBookingRealtimeToast } from '../utils/realtimeBookingToastUtils';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useMultilingualToast } from '../utils/multilingualToastUtils';
 import { userHasLocation } from '../utils/userUtils';
+import DateTimeFormatter from '../utils/DateTimeFormatter';
 
 // Helper function to format time strings
 const formatTime = (timeString) => {
@@ -192,17 +193,27 @@ export const useDashboardData = () => {
   // Add staffData to state
   const [staffData, setStaffData] = useState([]);
 
-  const fetchBookingsWithStaff = useCallback(async (customersData) => {
+  const fetchBookingsWithStaff = useCallback(async (customersData, includePastBookings = false) => {
     try {
       const dbService = DatabaseService.getInstance();
       const locationService = LocationService.getInstance();
       const currentLocationId = locationService.getSelectedLocationId();
       
+      // Prepare booking filter based on includePastBookings flag
+      let bookingFilter = currentLocationId ? { location: currentLocationId } : {};
+      
+      if (!includePastBookings) {
+        // Exclude bookings before yesterday (keep today's and future bookings)
+        const filterDate = DateTimeFormatter.getYesterdayStart();
+        console.log('🔍 Past booking filter - Yesterday start:', filterDate);
+        console.log('🔍 Current date for reference:', new Date().toISOString());
+        bookingFilter.start_time = { gte: filterDate };
+        console.log('🔍 Applied booking filter:', JSON.stringify(bookingFilter, null, 2));
+      }
+
       const [bookingsData, staffDataResult, servicesData, showStaffNameSetting, fetchedCustomersData] = await Promise.all([
-        // Filter bookings by current location
-        currentLocationId 
-          ? dbService.fetchData(TABLES.BOOKINGS, 'created_at', false, { location: currentLocationId })
-          : dbService.fetchData(TABLES.BOOKINGS),
+        // Filter bookings by current location and optionally exclude past bookings
+        dbService.fetchData(TABLES.BOOKINGS, 'created_at', false, bookingFilter),
         dbService.fetchData(TABLES.USERS, 'created_at', false, { role: { in: ['staff', 'manager'] } }, ['id', 'full_name', 'locations']),
         dbService.fetchData(TABLES.SERVICES),
         dbService.getSettingsByKey('booking', 'showStaffName'),
@@ -346,14 +357,16 @@ export const useDashboardData = () => {
       const [allStaffData, availabilityData] = await Promise.all([
         // Fetch all staff and managers with locations field
         dbService.fetchData(TABLES.USERS, 'created_at', false, { role: { in: ['staff', 'manager'] } }, ['id', 'full_name', 'locations']),
-        // Filter availability data by current location AND is_available=true
+        // Filter availability data by current location AND is_available=true AND from yesterday onwards
         currentLocationId 
           ? dbService.fetchData('staff_availability', 'created_at', false, { 
               location: currentLocationId,
-              is_available: true
+              is_available: true,
+              date: { gte: DateTimeFormatter.getYesterdayStart().split('T')[0] }
             })
           : dbService.fetchData('staff_availability', 'created_at', false, {
-              is_available: true
+              is_available: true,
+              date: { gte: DateTimeFormatter.getYesterdayStart().split('T')[0] }
             })
       ]);
       
@@ -454,38 +467,31 @@ export const useDashboardData = () => {
       // Add availability events to calendar
       const validAvailabilityEvents = availabilityEvents.flat().filter(Boolean);
       
-      // INSERT DYNAMIC WIDTH CALCULATION HERE
-      // Dynamic Width Calculation - Update positioning classes based on actual staff count per date/time
-      const updatedAvailabilityEvents = validAvailabilityEvents.map(event => {
-        const eventDate = event.start.split('T')[0];
-        const eventStartTime = event.extendedProps.startTime;
-        const eventEndTime = event.extendedProps.endTime;
-        
-        // Count how many staff are available at the same time slot on the same date
-        const concurrentStaff = validAvailabilityEvents.filter(otherEvent => {
-          const otherDate = otherEvent.start.split('T')[0];
-          const otherStartTime = otherEvent.extendedProps.startTime;
-          const otherEndTime = otherEvent.extendedProps.endTime;
-          
-          return otherDate === eventDate && 
-                 otherStartTime === eventStartTime && 
-                 otherEndTime === eventEndTime;
-        });
-        
-        // Update class names based on actual concurrent staff count
-        const updatedClassNames = ['availability-event'];
-        
-        if (concurrentStaff.length === 1) {
-          // Single staff - use full width
-          updatedClassNames.push('availability-single-staff');
-        } else {
-          // Multiple staff - use original positioning
-          updatedClassNames.push(`availability-position-${event.extendedProps.positionIndex}`);
-        }
-        
+      // Create duplicate all-day availability events
+      const allDayAvailabilityEvents = validAvailabilityEvents.map(event => {
+        // Extract date from the original event (convert GMT to local timezone)
+        const eventDate = DateTimeFormatter.getLocalDateFromGMT(event.start);
+        // if(!event.extendedProps.is_available){
+        //   return null;
+        // } else
+        console.log('===event',event);
         return {
           ...event,
-          classNames: updatedClassNames
+          id: `${event.extendedProps.staffId}-allday-${eventDate}`, // Unique ID for all-day version
+          title: `${event.extendedProps.staffName} - Available (All Day)${event.extendedProps.locationName ? ` (${event.extendedProps.locationName})` : ''}`,
+          start: eventDate, // All-day event uses just the date
+          end: eventDate,
+          allDay: true, // Mark as all-day event
+          display: 'block', // Use block display instead of background
+          backgroundColor: '#e8f5e8', // Slightly different color for all-day events
+          borderColor: '#28a745',
+          color: '#155724',
+          classNames: ['availability-allday'], // Add specific class for all-day
+          extendedProps: {
+            ...event.extendedProps,
+            isAllDayAvailability: true, // Flag to identify all-day availability events
+            originalEventId: event.id // Reference to original time-based event
+          }
         };
       });
   
@@ -493,12 +499,14 @@ export const useDashboardData = () => {
         // Filter out any existing availability events for the same staff
         const bookingEvents = prevBookings.filter(event => 
           !event.classNames?.includes('availability-event') || 
-          !updatedAvailabilityEvents.some(newEvent => 
+          !validAvailabilityEvents.some(newEvent => 
             newEvent.extendedProps.staffId === event.extendedProps.staffId
           )
         );
-        const newBookings = [...bookingEvents, ...updatedAvailabilityEvents]; // Use updated events
-        console.log('Final bookings state with availability:', newBookings);
+        // Combine original time-based events with all-day duplicates
+        const newBookings = [...bookingEvents, ...validAvailabilityEvents, ...allDayAvailabilityEvents];
+        console.log('===allDayAvailabilityEvents',allDayAvailabilityEvents);
+        console.log('Final bookings state with availability (including all-day):', newBookings);
         return newBookings;
       });
     } catch (error) {

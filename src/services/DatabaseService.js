@@ -40,6 +40,11 @@ class DatabaseService {
     try {
       let query = supabase.from(table).select('*');
       
+      // Debug logging for date filters
+      if (table === 'bookings' && filters.start_time) {
+        console.log('🔍 DatabaseService - Applying date filter to bookings:', JSON.stringify(filters, null, 2));
+      }
+      
       // Add filter conditions
       Object.entries(filters).forEach(([column, value]) => {
         if (typeof value === 'object' && value !== null) {
@@ -87,9 +92,22 @@ class DatabaseService {
         query = query.order(orderBy, { ascending });
       }
       
-      const { data, error } = await query;
+      const { data, error } = await query.order(orderBy, { ascending });
       
       if (error) throw error;
+      
+      // Debug logging for bookings query results
+      if (table === 'bookings' && filters.start_time) {
+        console.log('🔍 DatabaseService - Query returned', data?.length || 0, 'bookings');
+        if (data && data.length > 0) {
+          console.log('🔍 DatabaseService - Sample results:', data.slice(0, 3).map(item => ({
+            id: item.id,
+            start_time: item.start_time,
+            created_at: item.created_at
+          })));
+        }
+      }
+      
       return data;
     } catch (error) {
       console.error(`Error fetching ${table}:`, error.message);

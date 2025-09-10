@@ -106,6 +106,35 @@ class DateTimeFormatter {
     const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
     return `${hour12} ${period}`; // Remove padStart as hour value doesn't need zero padding
   };
+
+  /**
+   * Get the start of yesterday as an ISO string
+   * @returns {string} ISO string representing the start of yesterday
+   */
+  static getYesterdayStart() {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0); // Start of yesterday
+    return yesterday.toISOString();
+  }
+
+  /**
+   * Extract local date from GMT datetime string
+   * @param {string} gmtDateTimeString - GMT datetime string
+   * @returns {string} Local date in YYYY-MM-DD format
+   */
+  static getLocalDateFromGMT(gmtDateTimeString) {
+    if (!gmtDateTimeString) return '';
+    const localDate = new Date(gmtDateTimeString);
+    if (isNaN(localDate.getTime())) return '';
+    
+    // Get local date components
+    const year = localDate.getFullYear();
+    const month = String(localDate.getMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+  }
 }
 
 export default DateTimeFormatter;

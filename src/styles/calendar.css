@@ -309,4 +309,52 @@
   transform: translateY(-50%);
   z-index: 1;
 }
+/* All-day availability event styling */
+.fc-event.availability-allday {
+  background-color: #e8f5e8 !important;
+  border-color: #28a745 !important;
+  color: #155724 !important;
+  opacity: 0.9 !important;
+  font-weight: 500 !important;
+  border-style: solid !important;
+  border-width: 1px !important;
+}
+
+/* Override white text in all-day events */
+.fc-daygrid-event.availability-allday .fc-event-title,
+.fc-daygrid-event.availability-allday .fc-event-main,
+.fc-event.availability-allday .fc-event-title,
+.fc-event.availability-allday .fc-event-main {
+  color: #155724 !important;
+}
+
+/* Ensure text visibility in all-day section */
+.fc-daygrid-day-top .availability-allday,
+.fc-daygrid-day-top .availability-allday * {
+  color: #155724 !important;
+}
+
+/* All-day availability events in day grid */
+.fc-daygrid-event.availability-allday {
+  background-color: #e8f5e8 !important;
+  border-color: #28a745 !important;
+  color: #155724 !important;
+  margin: 1px 2px !important;
+  border-radius: 3px !important;
+}
+
+/* All-day availability events hover effect */
+.fc-event.availability-allday:hover {
+  background-color: #d1f2d1 !important;
+  opacity: 1 !important;
+  cursor: pointer;
+}
+
+/* Ensure all-day availability events are properly positioned */
+.fc-daygrid-day-top .availability-allday {
+  margin: 1px !important;
+  padding: 2px 4px !important;
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+}
 
