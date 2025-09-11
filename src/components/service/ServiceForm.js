@@ -5,14 +5,17 @@ import DatabaseService from '../../services/DatabaseService';
 import { ERROR_MESSAGES } from '../../constants';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-const ServiceForm = ({ initialData, staffUsers, onClose, onSubmit }) => {
+const ServiceForm = ({ initialData, staffUsers, maxBookingNumber = 2, onClose, onSubmit }) => {
   const { t } = useLanguage();
+  
+  // Get max booking number from settings, default to 2 if not set
   const { register, formState: { errors } } = useForm();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     price: '',
     duration: '',
+    max_number: '',
     staff_ids: [],
   });
 
@@ -27,13 +30,14 @@ const ServiceForm = ({ initialData, staffUsers, onClose, onSubmit }) => {
     setFormData(prev => ({
       ...prev,
       duration: duration ? parseInt(duration) : 60,
-      price: price ? parseFloat(price) : 100
+      price: price ? parseFloat(price) : 100,
+      max_number: maxBookingNumber
     }));
   } catch (error) {
     console.error('Failed to fetch settings:', error);
     toast.error(ERROR_MESSAGES.FAILED_LOAD_DEFAULT_SETTINGS);
   }
-}, []);
+}, [maxBookingNumber]);
 
 // Only apply default values when creating new
 useEffect(() => {
@@ -52,6 +56,7 @@ useEffect(() => {
         description: initialData.description || '',
         price: initialData.price !== undefined && initialData.price !== null ? initialData.price : 0,
         duration: initialData.duration || '',
+        max_number: initialData.max_number || initialData.max || '',
         staff_ids: initialData.staff_ids && initialData.staff_ids.length > 0
           ? initialData.staff_ids
           : initialData.staff_id
@@ -91,11 +96,20 @@ useEffect(() => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Validate Max Number field
+    const maxNumberValue = parseInt(formData.max_number);
+    if (!maxNumberValue || maxNumberValue < 1 || maxNumberValue > maxBookingNumber) {
+      toast.error(t('messages.error.maxNumberValidation', { maxValue: maxBookingNumber + 1 }));
+      return;
+    }
+    
     // Ensure staff_ids is a valid array
     const staff_ids = formData.staff_ids || [];
     // Prepare submit data, maintain backward compatibility
     const submitData = {
       ...formData,
+      max_number: maxNumberValue,
       staff_ids: staff_ids,
       staff_id: staff_ids.length > 0 ? staff_ids[0] : null
     };
@@ -104,7 +118,7 @@ useEffect(() => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       <div>
         <label className="block text-sm font-medium text-gray-700">{t('formLabels.serviceName')} <span className="text-red-500">*</span></label>
         <input
@@ -150,6 +164,18 @@ useEffect(() => {
           step="1"
           min="1"
           required
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">{t('formLabels.max_number')} <span className="text-red-500">*</span></label>
+        <input
+          type="number"
+          name="max_number"
+          value={formData.max_number}
+          onChange={handleChange}
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          step="1"
         />
       </div>
 

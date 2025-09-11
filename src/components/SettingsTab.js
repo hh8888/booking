@@ -153,6 +153,15 @@ export default function SettingsTab() {
       min: 1,
       max: 168,
       description: t('settings.bookingEditTimeLimitDesc')
+    },
+    {
+      key: 'maxBookingNumber',
+      label: t('settings.maxBookingNumber'),
+      value: '10',
+      type: 'number',
+      min: 1,
+      max: 100,
+      description: t('settings.maxBookingNumberDesc')
     }
   ]);
 
@@ -452,31 +461,9 @@ export default function SettingsTab() {
     try {
       const dbService = DatabaseService.getInstance();
       
-      // Prepare data to save
-      const settingsToSave = Object.keys(formData).map(key => ({
-        category: 'booking',
-        key,
-        value: formData[key]
-      }));
-
-      // Check if settings exist, update if they do, otherwise create
-      for (const setting of settingsToSave) {
-        const { data } = await supabase
-          .from(TABLES.SETTINGS)
-          .select('*')
-          .eq('category', setting.category)
-          .eq('key', setting.key);
-
-        if (data && data.length > 0) {
-          // Update existing setting
-          await dbService.updateItem(TABLES.SETTINGS, {
-            id: data[0].id,
-            ...setting
-          }, 'Setting');
-        } else {
-          // Create new setting
-          await dbService.createItem(TABLES.SETTINGS, setting, 'Setting');
-        }
+      // Use updateSettings for each setting
+      for (const key of Object.keys(formData)) {
+        await dbService.updateSettings('booking', key, formData[key]);
       }
 
       // Update local state

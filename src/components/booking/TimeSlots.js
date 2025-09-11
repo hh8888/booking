@@ -2,7 +2,7 @@ import React from 'react';
 import DateTimeFormatter from '../../utils/DateTimeFormatter';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-export default function TimeSlots({ selectedHour, selectedMinute, onTimeSelect, bookedSlots = [], duration = 30, availableSlots = [], allSlots = [] }) {
+export default function TimeSlots({ selectedHour, selectedMinute, onTimeSelect, bookedSlots = [], duration = 30, availableSlots = [], allSlots = [], slotConflictCounts = {} }) {
   const { t } = useLanguage();
   console.log('Available Slots:', availableSlots);
   console.log('Booked Slots:', bookedSlots);
@@ -83,6 +83,8 @@ export default function TimeSlots({ selectedHour, selectedMinute, onTimeSelect, 
             const isInSelectedRange = isTimeInSelectedRange(hour, minute);
             const isBooked = bookedSlots.includes(slot);
             const isAvailable = availableSlots.includes(slot);
+            const slotInfo = slotConflictCounts[slot] || { count: 0, maxNumber: 1 };
+            const isPartiallyBooked = isAvailable && slotInfo.count > 0 && slotInfo.count < slotInfo.maxNumber;
             const formattedTime = `${hour === '00' ? '12' : (parseInt(hour) > 12 ? parseInt(hour) - 12 : hour)}:${minute}${parseInt(hour) >= 12 ? 'PM' : 'AM'}`;
             
 
@@ -121,7 +123,9 @@ export default function TimeSlots({ selectedHour, selectedMinute, onTimeSelect, 
                       ? 'bg-red-100 text-red-800 cursor-not-allowed opacity-75'
                       : wouldCauseOverlap(hour, minute)
                         ? 'bg-orange-100 text-orange-800 cursor-not-allowed opacity-75'
-                        : 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer'}
+                        : isPartiallyBooked
+                          ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 cursor-pointer'
+                          : 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer'}
                   ${!isBooked && !wouldCauseOverlap(hour, minute) ? 'hover:shadow-sm' : ''}
                 `}
                 title={

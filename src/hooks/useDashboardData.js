@@ -471,10 +471,7 @@ export const useDashboardData = () => {
       const allDayAvailabilityEvents = validAvailabilityEvents.map(event => {
         // Extract date from the original event (convert GMT to local timezone)
         const eventDate = DateTimeFormatter.getLocalDateFromGMT(event.start);
-        // if(!event.extendedProps.is_available){
-        //   return null;
-        // } else
-        console.log('===event',event);
+        
         return {
           ...event,
           id: `${event.extendedProps.staffId}-allday-${eventDate}`, // Unique ID for all-day version
@@ -505,7 +502,6 @@ export const useDashboardData = () => {
         );
         // Combine original time-based events with all-day duplicates
         const newBookings = [...bookingEvents, ...validAvailabilityEvents, ...allDayAvailabilityEvents];
-        console.log('===allDayAvailabilityEvents',allDayAvailabilityEvents);
         console.log('Final bookings state with availability (including all-day):', newBookings);
         return newBookings;
       });

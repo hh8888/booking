@@ -8,9 +8,14 @@ import ServiceStaffService from '../../services/ServiceStaffService';
 import withErrorHandling from '../common/withErrorHandling';
 import { USER_ROLES, TABLES, QUERY_FILTERS } from '../../constants';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useSettings } from '../../contexts/SettingsContext';
 
 function ServicesTab({ users, handleError }) {
   const { t } = useLanguage();
+  const { settings } = useSettings();
+  
+  // Get max booking number from settings, default to 2 if not set
+  const maxBookingNumber = parseInt(settings?.maxBookingNumber) || 2;
   const [services, setServices] = useState([]);
   const [staffUsers, setStaffUsers] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
@@ -263,6 +268,7 @@ function ServicesTab({ users, handleError }) {
             <ServiceForm
               initialData={editItem}
               staffUsers={staffUsers}
+              maxBookingNumber={maxBookingNumber}
               onClose={() => {
                 setEditItem(null);
                 setIsCreating(false);

@@ -43,6 +43,7 @@ class FormValidationService {
       description: string().required('Service description is required'),
       duration: number().required('Service duration is required').min(1, 'Service duration must be greater than 0'),
       price: number().required('Service price is required').min(0, 'Service price cannot be negative'),
+      max_number: number().required('Max number value is required').min(1, 'Max number must be a positive number').max(2, 'Max number must be smaller than 3'),
       staffIds: array().of(string()).min(1, 'Please select at least one staff member')
     }
   };
@@ -58,8 +59,15 @@ class FormValidationService {
   }
 
   // Get service form validation schema
-  getServiceValidationSchema() {
-    return object().shape(this.validationRules.service);
+  getServiceValidationSchema(maxBookingNumber = 2) {
+    const serviceRules = {
+      ...this.validationRules.service,
+      max_number: number()
+        .required('Max number value is required')
+        .min(1, 'Max number must be a positive number')
+        .max(maxBookingNumber, `Max number must be smaller than ${maxBookingNumber + 1}`)
+    };
+    return object().shape(serviceRules);
   }
 
   // 创建表单Hook
@@ -81,8 +89,8 @@ class FormValidationService {
   }
 
   // Create service form hook
-  createServiceFormHook(defaultValues = {}) {
-    return this.createFormHook(this.getServiceValidationSchema(), defaultValues);
+  createServiceFormHook(defaultValues = {}, maxBookingNumber = 2) {
+    return this.createFormHook(this.getServiceValidationSchema(maxBookingNumber), defaultValues);
   }
 
   // 自定义验证规则

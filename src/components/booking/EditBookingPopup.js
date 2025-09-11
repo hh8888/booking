@@ -49,6 +49,7 @@ export default function EditBookingPopup({
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
   const [bookedSlots, setBookedSlots] = useState([]);
   const [allTimeSlots, setAllTimeSlots] = useState([]);
+  const [slotConflictCounts, setSlotConflictCounts] = useState({});
   const [showCreateUserForm, setShowCreateUserForm] = useState(false);
   const [showAvailableProvidersOnly, setShowAvailableProvidersOnly] = useState(false);
   const [filteredProviders, setFilteredProviders] = useState([]);
@@ -235,6 +236,10 @@ export default function EditBookingPopup({
           const allSlots = [];
           const availableSlots = [];
           const bookedSlots = [];
+          const slotConflictCounts = {}; // Store conflict counts for each time slot
+          
+          // Initialize conflict counter
+          let conflictedBookingCounter = 0;
 
           // Check if we have the required data
           if (hourOptions.length === 0 || minuteOptions.length === 0) {
@@ -254,7 +259,7 @@ export default function EditBookingPopup({
                 const serviceDuration = parseInt(editItem?.duration) || 30; // Ensure correct duration
                 console.log('Using service duration (minutes):', serviceDuration);
                 const slotEndTime = new Date(slotTime.getTime() + serviceDuration * 60000);
-                console.log(`Slot ${hour}:${minute} - Start: ${slotTime.toLocaleTimeString()}, End: ${slotEndTime.toLocaleTimeString()}`);
+
               
                 // 检查时间槽是否在服务提供者的可用时间内
                 const isInAvailableHours = dayAvailability.some(slot => {
@@ -271,8 +276,9 @@ export default function EditBookingPopup({
                   return slotTime >= availStart && slotTime < availEnd;
                 });
 
-                // 检查时间槽是否被占用 - improved conflict detection
+                // 检查时间槽是否被占用 - improved conflict detection with double booking support
                 // Only check for conflicts if the service has staff_id
+                let slotConflictCount = 0;
                 const isSlotBooked = serviceHasStaff ? filteredBookings.some(booking => {
                   // Exclude cancelled bookings from blocking time slots
                   if (booking.status === BOOKING_STATUS.CANCELLED) {
@@ -291,13 +297,30 @@ export default function EditBookingPopup({
                   // Check for any overlap: slot starts before booking ends AND slot ends after booking starts
                   const hasOverlap = slotStartTime < bookingEndTime && slotEndTimeMs > bookingStartTime;
                   
-                  console.log(`Checking slot ${hour}:${minute}:`);
-                  console.log(`  Slot time: ${new Date(slotStartTime).toLocaleTimeString()} - ${new Date(slotEndTimeMs).toLocaleTimeString()}`);
-                  console.log(`  Booking time: ${new Date(bookingStartTime).toLocaleTimeString()} - ${new Date(bookingEndTime).toLocaleTimeString()}`);
-                  console.log(`  Has overlap: ${hasOverlap}`);
+                  // Count conflicts for this specific time slot
+                  if (hasOverlap) {
+                    slotConflictCount++;
+                    conflictedBookingCounter++;
+                  }
                   
-                  return hasOverlap;
+                  return false; // Don't block the slot here, we'll check max_number below
                 }) : false; // If no staff_id, never consider slots as booked
+                
+                // Check if this slot should be blocked based on max_number
+                const selectedService = services.find(service => service.id === editItem?.service_id);
+                const maxNumber = parseInt(selectedService?.max_number) || 1;
+                const isSlotFullyBooked = slotConflictCount >= maxNumber;
+                
+                // Store conflict count for this time slot
+                const timeSlotKey = `${hour}:${minute}`;
+                slotConflictCounts[timeSlotKey] = { count: slotConflictCount, maxNumber };
+                
+                // Log time slot booking information for double booking services
+                if (maxNumber > 1) {
+                  console.log(`timeslots: ${slotConflictCount} booking(s) at ${hour}:${minute} (under same provider)`);
+                }
+                
+                console.log(`Slot ${hour}:${minute} - Conflicts: ${slotConflictCount}, Max allowed: ${maxNumber}, Fully booked: ${isSlotFullyBooked}`);
 
                 if (isInAvailableHours) {
                   const timeSlot = `${hour}:${minute}`;
@@ -305,30 +328,18 @@ export default function EditBookingPopup({
                   allSlots.push(timeSlot);
                   
                   // Only check for booking conflicts if service has staff_id
-                  if (serviceHasStaff) {
-                    // Check if this slot falls within any existing booking duration
-                    const isWithinBooking = filteredBookings.some(booking => {
-                      const bookingStart = new Date(booking.start_time);
-                      const bookingEnd = new Date(booking.end_time);
-                      const slotTime = new Date(bookingStart);
-                      slotTime.setHours(parseInt(hour), parseInt(minute), 0, 0);
-                      
-                      // Check if slot time is within the booking period
-                      return slotTime >= bookingStart && slotTime < bookingEnd;
-                    });
-                    
-                    if (isWithinBooking) {
-                      bookedSlots.push(timeSlot);
-                    } else if (isSlotBooked) {
-                      // This slot would cause overlap but isn't within an existing booking
-                      // Don't add to bookedSlots - let TimeSlots.js handle it as overlap
-                    } else {
-                      availableSlots.push(timeSlot);
-                    }
+                if (serviceHasStaff) {
+                  if (isSlotFullyBooked) {
+                    // Slot has reached maximum capacity based on max_number
+                    bookedSlots.push(timeSlot);
                   } else {
-                    // For services without staff_id, all slots within available hours are available
+                    // Slot is available (either no conflicts or within max_number limit)
                     availableSlots.push(timeSlot);
                   }
+                } else {
+                  // For services without staff_id, all slots within available hours are available
+                  availableSlots.push(timeSlot);
+                }
                 }
               }
             }
@@ -341,10 +352,12 @@ export default function EditBookingPopup({
             console.log('All Slots:', allSlots);
             console.log('Available Slots:', availableSlots);
             console.log('Booked Slots:', bookedSlots);
+            console.log('Total Conflicted Bookings Counter:', conflictedBookingCounter);
             
             setAllTimeSlots(allSlots);
             setAvailableTimeSlots(availableSlots);
             setBookedSlots(bookedSlots);
+            setSlotConflictCounts(slotConflictCounts);
         } catch (error) {
           if (!abortController.signal.aborted) {
             console.error('Error fetching available time slots:', error);
@@ -809,7 +822,10 @@ export default function EditBookingPopup({
         
         console.log('Debug - filteredBookings after filter:', filteredBookings.map(b => ({ id: b.id, start_time: b.start_time, end_time: b.end_time })));
         
-        // Check for time overlap with existing bookings
+        // Check for time overlap with existing bookings and count conflicts
+        let conflictCount = 0;
+        const conflictingBookings = [];
+        
         for (const booking of filteredBookings) {
           const bookingStart = new Date(booking.start_time);
           const bookingEnd = new Date(booking.end_time);
@@ -831,9 +847,21 @@ export default function EditBookingPopup({
             }
             
             console.log('Debug - CONFLICT DETECTED with booking:', booking.id);
-            const conflictTime = DateTimeFormatter.getInstance().formatDateTime(bookingStart);
-            throw new Error(`The booking duration would conflict with an existing booking at ${conflictTime}. Please select a different time or reduce the duration.`);
+            conflictCount++;
+            conflictingBookings.push(booking);
           }
+        }
+        
+        // Check if the current service allows double booking based on max_number
+        const maxNumber = parseInt(selectedService?.max_number) || 1;
+        console.log('Debug - Service max_number:', maxNumber, 'Conflict count:', conflictCount);
+        
+        // Only throw error if conflicts exceed the allowed max_number
+        if (conflictCount >= maxNumber) {
+          const conflictTime = DateTimeFormatter.getInstance().formatDateTime(new Date(conflictingBookings[0].start_time));
+          throw new Error(`The booking duration would conflict with ${conflictCount} existing booking(s) at ${conflictTime}. This service allows a maximum of ${maxNumber} concurrent booking(s). Please select a different time or reduce the duration.`);
+        } else if (conflictCount > 0) {
+          console.log(`Debug - ${conflictCount} conflict(s) detected but within allowed limit of ${maxNumber}. Allowing double booking.`);
         }
         
         console.log('Debug - No conflicts found');
@@ -1399,6 +1427,7 @@ export default function EditBookingPopup({
                     allSlots={allTimeSlots}
                     availableSlots={availableTimeSlots}
                     bookedSlots={bookedSlots}
+                    slotConflictCounts={slotConflictCounts}
                     selectedHour={editItem?.start_time_hour}
                     selectedMinute={editItem?.start_time_minute}
                     duration={parseInt(editItem?.duration) || 60}
