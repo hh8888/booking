@@ -243,7 +243,9 @@ blockTimeSlot: {
     hideBookings: 'Hide Bookings',
     showPast: 'Show Past',
     hidePast: 'Hide Past',
-    hideNonWorkingHours: 'Hide Non-Working Hours'
+    hideNonWorkingHours: 'Hide Non-Working Hours',
+    showUnassigned: 'Show Unassigned',
+    hideUnassigned: 'Hide Unassigned'
   },
 
   // Bookings
@@ -322,7 +324,8 @@ blockTimeSlot: {
     search: 'Search',
     searchPlaceholder: 'Search by customer, service, or notes...',
     locationFilter: 'Location',
-    allLocations: 'All Locations'
+    allLocations: 'All Locations',
+    phone: 'phone'
   },
 
   // Users
@@ -691,7 +694,7 @@ blockTimeSlot: {
       unexpectedSignOutError: 'An unexpected error occurred while signing out',
       pleaseLogin: 'Please log in to access your dashboard',
       duplicateEmail: 'This email address is already registered. Please use a different email address.',
-      bookingEditTimeLimit: 'This booking cannot be edited as it is within {{hours}} hours of the appointment time.',
+      bookingEditTimeLimit: 'This booking cannot be edited as it is within {hours} hours of the appointment time.',
       bookingEditTimeLimitPassed: 'The time limit for editing this booking has passed.'
     },
     confirm: {

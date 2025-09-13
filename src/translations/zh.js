@@ -239,7 +239,9 @@ export default {
     hideBookings: '隐藏预订',
     showPast: '显示过去',
     hidePast: '隐藏过去',
-    hideNonWorkingHours: '隐藏非工作时间'
+    hideNonWorkingHours: '隐藏非工作时间',
+    showUnassigned: '显示未分配',
+    hideUnassigned: '隐藏未分配'
   },
 
   // Bookings

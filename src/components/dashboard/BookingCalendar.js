@@ -16,6 +16,7 @@ const BookingCalendar = ({
   showPast,
   showNonWorkingHours,
   showNonAvailableStaff,
+  showUnassigned,
   businessHours,
   onDateClick,
   onEventClick,
@@ -157,12 +158,14 @@ const BookingCalendar = ({
   const getResources = () => {
     const resources = [];
     
-    // Add generic resource for unassigned bookings
-    resources.push({
-      id: 'generic',
-      title: 'Unassigned',
-      eventColor: '#6B7280' // Gray color for generic bookings
-    });
+    // Add generic resource for unassigned bookings (only if showUnassigned is true)
+    if (showUnassigned) {
+      resources.push({
+        id: 'generic',
+        title: 'Unassigned',
+        eventColor: '#6B7280' // Gray color for generic bookings
+      });
+    }
     
     // Add staff resources
     if (staffData && staffData.length > 0) {
