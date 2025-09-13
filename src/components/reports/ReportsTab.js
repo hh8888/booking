@@ -33,6 +33,7 @@ export default function ReportsTab() {
   const { currentUserId, userRole, userName } = useDashboardUser();
   const [activeReportTab, setActiveReportTab] = useState('bookings');
   const [weeklyBookings, setWeeklyBookings] = useState([]);
+  const [customerBookings, setCustomerBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedStaffId, setSelectedStaffId] = useState('all');
   const [staffOptions, setStaffOptions] = useState([]);
@@ -45,6 +46,7 @@ export default function ReportsTab() {
 
   useEffect(() => {
     fetchWeeklyBookings();
+    fetchCustomerBookings();
   }, [startDate, endDate, selectedStaffId]); // Refetch data when date range or staff selection changes
 
   const fetchWeeklyBookings = async () => {
@@ -166,6 +168,110 @@ export default function ReportsTab() {
     }
   };
 
+  const fetchCustomerBookings = async () => {
+    try {
+      const dbService = DatabaseService.getInstance();
+      
+      // Get date range
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+
+      // Get booking data with related services, staff, and customers
+      const [bookings, services, customers] = await Promise.all([
+        dbService.fetchData(
+          TABLES.BOOKINGS,
+          'start_time',
+          false,
+          {
+            start_time: {
+              gte: start.toISOString(),
+              lte: end.toISOString()
+            }
+          }
+        ),
+        dbService.fetchData(TABLES.SERVICES),
+        dbService.fetchData(TABLES.USERS, 'full_name', false, { role: 'customer' })
+      ]);
+
+      // Filter bookings by selected staff if not 'all'
+      let filteredBookings = bookings;
+      if (selectedStaffId !== 'all') {
+        filteredBookings = bookings.filter(booking => booking.provider_id === selectedStaffId);
+      }
+
+      // Group bookings by customer and service type
+      const customerServiceCounts = {};
+      const serviceTypes = new Set();
+
+      filteredBookings.forEach(booking => {
+        const customer = customers.find(c => c.id === booking.customer_id);
+        const service = services.find(s => s.id === booking.service_id);
+        
+        const customerName = customer?.full_name || 'Unknown Customer';
+        const serviceName = service?.name || 'Unknown Service';
+        
+        serviceTypes.add(serviceName);
+        
+        if (!customerServiceCounts[customerName]) {
+          customerServiceCounts[customerName] = {};
+        }
+        
+        if (!customerServiceCounts[customerName][serviceName]) {
+          customerServiceCounts[customerName][serviceName] = 0;
+        }
+        
+        customerServiceCounts[customerName][serviceName]++;
+      });
+
+      // Sort customers by total booking count (descending)
+      const sortedCustomers = Object.keys(customerServiceCounts)
+        .map(customerName => ({
+          name: customerName,
+          totalBookings: Object.values(customerServiceCounts[customerName]).reduce((sum, count) => sum + count, 0)
+        }))
+        .sort((a, b) => b.totalBookings - a.totalBookings)
+        .slice(0, 15) // Limit to top 15 customers for readability
+        .map(customer => customer.name);
+
+      const serviceTypesList = Array.from(serviceTypes).sort();
+      
+      // Generate colors for each service type
+      const colors = [
+        'rgba(59, 130, 246, 0.8)',   // Blue
+        'rgba(34, 197, 94, 0.8)',    // Green
+        'rgba(239, 68, 68, 0.8)',    // Red
+        'rgba(245, 158, 11, 0.8)',   // Yellow
+        'rgba(139, 92, 246, 0.8)',   // Purple
+        'rgba(236, 72, 153, 0.8)',   // Pink
+        'rgba(20, 184, 166, 0.8)',   // Teal
+        'rgba(251, 146, 60, 0.8)',   // Orange
+        'rgba(156, 163, 175, 0.8)',  // Gray
+        'rgba(99, 102, 241, 0.8)'    // Indigo
+      ];
+
+      // Create datasets for each service type
+      const datasets = serviceTypesList.map((serviceType, index) => ({
+        label: serviceType,
+        data: sortedCustomers.map(customerName => 
+          customerServiceCounts[customerName]?.[serviceType] || 0
+        ),
+        backgroundColor: colors[index % colors.length],
+        borderColor: colors[index % colors.length].replace('0.8', '1'),
+        borderWidth: 1
+      }));
+
+      setCustomerBookings({
+        labels: sortedCustomers,
+        datasets: datasets
+      });
+    } catch (error) {
+      console.error('Error fetching customer bookings:', error);
+      toast.error('Failed to fetch customer booking statistics');
+    }
+  };
+
   const chartOptions = {
     responsive: true,
     plugins: {
@@ -244,6 +350,16 @@ export default function ReportsTab() {
             {t('reports.bookingStatistics')}
           </button>
           <button
+            onClick={() => setActiveReportTab('customers')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeReportTab === 'customers'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            {t('reports.customerBookings')}
+          </button>
+          <button
             onClick={() => setActiveReportTab('connectedUsers')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               activeReportTab === 'connectedUsers'
@@ -314,6 +430,105 @@ export default function ReportsTab() {
               }
             }}
           />
+        </div>
+      )}
+
+      {activeReportTab === 'customers' && (
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="mb-4 flex items-center space-x-4 flex-wrap">
+            <div className="flex items-center">
+              <label htmlFor="startDate" className="mr-2 text-gray-700">{t('reports.startDate')}</label>
+              <input
+                type="date"
+                id="startDate"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1"
+              />
+            </div>
+            <div className="flex items-center">
+              <label htmlFor="endDate" className="mr-2 text-gray-700">{t('reports.endDate')}</label>
+              <input
+                type="date"
+                id="endDate"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1"
+              />
+            </div>
+            <div className="flex items-center">
+              <label htmlFor="staffFilter" className="mr-2 text-gray-700">Staff Filter:</label>
+              <select
+                id="staffFilter"
+                value={selectedStaffId}
+                onChange={(e) => setSelectedStaffId(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1"
+              >
+                {staffOptions.map(staff => (
+                  <option key={staff.id} value={staff.id}>
+                    {staff.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {customerBookings.labels && customerBookings.labels.length > 0 ? (
+            <div style={{ height: '400px', width: '100%' }}>
+              <Bar
+                data={customerBookings}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: 'top',
+                    },
+                    title: {
+                      display: true,
+                      text: `Customer Booking Statistics ${startDate} to ${endDate}${selectedStaffId !== 'all' ? ` - ${staffOptions.find(s => s.id === selectedStaffId)?.name || 'Selected Staff'}` : ''}`
+                    },
+                    tooltip: {
+                      mode: 'index',
+                      intersect: false,
+                      callbacks: {
+                        footer: function(tooltipItems) {
+                          let total = 0;
+                          tooltipItems.forEach(function(tooltipItem) {
+                            total += tooltipItem.parsed.y;
+                          });
+                          return 'Total: ' + total;
+                        }
+                      }
+                    }
+                  },
+                  scales: {
+                    x: {
+                      stacked: true,
+                      ticks: {
+                        maxRotation: 45,
+                        minRotation: 0
+                      }
+                    },
+                    y: {
+                      stacked: true,
+                      beginAtZero: true,
+                      ticks: {
+                        stepSize: 1
+                      }
+                    }
+                  },
+                  interaction: {
+                    mode: 'index',
+                    intersect: false
+                  }
+                }}
+              />
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <p>No customer booking data available for the selected period</p>
+            </div>
+          )}
         </div>
       )}
 

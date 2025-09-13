@@ -32,6 +32,7 @@ export default function DashboardTab() {
   const [showEditPopup, setShowEditPopup] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [defaultTime, setDefaultTime] = useState(null);
+  const [showStaffNameSetting, setShowStaffNameSetting] = useState('true');
   
   // Data from custom hook
   const {
@@ -47,6 +48,22 @@ export default function DashboardTab() {
     fetchStaffAvailability,
     staffData // Add this to get staff data from the hook
   } = useDashboardData();
+
+  // Fetch the showStaffName setting
+  useEffect(() => {
+    const fetchShowStaffNameSetting = async () => {
+      try {
+        const dbService = DatabaseService.getInstance();
+        const setting = await dbService.getSettingsByKey('booking', 'showStaffName');
+        setShowStaffNameSetting(setting || 'true');
+      } catch (error) {
+        console.error('Error fetching showStaffName setting:', error);
+        setShowStaffNameSetting('true'); // Default to true
+      }
+    };
+    
+    fetchShowStaffNameSetting();
+  }, []);
 
   // Event handlers
   const handleEventClick = (info) => {
@@ -171,9 +188,12 @@ export default function DashboardTab() {
       const eventDuration = (new Date(eventInfo.event.end) - new Date(eventInfo.event.start)) / (1000 * 60); // duration in minutes
       const shouldAllowFullText = eventDuration >= 30; // 30 minutes or longer
       
+      // Check if staff name should be shown based on setting
+      const showStaffName = showStaffNameSetting === 'true';
+      
       const formattedTitle = shouldAllowFullText ? 
-        `${staffName} - ${customerName} - ${serviceName}` :
-        `${truncateText(customerName, 15)} - ${truncateText(staffName, 10)} - ${truncateText(serviceName, 20)}`;
+        (showStaffName ? `${staffName} - ${customerName} - ${serviceName}` : `${customerName} - ${serviceName}`) :
+        (showStaffName ? `${truncateText(staffName, 10)} - ${truncateText(customerName, 15)} - ${truncateText(serviceName, 20)}` : `${truncateText(customerName, 15)} - ${truncateText(serviceName, 20)}`);
       
       return {
         html: `<div class="booking-event-content ${isCancelled ? 'cancelled-booking' : ''}" style="

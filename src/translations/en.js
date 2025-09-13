@@ -172,7 +172,9 @@ blockTimeSlot: {
     noData: 'No data available',
     refreshData: 'Refresh Data',
     today: 'Today',
+    tomorrow: 'Tomorrow',
     future: 'Future',
+    afterTomorrow: 'After Tomorrow',
     scheduledAppointments: 'Scheduled appointments',
     upcomingAppointments: 'Upcoming appointments',
     bookingCalendar: 'Booking Calendar'
@@ -387,6 +389,7 @@ blockTimeSlot: {
 
   // Reports
   reports: {
+    customerBookings: 'Customer Bookings',
     title: 'Reports',
     bookingStatistics: 'Booking Statistics',
     startDate: 'Start Date:',
@@ -672,6 +675,7 @@ blockTimeSlot: {
       bookingCreatedCustomer: 'Your booking has been created successfully!',
       bookingCancelledCustomer: 'Your booking has been cancelled!',
       bookingCompleted: 'Booking completed successfully!', 
+      bookingUpdatedCustomer: 'Your booking has been updated successfully!'
     },
     error: {
       general: 'An error occurred. Please try again.',

@@ -168,7 +168,9 @@ export default {
     noData: '无可用数据',
     refreshData: '刷新数据',
     today: '今天',
+    tomorrow: '明天',
     future: '未来',
+    afterTomorrow: '明天以后',
     scheduledAppointments: '已安排的预约',
     upcomingAppointments: '即将到来的预约',
     bookingCalendar: '预约日历'
@@ -381,6 +383,8 @@ export default {
 
   // Reports
   reports: {
+    
+    customerBookings: '客户预约',
     title: '报表',
     bookingStatistics: '预约统计',
     startDate: '开始日期：',
@@ -681,6 +685,7 @@ export default {
       bookingCreatedCustomer: '您的预约已成功创建！',
       bookingCancelledCustomer: '您的预约已被取消！',
       bookingCompleted: '预约已成功完成！',
+      bookingUpdatedCustomer: '您的预约已成功更新！'
     },
     error: {
       general: '发生错误，请重试。',

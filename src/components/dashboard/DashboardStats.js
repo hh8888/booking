@@ -29,7 +29,12 @@ const DashboardStats = ({ tableStats, currentLocation, loading }) => {
           <p className="text-sm text-gray-500 mt-1">{t('dashboard.scheduledAppointments')}</p>
         </div>
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-lg font-medium text-gray-700 mb-2">{t('dashboard.future')}</h3>
+          <h3 className="text-lg font-medium text-gray-700 mb-2">{t('dashboard.tomorrow')}</h3>
+          <p className="text-3xl font-bold text-green-600">{tableStats.tomorrowBookings}</p>
+          <p className="text-sm text-gray-500 mt-1">{t('dashboard.scheduledAppointments')}</p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-lg font-medium text-gray-700 mb-2">{t('dashboard.afterTomorrow')}</h3>
           <p className="text-3xl font-bold text-blue-600">{tableStats.futureBookings}</p>
           <p className="text-sm text-gray-500 mt-1">{t('dashboard.upcomingAppointments')}</p>
         </div>

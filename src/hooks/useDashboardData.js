@@ -37,6 +37,7 @@ export const useDashboardData = () => {
     services: 0,
     bookings: 0,
     todayBookings: 0,
+    tomorrowBookings: 0,
     futureBookings: 0,
     pastBookings: 0
   });
@@ -88,10 +89,26 @@ export const useDashboardData = () => {
         // console.log(`Booking ${booking.id}: ${booking.start_time} -> ${bookingDate.toISOString()} -> Today: ${isToday}`);
         return isToday;
       }).length;
+
+      // Calculate tomorrow's bookings
+      const tomorrowStart = new Date(now);
+      tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+      const tomorrowEnd = new Date(tomorrowStart);
+      tomorrowEnd.setHours(23, 59, 59, 999);
+
+      const tomorrowBookings = bookings.filter(booking => {
+        const bookingDate = new Date(booking.start_time);
+        const isTomorrow = bookingDate >= tomorrowStart && bookingDate <= tomorrowEnd;
+        return isTomorrow;
+      }).length;
   
+      // Future bookings now means after tomorrow
+      const afterTomorrowStart = new Date(tomorrowEnd);
+      afterTomorrowStart.setMilliseconds(afterTomorrowStart.getMilliseconds() + 1);
+      
       const futureBookings = bookings.filter(booking => {
         const bookingDate = new Date(booking.start_time);
-        const isFuture = bookingDate > todayEnd;
+        const isFuture = bookingDate > afterTomorrowStart;
         // console.log(`Booking ${booking.id}: ${booking.start_time} -> ${bookingDate.toISOString()} -> Future: ${isFuture}`);
         return isFuture;
       }).length;
@@ -113,6 +130,7 @@ export const useDashboardData = () => {
         services: servicesCount,
         bookings: bookings.length,
         todayBookings,
+        tomorrowBookings,
         futureBookings,
         pastBookings
       });
