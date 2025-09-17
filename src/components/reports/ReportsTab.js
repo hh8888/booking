@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DatabaseService from '../../services/DatabaseService';
+import LocationService from '../../services/LocationService';
 import { toast } from 'react-toastify';
 import { TABLES } from '../../constants';
 import { Bar } from 'react-chartjs-2';
@@ -28,15 +29,43 @@ ChartJS.register(
   Legend
 );
 
+// Shared color array for all charts (20 unique colors)
+const CHART_COLORS = [
+  'rgba(59, 130, 246, 0.8)',   // Blue
+  'rgba(34, 197, 94, 0.8)',    // Green
+  'rgba(239, 68, 68, 0.8)',    // Red
+  'rgba(245, 158, 11, 0.8)',   // Yellow
+  'rgba(139, 92, 246, 0.8)',   // Purple
+  'rgba(236, 72, 153, 0.8)',   // Pink
+  'rgba(20, 184, 166, 0.8)',   // Teal
+  'rgba(251, 146, 60, 0.8)',   // Orange
+  'rgba(156, 163, 175, 0.8)',  // Gray
+  'rgba(99, 102, 241, 0.8)',   // Indigo
+  'rgba(168, 85, 247, 0.8)',   // Violet
+  'rgba(14, 165, 233, 0.8)',   // Sky Blue
+  'rgba(34, 197, 94, 0.8)',    // Emerald
+  'rgba(249, 115, 22, 0.8)',   // Orange Red
+  'rgba(217, 70, 239, 0.8)',   // Fuchsia
+  'rgba(6, 182, 212, 0.8)',    // Cyan
+  'rgba(132, 204, 22, 0.8)',   // Lime
+  'rgba(251, 191, 36, 0.8)',   // Amber
+  'rgba(244, 63, 94, 0.8)',    // Rose
+  'rgba(71, 85, 105, 0.8)'     // Slate
+];
+
 export default function ReportsTab() {
   const { t } = useLanguage();
   const { currentUserId, userRole, userName } = useDashboardUser();
   const [activeReportTab, setActiveReportTab] = useState('bookings');
   const [weeklyBookings, setWeeklyBookings] = useState([]);
   const [customerBookings, setCustomerBookings] = useState([]);
+  const [totalBookings, setTotalBookings] = useState(0);
+  const [totalCustomers, setTotalCustomers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [selectedStaffId, setSelectedStaffId] = useState('all');
   const [staffOptions, setStaffOptions] = useState([]);
+  const [selectedLocationId, setSelectedLocationId] = useState('all');
+  const [locationOptions, setLocationOptions] = useState([]);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]); // Start date
   const [endDate, setEndDate] = useState(() => {
     const date = new Date();
@@ -47,7 +76,7 @@ export default function ReportsTab() {
   useEffect(() => {
     fetchWeeklyBookings();
     fetchCustomerBookings();
-  }, [startDate, endDate, selectedStaffId]); // Refetch data when date range or staff selection changes
+  }, [startDate, endDate, selectedStaffId, selectedLocationId]); // Refetch data when date range, staff, or location selection changes
 
   const fetchWeeklyBookings = async () => {
     try {
@@ -86,6 +115,17 @@ export default function ReportsTab() {
         ...sortedStaff
       ]);
 
+      // Get location options
+      const locationService = LocationService.getInstance();
+      const dbService2 = DatabaseService.getInstance();
+      await locationService.initializeLocations(dbService2);
+      const locations = locationService.getLocations();
+      
+      setLocationOptions([
+        { id: 'all', name: 'All Locations' },
+        ...locations.map(loc => ({ id: loc.id, name: loc.name }))
+      ]);
+
       // Create date labels
       const dateLabels = [];
       let currentDate = new Date(start);
@@ -98,41 +138,37 @@ export default function ReportsTab() {
       // Filter bookings by selected staff if not 'all'
       let filteredBookings = bookings;
       if (selectedStaffId !== 'all') {
-        filteredBookings = bookings.filter(booking => booking.provider_id === selectedStaffId);
+        filteredBookings = filteredBookings.filter(booking => booking.provider_id === selectedStaffId);
       }
 
-      // Get unique service types (booking types)
-      const serviceTypes = new Set();
-      filteredBookings.forEach(booking => {
-        const service = services.find(s => s.id === booking.service_id);
-        const serviceName = service?.name || 'Unknown Service';
-        serviceTypes.add(serviceName);
-      });
+      // Filter bookings by selected location if not 'all'
+      if (selectedLocationId !== 'all') {
+        const locationIdInt = parseInt(selectedLocationId, 10);
+        console.log('🔍 Location filtering debug:', {
+          selectedLocationId,
+          locationIdInt,
+          totalBookings: filteredBookings.length,
+          sampleBookingLocations: filteredBookings.slice(0, 5).map(b => ({ id: b.id, location: b.location, type: typeof b.location }))
+        });
+        filteredBookings = filteredBookings.filter(booking => booking.location === locationIdInt);
+        console.log('🔍 After location filter:', filteredBookings.length, 'bookings remain');
+      }
+
+      // Get unique service types (booking types) - include all services in the system
+      const serviceTypes = new Set(services.map(service => service.name));
 
       const serviceTypesList = Array.from(serviceTypes).sort();
       
-      // Generate colors for each combination
-      const colors = [
-        'rgba(59, 130, 246, 0.8)',   // Blue
-        'rgba(34, 197, 94, 0.8)',    // Green
-        'rgba(239, 68, 68, 0.8)',    // Red
-        'rgba(245, 158, 11, 0.8)',   // Yellow
-        'rgba(139, 92, 246, 0.8)',   // Purple
-        'rgba(236, 72, 153, 0.8)',   // Pink
-        'rgba(20, 184, 166, 0.8)',   // Teal
-        'rgba(251, 146, 60, 0.8)',   // Orange
-        'rgba(156, 163, 175, 0.8)',  // Gray
-        'rgba(99, 102, 241, 0.8)'    // Indigo
-      ];
-
+      // Use shared color array
+      
       // Initialize data structure for each service type and date
       const chartData = {};
       serviceTypesList.forEach((serviceType, index) => {
         chartData[serviceType] = {
           label: serviceType,
           data: new Array(dateLabels.length).fill(0),
-          backgroundColor: colors[index % colors.length],
-          borderColor: colors[index % colors.length].replace('0.8', '1'),
+          backgroundColor: CHART_COLORS[index % CHART_COLORS.length],
+          borderColor: CHART_COLORS[index % CHART_COLORS.length].replace('0.8', '1'),
           borderWidth: 1
         };
       });
@@ -198,12 +234,19 @@ export default function ReportsTab() {
       // Filter bookings by selected staff if not 'all'
       let filteredBookings = bookings;
       if (selectedStaffId !== 'all') {
-        filteredBookings = bookings.filter(booking => booking.provider_id === selectedStaffId);
+        filteredBookings = filteredBookings.filter(booking => booking.provider_id === selectedStaffId);
+      }
+
+      // Filter bookings by selected location if not 'all'
+      if (selectedLocationId !== 'all') {
+        const locationIdInt = parseInt(selectedLocationId, 10);
+        filteredBookings = filteredBookings.filter(booking => booking.location === locationIdInt);
       }
 
       // Group bookings by customer and service type
       const customerServiceCounts = {};
-      const serviceTypes = new Set();
+      // Include all services in the system, not just those with bookings
+      const serviceTypes = new Set(services.map(service => service.name));
 
       filteredBookings.forEach(booking => {
         const customer = customers.find(c => c.id === booking.customer_id);
@@ -211,8 +254,6 @@ export default function ReportsTab() {
         
         const customerName = customer?.full_name || 'Unknown Customer';
         const serviceName = service?.name || 'Unknown Service';
-        
-        serviceTypes.add(serviceName);
         
         if (!customerServiceCounts[customerName]) {
           customerServiceCounts[customerName] = {};
@@ -232,24 +273,12 @@ export default function ReportsTab() {
           totalBookings: Object.values(customerServiceCounts[customerName]).reduce((sum, count) => sum + count, 0)
         }))
         .sort((a, b) => b.totalBookings - a.totalBookings)
-        .slice(0, 15) // Limit to top 15 customers for readability
+        //.slice(0, 25) // Limit to top 25 customers for better visibility
         .map(customer => customer.name);
 
       const serviceTypesList = Array.from(serviceTypes).sort();
       
-      // Generate colors for each service type
-      const colors = [
-        'rgba(59, 130, 246, 0.8)',   // Blue
-        'rgba(34, 197, 94, 0.8)',    // Green
-        'rgba(239, 68, 68, 0.8)',    // Red
-        'rgba(245, 158, 11, 0.8)',   // Yellow
-        'rgba(139, 92, 246, 0.8)',   // Purple
-        'rgba(236, 72, 153, 0.8)',   // Pink
-        'rgba(20, 184, 166, 0.8)',   // Teal
-        'rgba(251, 146, 60, 0.8)',   // Orange
-        'rgba(156, 163, 175, 0.8)',  // Gray
-        'rgba(99, 102, 241, 0.8)'    // Indigo
-      ];
+      // Use shared color array
 
       // Create datasets for each service type
       const datasets = serviceTypesList.map((serviceType, index) => ({
@@ -257,15 +286,21 @@ export default function ReportsTab() {
         data: sortedCustomers.map(customerName => 
           customerServiceCounts[customerName]?.[serviceType] || 0
         ),
-        backgroundColor: colors[index % colors.length],
-        borderColor: colors[index % colors.length].replace('0.8', '1'),
+        backgroundColor: CHART_COLORS[index % CHART_COLORS.length],
+        borderColor: CHART_COLORS[index % CHART_COLORS.length].replace('0.8', '1'),
         borderWidth: 1
       }));
+
+      // Calculate totals
+      const totalBookingsCount = filteredBookings.length;
+      const totalCustomersCount = Object.keys(customerServiceCounts).length;
 
       setCustomerBookings({
         labels: sortedCustomers,
         datasets: datasets
       });
+      setTotalBookings(totalBookingsCount);
+      setTotalCustomers(totalCustomersCount);
     } catch (error) {
       console.error('Error fetching customer bookings:', error);
       toast.error('Failed to fetch customer booking statistics');
@@ -413,6 +448,21 @@ export default function ReportsTab() {
                 ))}
               </select>
             </div>
+            <div className="flex items-center">
+              <label htmlFor="locationFilter" className="mr-2 text-gray-700">Location Filter:</label>
+              <select
+                id="locationFilter"
+                value={selectedLocationId}
+                onChange={(e) => setSelectedLocationId(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1"
+              >
+                {locationOptions.map(location => (
+                  <option key={location.id} value={location.id}>
+                    {location.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <Bar
             data={{
@@ -425,7 +475,7 @@ export default function ReportsTab() {
                 ...chartOptions.plugins,
                 title: {
                   ...chartOptions.plugins.title,
-                  text: `Service Booking Statistics ${startDate} to ${endDate}${selectedStaffId !== 'all' ? ` - ${staffOptions.find(s => s.id === selectedStaffId)?.name || 'Selected Staff'}` : ''}`
+                  text: `Service Booking Statistics ${startDate} to ${endDate}${selectedStaffId !== 'all' ? ` - ${staffOptions.find(s => s.id === selectedStaffId)?.name || 'Selected Staff'}` : ''}${selectedLocationId !== 'all' ? ` - ${locationOptions.find(l => l.id === selectedLocationId)?.name || 'Selected Location'}` : ''}`
                 }
               }
             }}
@@ -471,9 +521,41 @@ export default function ReportsTab() {
                 ))}
               </select>
             </div>
+            <div className="flex items-center">
+              <label htmlFor="locationFilter" className="mr-2 text-gray-700">Location Filter:</label>
+              <select
+                id="locationFilter"
+                value={selectedLocationId}
+                onChange={(e) => setSelectedLocationId(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1"
+              >
+                {locationOptions.map(location => (
+                  <option key={location.id} value={location.id}>
+                    {location.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
+          
+          {/* Summary Statistics */}
+          <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div className="text-2xl font-bold text-blue-600">{totalBookings}</div>
+              <div className="text-sm text-blue-800">Total Bookings</div>
+            </div>
+            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+              <div className="text-2xl font-bold text-green-600">{totalCustomers}</div>
+              <div className="text-sm text-green-800">Total Customers</div>
+            </div>
+          </div>
+
           {customerBookings.labels && customerBookings.labels.length > 0 ? (
-            <div style={{ height: '400px', width: '100%' }}>
+            <div>
+              <div className="mb-2 text-sm text-gray-600">
+                <span className="font-medium">Note:</span> Chart shows top 25 customers by booking count. Total count above includes all customers.
+              </div>
+              <div style={{ height: '400px', width: '100%' }}>
               <Bar
                 data={customerBookings}
                 options={{
@@ -485,7 +567,7 @@ export default function ReportsTab() {
                     },
                     title: {
                       display: true,
-                      text: `Customer Booking Statistics ${startDate} to ${endDate}${selectedStaffId !== 'all' ? ` - ${staffOptions.find(s => s.id === selectedStaffId)?.name || 'Selected Staff'}` : ''}`
+                      text: `Customer Booking Statistics ${startDate} to ${endDate}${selectedStaffId !== 'all' ? ` - ${staffOptions.find(s => s.id === selectedStaffId)?.name || 'Selected Staff'}` : ''}${selectedLocationId !== 'all' ? ` - ${locationOptions.find(l => l.id === selectedLocationId)?.name || 'Selected Location'}` : ''}`
                     },
                     tooltip: {
                       mode: 'index',
@@ -523,6 +605,7 @@ export default function ReportsTab() {
                   }
                 }}
               />
+              </div>
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
