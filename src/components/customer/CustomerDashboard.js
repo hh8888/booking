@@ -18,11 +18,10 @@ import { useBusinessInfo } from '../../hooks/useBusinessInfo';
 import { useLanguage } from '../../contexts/LanguageContext';
 import useDashboardUser from '../../hooks/useDashboardUser';
 import useCustomerRealtime from '../../hooks/useCustomerRealtime';
-// Add this import
 import { useConnectedUsersTracker } from '../../hooks/useConnectedUsersTracker';
 import { BOOKING_STATUS, TABLES, SUCCESS_MESSAGES, ERROR_MESSAGES, QUERY_FILTERS } from '../../constants';
 import { useMultilingualToast } from '../../utils/multilingualToastUtils';
-// Add import
+import { canEditBookingWithTimeLimit } from '../../utils/bookingUtils';
 import { useServerSessionTracker } from '../../hooks/useServerSessionTracker';
 
 const CustomerDashboard = () => {
@@ -331,8 +330,11 @@ const CustomerDashboard = () => {
     try {
       const bookingService = BookingService.getInstance();
       
+      // Remove fields that are added by processBookingsData but don't belong in the database
+      const { customer_phone, customer_name, service_name, provider_name, booking_time_formatted, created_at_formatted, start_date, start_time_hour, start_time_minute, ...cleanBookingData } = bookingData;
+      
       const bookingWithCustomer = {
-        ...bookingData,
+        ...cleanBookingData,
         customer_id: customerData.id
       };
       
@@ -371,9 +373,25 @@ const CustomerDashboard = () => {
   };
 
   const handleCancelBooking = async (bookingId) => {
-    if (window.confirm(t('bookings.confirmCancelBooking'))) {
-      try {
-        const dbService = DatabaseService.getInstance();
+    try {
+      // Find the booking to cancel
+      const booking = bookings.find(b => b.id === bookingId);
+      if (!booking) {
+        toast.error(t('messages.error.bookingNotFound'));
+        return;
+      }
+  
+      // Get booking edit time limit setting from database
+      const dbService = DatabaseService.getInstance();
+      const timeLimit = await dbService.getSettingsByKey('booking', 'bookingEditTimeLimit') || 24; // Default to 24 hours
+      
+      // Check if booking can be cancelled based on time limit
+      if (!canEditBookingWithTimeLimit(booking, timeLimit)) {
+        toast.error(t('messages.error.bookingEditTimeLimit', { hours: timeLimit }));
+        return;
+      }
+  
+      if (window.confirm(t('bookings.confirmCancelBooking'))) {
         await dbService.updateItem(TABLES.BOOKINGS, { id: bookingId, status: BOOKING_STATUS.CANCELLED }, 'Booking');
         toast.success(SUCCESS_MESSAGES.BOOKING_CANCELLED);
         
@@ -381,10 +399,10 @@ const CustomerDashboard = () => {
         setBookings(prev => prev.map(booking => 
           booking.id === bookingId ? { ...booking, status: BOOKING_STATUS.CANCELLED } : booking
         ));
-      } catch (error) {
-        console.error('Error cancelling booking:', error);
-        toast.error(ERROR_MESSAGES.FAILED_CANCEL_BOOKING);
       }
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+      toast.error(ERROR_MESSAGES.FAILED_CANCEL_BOOKING);
     }
   };
 
@@ -394,10 +412,24 @@ const CustomerDashboard = () => {
     setShowBookingForm(true);
   };
 
-  const handleEditBooking = (booking) => {
-    console.log('✏️ handleEditBooking: Called with booking:', booking?.id);
-    setEditingBooking(booking);
-    setShowBookingForm(true);
+  const handleEditBooking = async (booking) => {
+    try {
+      // Get booking edit time limit setting from database
+      const dbService = DatabaseService.getInstance();
+      const timeLimit = await dbService.getSettingsByKey('booking', 'bookingEditTimeLimit') || 24; // Default to 24 hours
+      
+      // Check if booking can be edited based on time limit
+      if (!canEditBookingWithTimeLimit(booking, timeLimit)) {
+        toast.error(t('messages.error.bookingEditTimeLimit', { hours: timeLimit }));
+        return;
+      }
+      
+      setEditingBooking(booking);
+      setShowBookingForm(true);
+    } catch (error) {
+      console.error('Error checking edit permissions:', error);
+      toast.error(t('messages.error.general'));
+    }
   };
 
   const handleCloseBookingForm = () => {
