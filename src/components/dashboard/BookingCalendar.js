@@ -154,12 +154,58 @@ const BookingCalendar = ({
     return eventStart <= currentViewDates.end && eventEnd >= currentViewDates.start;
   };
 
+  // Check if there are any bookings that should be unassigned
+  const hasUnassignedBookings = () => {
+    const filteredEvents = getFilteredEvents();
+    
+    return filteredEvents.some(event => {
+      // Skip availability events
+      if (event.classNames?.includes('availability-event') || event.classNames?.includes('availability-allday')) {
+        return false;
+      }
+      
+      const staffId = event.extendedProps?.staffId || event.extendedProps?.providerId;
+      const serviceId = event.extendedProps?.serviceId;
+      const service = services?.find(s => s.id === serviceId);
+      
+      // Check if this booking should be unassigned
+      if (!service?.staff_ids || !Array.isArray(service.staff_ids) || service.staff_ids.length === 0) {
+        return true; // Service has no assigned staff
+      }
+      
+      if (!staffId) {
+        return true; // No staff assigned to booking
+      }
+      
+      const staff = staffData?.find(s => s.id.toString() === staffId.toString());
+      if (!staff) {
+        return true; // Staff member not found
+      }
+      
+      // Check staff availability
+      const bookingDate = new Date(event.start);
+      const bookingDateStr = bookingDate.toLocaleDateString('en-CA');
+      const hasAvailabilityOnDate = filteredEvents.some(availEvent => {
+        if (!availEvent.classNames?.includes('availability-event') && !availEvent.classNames?.includes('availability-allday')) {
+          return false;
+        }
+        const availStaffId = availEvent.extendedProps?.staffId || availEvent.extendedProps?.providerId;
+        const availDate = new Date(availEvent.start);
+        const availDateStr = availDate.toLocaleDateString('en-CA');
+        
+        return availStaffId?.toString() === staffId.toString() && availDateStr === bookingDateStr;
+      });
+      
+      return !hasAvailabilityOnDate; // Should be unassigned if no availability
+    });
+  };
+
   // Get resources (staff) for the calendar
   const getResources = () => {
     const resources = [];
     
-    // Add generic resource for unassigned bookings (only if showUnassigned is true)
-    if (showUnassigned) {
+    // Add generic resource for unassigned bookings (if showUnassigned is true OR there are unassigned bookings)
+    if (showUnassigned || hasUnassignedBookings()) {
       resources.push({
         id: 'generic',
         title: 'Unassigned',
@@ -222,7 +268,7 @@ const BookingCalendar = ({
         };
       }
       
-      // Handle booking events - check service assignment
+      // Handle booking events - check service assignment and provider availability
       const serviceId = event.extendedProps?.serviceId;
       const service = services?.find(s => s.id === serviceId);
       
@@ -231,8 +277,44 @@ const BookingCalendar = ({
         // Service has no assigned staff - put in generic column
         resourceId = 'generic';
       } else if (staffId) {
-        // Service has assigned staff and booking has a provider
-        resourceId = staffId.toString();
+        // Check if the assigned provider is available on the booking date
+        const bookingDate = new Date(event.start);
+        const bookingDateStr = bookingDate.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+        
+        // Find the staff member in staffData
+        const staff = staffData?.find(s => s.id.toString() === staffId.toString());
+        
+        if (!staff) {
+          // Staff member not found - put in generic column
+          resourceId = 'generic';
+        } else {
+          // Check if staff is available on this date by looking for availability events
+          const hasAvailabilityOnDate = filteredEvents.some(availEvent => {
+            if (!availEvent.classNames?.includes('availability-event') && !availEvent.classNames?.includes('availability-allday')) {
+              return false;
+            }
+            const availStaffId = availEvent.extendedProps?.staffId || availEvent.extendedProps?.providerId;
+            const availDate = new Date(availEvent.start);
+            const availDateStr = availDate.toLocaleDateString('en-CA');
+            
+            return availStaffId?.toString() === staffId.toString() && availDateStr === bookingDateStr;
+          });
+          
+          // Debug logging
+          console.log(`🔍 Checking booking: ${event.title} on ${bookingDateStr}`);
+          console.log(`📋 Staff ID: ${staffId}, Staff found: ${staff?.name || 'Unknown'}`);
+          console.log(`⏰ Has availability on date: ${hasAvailabilityOnDate}`);
+          
+          if (hasAvailabilityOnDate) {
+            // Provider is available - assign to their column
+            resourceId = staffId.toString();
+            console.log(`✅ Assigned to staff column: ${staffId}`);
+          } else {
+            // Provider is not available on this date - put in unassigned column
+            resourceId = 'generic';
+            console.log(`❌ Moved to unassigned column (no availability found)`);
+          }
+        }
       } else {
         // Fallback to generic for any edge cases
         resourceId = 'generic';

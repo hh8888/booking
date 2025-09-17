@@ -73,34 +73,55 @@ export const useDashboardData = () => {
       console.log('Bookings data:', bookings.map(b => ({ id: b.id, start_time: b.start_time, location: b.location })));
       
       const now = new Date();
-      now.setHours(0, 0, 0, 0);
       
-      const todayEnd = new Date(now);
-      todayEnd.setHours(23, 59, 59, 999);
+      // Get current date components in local timezone (Sydney)
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      const currentDate = now.getDate();
       
-      console.log('Date comparison:');
-      console.log('Now (start of today):', now.toISOString());
-      console.log('Today end:', todayEnd.toISOString());
-      console.log('Current location filter:', currentLocationId);
-  
-      const todayBookings = bookings.filter(booking => {
+      // Create today's start and end times in local timezone
+      const todayStart = new Date(currentYear, currentMonth, currentDate, 0, 0, 0, 0);
+      const todayEnd = new Date(currentYear, currentMonth, currentDate, 23, 59, 59, 999);
+      
+      console.log('🕐 Current time (Sydney):', now.toISOString());
+      console.log('🕐 Today start (Sydney):', todayStart.toISOString());
+      console.log('🕐 Today end (Sydney):', todayEnd.toISOString());
+      
+      const todayBookingsArray = bookings.filter(booking => {
         const bookingDate = new Date(booking.start_time);
-        const isToday = bookingDate >= now && bookingDate <= todayEnd;
-        // console.log(`Booking ${booking.id}: ${booking.start_time} -> ${bookingDate.toISOString()} -> Today: ${isToday}`);
+        // Check if booking falls within today's local time range
+        const isToday = bookingDate >= todayStart && bookingDate <= todayEnd;
+        if (isToday) {
+          console.log(`✅ TODAY Booking ${booking.id}: ${booking.start_time}`);
+        }
         return isToday;
-      }).length;
-
-      // Calculate tomorrow's bookings
-      const tomorrowStart = new Date(now);
-      tomorrowStart.setDate(tomorrowStart.getDate() + 1);
-      const tomorrowEnd = new Date(tomorrowStart);
-      tomorrowEnd.setHours(23, 59, 59, 999);
+      });
+      
+      const todayBookings = todayBookingsArray.length;
+      
+      console.log('📊 Today\'s bookings (Sydney timezone):');
+      todayBookingsArray.forEach((booking, index) => {
+        const bookingTime = new Date(booking.start_time).toLocaleTimeString('en-AU', {
+          timeZone: 'Australia/Sydney',
+          hour12: false
+        });
+        const statusIcon = booking.status === 'cancelled' ? '❌' : '✅';
+        const userName = booking.customer_name || booking.user_name || 'Unknown';
+        console.log(`  ${index + 1}. ${statusIcon} ${bookingTime} - ${userName} (${booking.status})`);
+      });
+      
+      console.log(`📊 Today bookings count: ${todayBookings}`);
+      
+      const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const tomorrowEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 23, 59, 59, 999);
 
       const tomorrowBookings = bookings.filter(booking => {
         const bookingDate = new Date(booking.start_time);
         const isTomorrow = bookingDate >= tomorrowStart && bookingDate <= tomorrowEnd;
         return isTomorrow;
       }).length;
+
+      console.log(`📊 Tomorrow bookings count: ${tomorrowBookings}`);
   
       // Future bookings now means after tomorrow
       const afterTomorrowStart = new Date(tomorrowEnd);
