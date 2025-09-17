@@ -89,21 +89,41 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
       
       if (signUpError) throw signUpError;
   
-      const { error: userError } = await supabase
-        .from(TABLES.USERS)
-        .insert([{
-          id: data.user.id,
-          email: authState.email,
-          full_name: authState.name,
-          post_code: authState.postCode,
-          birthday: authState.birthday || null,
-          gender: authState.gender || null,
-          phone_number: authState.mobile || null,
-          role: USER_ROLES.CUSTOMER,
-          email_verified: isFakeEmailAddress, // Mark fake emails as verified
-        }]);
-  
-      if (userError) throw userError;
+      // Only insert user data for normal signup (admin API already creates the user)
+      if (!isFakeEmailAddress) {
+        const { error: userError } = await supabase
+          .from(TABLES.USERS)
+          .insert([{
+            id: data.user.id,
+            email: authState.email,
+            full_name: authState.name,
+            post_code: authState.postCode,
+            birthday: authState.birthday || null,
+            gender: authState.gender || null,
+            phone_number: authState.mobile || null,
+            role: USER_ROLES.CUSTOMER,
+            email_verified: false,
+          }]);
+    
+        if (userError) throw userError;
+      } else {
+        // For fake emails using admin API, insert user data separately
+        const { error: userError } = await supabase
+          .from(TABLES.USERS)
+          .insert([{
+            id: data.user.id,
+            email: authState.email,
+            full_name: authState.name,
+            post_code: authState.postCode,
+            birthday: authState.birthday || null,
+            gender: authState.gender || null,
+            phone_number: authState.mobile || null,
+            role: USER_ROLES.CUSTOMER,
+            email_verified: true, // Mark fake emails as verified
+          }]);
+    
+        if (userError) throw userError;
+      }
       
       // Show different messages based on email type
       if (isFakeEmailAddress) {
