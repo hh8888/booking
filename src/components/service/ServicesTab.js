@@ -236,9 +236,11 @@ function ServicesTab({ users, handleError }) {
         >
           <option value="all">{t('services.allStaff')}</option>
           <option value="unassigned">{t('services.unassigned')}</option>
-          {staffUsers.map(staff => (
-            <option key={staff.id} value={staff.id}>{staff.full_name}</option>
-          ))}
+          {staffUsers
+            .sort((a, b) => a.full_name.localeCompare(b.full_name))
+            .map(staff => (
+              <option key={staff.id} value={staff.id}>{staff.full_name}</option>
+            ))}
         </select>
       </div>
 

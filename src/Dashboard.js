@@ -28,6 +28,7 @@ export default function Dashboard() {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isScrolled, setIsScrolled] = useState(false); // Restore this line
+  const [isHeaderMinimized, setIsHeaderMinimized] = useState(false); // Add header minimization state
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -48,6 +49,11 @@ export default function Dashboard() {
   // Conditional users data filtering for staff
   const usersDataConfig = isStaff ? { roleFilter: ['customer', 'staff'] } : {};
   const { users, setUsers, loading: usersLoading, networkError, retryFetch, error: usersError } = useUsersData(usersDataConfig);
+
+  // Toggle header minimization
+  const toggleHeaderMinimization = () => {
+    setIsHeaderMinimized(!isHeaderMinimized);
+  };
 
   // Scroll event listener for header transition with improved stability
   useEffect(() => {
@@ -157,142 +163,176 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Sticky Header Section with Scroll-based Transition */}
-      <div className={`sticky top-0 z-50 bg-gray-100 border-b border-gray-200 shadow-sm transition-all duration-300 ease-in-out ${
-        isScrolled ? 'py-0' : 'py-2 md:py-3'
-      }`}>
+      {/* Sticky Header Section - Remove all scroll-based styling */}
+      <div className="sticky top-0 z-50 bg-gray-100 border-b border-gray-200 shadow-sm transition-all duration-300 ease-in-out py-2 md:py-3">
         <div className={`transition-all duration-300 ease-in-out ${
-          isScrolled ? 'px-1 md:px-2' : 'px-2 md:px-3'
+          isHeaderMinimized ? 'px-0' : 'px-2 md:px-3'
         }`}>
-          {/* Full width title with conditional margin */}
-          <div className={`transition-all duration-300 ease-in-out ${
-            isScrolled ? 'mb-0' : 'mb-2 md:mb-3'
+          {/* Conditionally render header content based on minimization state */}
+          <div className={`transition-all duration-500 ease-in-out overflow-hidden ${
+            isHeaderMinimized ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'
           }`}>
-            <h1 className={`font-bold text-gray-800 transition-all duration-300 ease-in-out ${
-              isScrolled ? 'text-base md:text-lg' : 'text-lg md:text-xl'
-            }`}>{businessName}</h1>
-          </div>
-          
-          {/* Location and menu row with conditional margin */}
-          <div className={`flex justify-between items-center transition-all duration-300 ease-in-out ${
-            isScrolled ? 'mb-0' : 'mb-2 md:mb-3'
-          }`}>
-            <div>
-              <LocationSelector />
-            </div>
-            <div className="flex items-center space-x-2">
-              <SessionIndicator />
-              <UserDropdown 
-                userEmail={userEmail}
-                userRole={userRole}
-                userName={userName}
-                currentUserId={currentUserId}
-              />
-            </div>
+            {!isHeaderMinimized && (
+              <>
+                {/* Full width title - Remove scroll-based margin */}
+                <div className="transition-all duration-300 ease-in-out mb-2 md:mb-3">
+                  <h1 className="font-bold text-gray-800 transition-all duration-300 ease-in-out text-lg md:text-xl">{businessName}</h1>
+                </div>
+                
+                {/* Location and menu row - Remove scroll-based margin */}
+                <div className="flex justify-between items-center transition-all duration-300 ease-in-out mb-2 md:mb-3">
+                  <div className="transition-all duration-300 ease-in-out">
+                    <LocationSelector />
+                  </div>
+                  <div className="flex items-center space-x-2 transition-all duration-300 ease-in-out">
+                    <SessionIndicator />
+                    <UserDropdown 
+                      userEmail={userEmail}
+                      userRole={userRole}
+                      userName={userName}
+                      currentUserId={currentUserId}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         
-          {/* Tab Navigation with conditional padding */}
-          <div className="flex gap-1 border-b border-gray-200 overflow-x-auto">
-            {availableTabs.dashboard && (
-              <button
-                onClick={() => setActiveTab('dashboard')}
-                className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-all duration-300 ease-in-out ${
-                  isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
-                } ${
-                  activeTab === 'dashboard' 
-                    ? 'text-blue-500 border-b-2 border-blue-500' 
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
+          {/* Tab Navigation with toggle button on the same row */}
+          <div className={`flex justify-between items-center gap-1 border-b border-gray-200 transition-[padding] duration-500 ease-in-out`}>
+            {/* Tabs container */}
+            <div className="flex gap-1 overflow-x-auto flex-1">
+              {availableTabs.dashboard && (
+                <button
+                  onClick={() => setActiveTab('dashboard')}
+                  className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-[color,padding] duration-300 ease-in-out ${
+                    isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
+                  } ${
+                    activeTab === 'dashboard' 
+                      ? 'text-blue-500 border-b-2 border-blue-500' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {t('nav.dashboard')}
+                </button>
+              )}
+              {availableTabs.bookings && (
+                <button
+                  onClick={() => setActiveTab('bookings')}
+                  className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-[color,padding] duration-300 ease-in-out ${
+                    isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
+                  } ${
+                    activeTab === 'bookings' 
+                      ? 'text-blue-500 border-b-2 border-blue-500' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {isStaff ? t('nav.myBookings') : t('nav.bookings')}
+                </button>
+              )}
+              {availableTabs.users && (
+                <button
+                  onClick={() => setActiveTab('users')}
+                  className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-[color,padding] duration-300 ease-in-out ${
+                    isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
+                  } ${
+                    activeTab === 'users' 
+                      ? 'text-blue-500 border-b-2 border-blue-500' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {t('nav.users')}
+                </button>
+              )}
+              {availableTabs.customers && (
+                <button
+                  onClick={() => setActiveTab('customers')}
+                  className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-[color,padding] duration-300 ease-in-out ${
+                    isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
+                  } ${
+                    activeTab === 'customers' 
+                      ? 'text-blue-500 border-b-2 border-blue-500' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {t('nav.customers')}
+                </button>
+              )}
+              {availableTabs.services && (
+                <button
+                  onClick={() => setActiveTab('services')}
+                  className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-[color,padding] duration-300 ease-in-out ${
+                    isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
+                  } ${
+                    activeTab === 'services' 
+                      ? 'text-blue-500 border-b-2 border-blue-500' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {t('nav.services')}
+                </button>
+              )}
+              {availableTabs.reports && (
+                <button
+                  onClick={() => setActiveTab('reports')}
+                  className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-[color,padding] duration-300 ease-in-out ${
+                    isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
+                  } ${
+                    activeTab === 'reports' 
+                      ? 'text-blue-500 border-b-2 border-blue-500' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {t('nav.reports')}
+                </button>
+              )}
+              {availableTabs.settings && (
+                <button
+                  onClick={() => setActiveTab('settings')}
+                  className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-[color,padding] duration-300 ease-in-out ${
+                    isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
+                  } ${
+                    activeTab === 'settings' 
+                      ? 'text-blue-500 border-b-2 border-blue-500' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {t('nav.settings')}
+                </button>
+              )}
+            </div>
+            
+            {/* Toggle button on the same row as tabs */}
+            <button
+              onClick={toggleHeaderMinimization}
+              className={`flex-shrink-0 ml-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 hover:shadow-sm transition-[background-color,border-color,box-shadow,padding] duration-300 ease-in-out ${
+                isHeaderMinimized ? 'p-1' : 'p-1.5'
+              }`}
+              title={isHeaderMinimized ? 'Expand header' : 'Minimize header'}
+            >
+              <svg 
+                className={`text-gray-600 transition-[width,height] duration-300 ease-in-out ${
+                  isHeaderMinimized ? 'w-3 h-3' : 'w-4 h-4'
+                }`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
               >
-                {t('nav.dashboard')}
-              </button>
-            )}
-            {/* Apply the same conditional padding pattern to all other tab buttons */}
-
-            {availableTabs.bookings && (
-              <button
-                onClick={() => setActiveTab('bookings')}
-                className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-all duration-300 ease-in-out ${
-                  isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
-                } ${
-                  activeTab === 'bookings' 
-                    ? 'text-blue-500 border-b-2 border-blue-500' 
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {isStaff ? t('nav.myBookings') : t('nav.bookings')}
-              </button>
-            )}
-            {availableTabs.users && (
-              <button
-                onClick={() => setActiveTab('users')}
-                className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-all duration-300 ease-in-out ${
-                  isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
-                } ${
-                  activeTab === 'users' 
-                    ? 'text-blue-500 border-b-2 border-blue-500' 
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {t('nav.users')}
-              </button>
-            )}
-            {availableTabs.customers && (
-              <button
-                onClick={() => setActiveTab('customers')}
-                className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-all duration-300 ease-in-out ${
-                  isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
-                } ${
-                  activeTab === 'customers' 
-                    ? 'text-blue-500 border-b-2 border-blue-500' 
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {t('nav.customers')}
-              </button>
-            )}
-            {availableTabs.services && (
-              <button
-                onClick={() => setActiveTab('services')}
-                className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-all duration-300 ease-in-out ${
-                  isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
-                } ${
-                  activeTab === 'services' 
-                    ? 'text-blue-500 border-b-2 border-blue-500' 
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {t('nav.services')}
-              </button>
-            )}
-            {availableTabs.reports && (
-              <button
-                onClick={() => setActiveTab('reports')}
-                className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-all duration-300 ease-in-out ${
-                  isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
-                } ${
-                  activeTab === 'reports' 
-                    ? 'text-blue-500 border-b-2 border-blue-500' 
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {t('nav.reports')}
-              </button>
-            )}
-            {availableTabs.settings && (
-              <button
-                onClick={() => setActiveTab('settings')}
-                className={`whitespace-nowrap flex-shrink-0 text-sm md:text-base transition-all duration-300 ease-in-out ${
-                  isScrolled ? 'py-1 px-2 md:px-2' : 'py-1.5 px-2 md:px-3'
-                } ${
-                  activeTab === 'settings' 
-                    ? 'text-blue-500 border-b-2 border-blue-500' 
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {t('nav.settings')}
-              </button>
-            )}
+                {isHeaderMinimized ? (
+                  // Expand icon (double arrows pointing outward)
+                  <>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7l4-4m0 0l4 4m-4-4v18" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 17l-4 4m0 0l-4-4m4 4V3" />
+                  </>
+                ) : (
+                  // Minimize icon (double arrows pointing inward)
+                  <>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 17l4 4m0 0l4-4m-4 4V3" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7l-4-4m0 0l-4 4m4-4v18" />
+                  </>
+                )}
+              </svg>
+            </button>
           </div>
         </div>
       </div>

@@ -765,11 +765,17 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
             className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="all">{t('bookings.allProviders')}</option>
-            {providers.map(provider => (
-              <option key={provider.id} value={provider.id}>
-                {provider.full_name || `${provider.first_name} ${provider.last_name}`}
-              </option>
-            ))}
+            {providers
+              .sort((a, b) => {
+                const nameA = a.full_name || `${a.first_name} ${a.last_name}`;
+                const nameB = b.full_name || `${b.first_name} ${b.last_name}`;
+                return nameA.localeCompare(nameB);
+              })
+              .map(provider => (
+                <option key={provider.id} value={provider.id}>
+                  {provider.full_name || `${provider.first_name} ${provider.last_name}`}
+                </option>
+              ))}
           </select>
         </div>
 
@@ -783,9 +789,11 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
               className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">{t('bookings.allUsers')}</option>
-              {customers.map(customer => (
-                <option key={customer.id} value={customer.id}>{customer.full_name}</option>
-              ))}
+              {customers
+                .sort((a, b) => a.full_name.localeCompare(b.full_name))
+                .map(customer => (
+                  <option key={customer.id} value={customer.id}>{customer.full_name}</option>
+                ))}
             </select>
           </div>
         )}

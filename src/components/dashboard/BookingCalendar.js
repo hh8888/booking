@@ -415,6 +415,7 @@ const BookingCalendar = ({
             day: 'numeric',
             weekday: 'long'
           }}
+          nowIndicator={true}
           resources={getResources()}
           events={getFilteredEventsWithResources()}
           eventContent={renderEventContent}

@@ -19,11 +19,8 @@
   font-size: 0.8rem;
 }
 
-.compact-mode table th,
-.compact-mode table td {
-  padding: 0.25rem 0.375rem !important;
-  line-height: 1.2;
-}
+
+
 
 /* Form compact mode */
 .compact-mode .form-group {
@@ -383,4 +380,55 @@
 
 .compact-mode .relative .space-x-2 > * + * {
   margin-left: 0.125rem !important;
+}
+
+/* Calendar compact mode - reduce gaps between bookings */
+.compact-mode .fc-event {
+  margin-bottom: 0px !important;
+  margin-right: 0px !important;
+  padding: 0.0625rem 0.125rem !important;
+  font-size: 0.625rem !important;
+  line-height: 1.1 !important;
+  min-height: 14px !important;
+}
+
+.compact-mode .fc-timegrid-event {
+  margin-bottom: 0px !important;
+  margin-right: 0px !important;
+}
+
+.compact-mode .fc-timegrid-event-harness {
+  margin-right: 0px !important;
+}
+
+.compact-mode .fc-event-main {
+  padding: 0.0625rem 0.125rem !important;
+}
+
+.compact-mode .booking-event-content {
+  padding: 0px 2px !important;
+  font-size: 0.625rem !important;
+  line-height: 1.1 !important;
+}
+
+.compact-mode .fc-timegrid-slot {
+  height: 2rem !important;
+}
+
+.compact-mode .fc-timegrid-col-events {
+  margin-right: 0px !important;
+}
+
+/* Mobile calendar compact mode */
+.compact-mode .mobile-calendar .fc-event {
+  font-size: 0.5rem !important;
+  padding: 0.03125rem 0.0625rem !important;
+  margin-bottom: 0px !important;
+  min-height: 12px !important;
+  margin-right: 0px !important;
+}
+
+.compact-mode .mobile-calendar .fc-timegrid-event {
+  margin-right: 0px !important;
+  margin-bottom: 0px !important;
 }

@@ -68,6 +68,11 @@ export default function DashboardTab() {
 
   // Event handlers
   const handleEventClick = (info) => {
+    // Prevent all-day events from being clickable
+    if (info.event.allDay) {
+      return;
+    }
+    
     if (info.event.extendedProps.isAvailability) {
       // If clicking on availability slot, open create booking form with prefilled provider
       const clickedDate = info.event.start;

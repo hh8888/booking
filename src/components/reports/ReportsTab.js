@@ -160,7 +160,7 @@ export default function ReportsTab() {
       const serviceTypesList = Array.from(serviceTypes).sort();
       
       // Use shared color array
-      
+
       // Initialize data structure for each service type and date
       const chartData = {};
       serviceTypesList.forEach((serviceType, index) => {
@@ -409,37 +409,37 @@ export default function ReportsTab() {
 
       {/* Report Content */}
       {activeReportTab === 'bookings' && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="mb-4 flex items-center space-x-4 flex-wrap">
-            <div className="flex items-center">
-              <label htmlFor="startDate" className="mr-2 text-gray-700">{t('reports.startDate')}</label>
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+            <div className="flex flex-col">
+              <label htmlFor="startDate" className="mb-1 text-sm font-medium text-gray-700">{t('reports.startDate')}</label>
               <input
                 type="date"
                 id="startDate"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 max={endDate}
-                className="border border-gray-300 rounded px-2 py-1"
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
               />
             </div>
-            <div className="flex items-center">
-              <label htmlFor="endDate" className="mr-2 text-gray-700">{t('reports.endDate')}</label>
+            <div className="flex flex-col">
+              <label htmlFor="endDate" className="mb-1 text-sm font-medium text-gray-700">{t('reports.endDate')}</label>
               <input
                 type="date"
                 id="endDate"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 min={startDate}
-                className="border border-gray-300 rounded px-2 py-1"
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
               />
             </div>
-            <div className="flex items-center">
-              <label htmlFor="staffFilter" className="mr-2 text-gray-700">Staff Filter:</label>
+            <div className="flex flex-col">
+              <label htmlFor="staffFilter" className="mb-1 text-sm font-medium text-gray-700">Staff Filter:</label>
               <select
                 id="staffFilter"
                 value={selectedStaffId}
                 onChange={(e) => setSelectedStaffId(e.target.value)}
-                className="border border-gray-300 rounded px-2 py-1"
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
               >
                 {staffOptions.map(staff => (
                   <option key={staff.id} value={staff.id}>
@@ -448,13 +448,13 @@ export default function ReportsTab() {
                 ))}
               </select>
             </div>
-            <div className="flex items-center">
-              <label htmlFor="locationFilter" className="mr-2 text-gray-700">Location Filter:</label>
+            <div className="flex flex-col">
+              <label htmlFor="locationFilter" className="mb-1 text-sm font-medium text-gray-700">Location Filter:</label>
               <select
                 id="locationFilter"
                 value={selectedLocationId}
                 onChange={(e) => setSelectedLocationId(e.target.value)}
-                className="border border-gray-300 rounded px-2 py-1"
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
               >
                 {locationOptions.map(location => (
                   <option key={location.id} value={location.id}>
@@ -464,55 +464,97 @@ export default function ReportsTab() {
               </select>
             </div>
           </div>
-          <Bar
-            data={{
-              labels: weeklyBookings.labels,
-              datasets: weeklyBookings.datasets || []
-            }}
-            options={{
-              ...chartOptions,
-              plugins: {
-                ...chartOptions.plugins,
-                title: {
-                  ...chartOptions.plugins.title,
-                  text: `Service Booking Statistics ${startDate} to ${endDate}${selectedStaffId !== 'all' ? ` - ${staffOptions.find(s => s.id === selectedStaffId)?.name || 'Selected Staff'}` : ''}${selectedLocationId !== 'all' ? ` - ${locationOptions.find(l => l.id === selectedLocationId)?.name || 'Selected Location'}` : ''}`
-                }
-              }
-            }}
-          />
+          <div className="w-full overflow-x-auto">
+            <div className="min-w-full" style={{ minHeight: '300px', height: '400px' }}>
+              <Bar
+                data={{
+                  labels: weeklyBookings.labels,
+                  datasets: weeklyBookings.datasets || []
+                }}
+                options={{
+                  ...chartOptions,
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    ...chartOptions.plugins,
+                    legend: {
+                      ...chartOptions.plugins.legend,
+                      labels: {
+                        ...chartOptions.plugins.legend.labels,
+                        boxWidth: 10,
+                        padding: 8,
+                        font: {
+                          size: window.innerWidth < 768 ? 10 : 11
+                        }
+                      }
+                    },
+                    title: {
+                      ...chartOptions.plugins.title,
+                      font: {
+                        size: window.innerWidth < 768 ? 14 : 16
+                      },
+                      text: `Service Booking Statistics ${startDate} to ${endDate}${selectedStaffId !== 'all' ? ` - ${staffOptions.find(s => s.id === selectedStaffId)?.name || 'Selected Staff'}` : ''}${selectedLocationId !== 'all' ? ` - ${locationOptions.find(l => l.id === selectedLocationId)?.name || 'Selected Location'}` : ''}`
+                    }
+                  },
+                  scales: {
+                    ...chartOptions.scales,
+                    x: {
+                      ...chartOptions.scales.x,
+                      ticks: {
+                        font: {
+                          size: window.innerWidth < 768 ? 10 : 12
+                        },
+                        maxRotation: window.innerWidth < 768 ? 45 : 0,
+                        minRotation: window.innerWidth < 768 ? 45 : 0
+                      }
+                    },
+                    y: {
+                      ...chartOptions.scales.y,
+                      ticks: {
+                        ...chartOptions.scales.y.ticks,
+                        font: {
+                          size: window.innerWidth < 768 ? 10 : 12
+                        }
+                      }
+                    }
+                  }
+                }}
+              />
+            </div>
+          </div>
         </div>
       )}
 
       {activeReportTab === 'customers' && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="mb-4 flex items-center space-x-4 flex-wrap">
-            <div className="flex items-center">
-              <label htmlFor="startDate" className="mr-2 text-gray-700">{t('reports.startDate')}</label>
+        <div className="bg-white p-3 sm:p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="flex flex-col">
+              <label htmlFor="startDate" className="mb-1 text-sm font-medium text-gray-700">{t('reports.startDate')}</label>
               <input
                 type="date"
                 id="startDate"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="border border-gray-300 rounded px-2 py-1"
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
               />
             </div>
-            <div className="flex items-center">
-              <label htmlFor="endDate" className="mr-2 text-gray-700">{t('reports.endDate')}</label>
+            <div className="flex flex-col">
+              <label htmlFor="endDate" className="mb-1 text-sm font-medium text-gray-700">{t('reports.endDate')}</label>
               <input
                 type="date"
                 id="endDate"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="border border-gray-300 rounded px-2 py-1"
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
               />
             </div>
-            <div className="flex items-center">
-              <label htmlFor="staffFilter" className="mr-2 text-gray-700">Staff Filter:</label>
+            <div className="flex flex-col">
+              <label htmlFor="staffFilter" className="mb-1 text-sm font-medium text-gray-700">Staff Filter:</label>
               <select
                 id="staffFilter"
                 value={selectedStaffId}
                 onChange={(e) => setSelectedStaffId(e.target.value)}
-                className="border border-gray-300 rounded px-2 py-1"
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
               >
                 {staffOptions.map(staff => (
                   <option key={staff.id} value={staff.id}>
@@ -521,13 +563,13 @@ export default function ReportsTab() {
                 ))}
               </select>
             </div>
-            <div className="flex items-center">
-              <label htmlFor="locationFilter" className="mr-2 text-gray-700">Location Filter:</label>
+            <div className="flex flex-col">
+              <label htmlFor="locationFilter" className="mb-1 text-sm font-medium text-gray-700">Location Filter:</label>
               <select
                 id="locationFilter"
                 value={selectedLocationId}
                 onChange={(e) => setSelectedLocationId(e.target.value)}
-                className="border border-gray-300 rounded px-2 py-1"
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
               >
                 {locationOptions.map(location => (
                   <option key={location.id} value={location.id}>
@@ -539,23 +581,23 @@ export default function ReportsTab() {
           </div>
           
           {/* Summary Statistics */}
-          <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <div className="text-2xl font-bold text-blue-600">{totalBookings}</div>
-              <div className="text-sm text-blue-800">Total Bookings</div>
+          <div className="mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="bg-blue-50 p-3 sm:p-4 rounded-lg border border-blue-200">
+              <div className="text-xl sm:text-2xl font-bold text-blue-600">{totalBookings}</div>
+              <div className="text-xs sm:text-sm text-blue-800">Total Bookings</div>
             </div>
-            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-              <div className="text-2xl font-bold text-green-600">{totalCustomers}</div>
-              <div className="text-sm text-green-800">Total Customers</div>
+            <div className="bg-green-50 p-3 sm:p-4 rounded-lg border border-green-200">
+              <div className="text-xl sm:text-2xl font-bold text-green-600">{totalCustomers}</div>
+              <div className="text-xs sm:text-sm text-green-800">Total Customers</div>
             </div>
           </div>
 
           {customerBookings.labels && customerBookings.labels.length > 0 ? (
             <div>
-              <div className="mb-2 text-sm text-gray-600">
+              <div className="mb-2 text-xs sm:text-sm text-gray-600">
                 <span className="font-medium">Note:</span> Chart shows top 25 customers by booking count. Total count above includes all customers.
               </div>
-              <div style={{ height: '400px', width: '100%' }}>
+              <div style={{ height: window.innerWidth < 768 ? '300px' : '400px', width: '100%' }}>
               <Bar
                 data={customerBookings}
                 options={{
@@ -564,14 +606,33 @@ export default function ReportsTab() {
                   plugins: {
                     legend: {
                       position: 'top',
+                      labels: {
+                        font: {
+                          size: window.innerWidth < 768 ? 10 : 12
+                        },
+                        padding: window.innerWidth < 768 ? 10 : 20
+                      }
                     },
                     title: {
                       display: true,
-                      text: `Customer Booking Statistics ${startDate} to ${endDate}${selectedStaffId !== 'all' ? ` - ${staffOptions.find(s => s.id === selectedStaffId)?.name || 'Selected Staff'}` : ''}${selectedLocationId !== 'all' ? ` - ${locationOptions.find(l => l.id === selectedLocationId)?.name || 'Selected Location'}` : ''}`
+                      text: `Customer Booking Statistics ${startDate} to ${endDate}${selectedStaffId !== 'all' ? ` - ${staffOptions.find(s => s.id === selectedStaffId)?.name || 'Selected Staff'}` : ''}${selectedLocationId !== 'all' ? ` - ${locationOptions.find(l => l.id === selectedLocationId)?.name || 'Selected Location'}` : ''}`,
+                      font: {
+                        size: window.innerWidth < 768 ? 12 : 16
+                      },
+                      padding: {
+                        top: window.innerWidth < 768 ? 10 : 20,
+                        bottom: window.innerWidth < 768 ? 15 : 30
+                      }
                     },
                     tooltip: {
                       mode: 'index',
                       intersect: false,
+                      titleFont: {
+                        size: window.innerWidth < 768 ? 11 : 13
+                      },
+                      bodyFont: {
+                        size: window.innerWidth < 768 ? 10 : 12
+                      },
                       callbacks: {
                         footer: function(tooltipItems) {
                           let total = 0;
@@ -587,15 +648,21 @@ export default function ReportsTab() {
                     x: {
                       stacked: true,
                       ticks: {
-                        maxRotation: 45,
-                        minRotation: 0
+                        font: {
+                          size: window.innerWidth < 768 ? 9 : 11
+                        },
+                        maxRotation: window.innerWidth < 768 ? 45 : 0,
+                        minRotation: window.innerWidth < 768 ? 45 : 0
                       }
                     },
                     y: {
                       stacked: true,
                       beginAtZero: true,
                       ticks: {
-                        stepSize: 1
+                        stepSize: 1,
+                        font: {
+                          size: window.innerWidth < 768 ? 9 : 11
+                        }
                       }
                     }
                   },
