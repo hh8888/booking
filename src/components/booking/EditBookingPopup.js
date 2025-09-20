@@ -27,7 +27,7 @@ export default function EditBookingPopup({
   hideRecurringOptions = false   // New prop
 }) {
   const { t } = useLanguage();
-  const { user: currentUser } = useDashboardUser();
+  const { userRole } = useDashboardUser();
   const [editItem, setEditItem] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingAvailability, setLoadingAvailability] = useState(false);
@@ -55,17 +55,17 @@ export default function EditBookingPopup({
   const [filteredProviders, setFilteredProviders] = useState([]);
 
   // Check if current user can edit staff comments
-  const canEditStaffComments = currentUser && (
-    currentUser.role === USER_ROLES.STAFF || 
-    currentUser.role === USER_ROLES.MANAGER || 
-    currentUser.role === USER_ROLES.ADMIN
+  const canEditStaffComments = userRole && (
+    userRole === USER_ROLES.STAFF || 
+    userRole === USER_ROLES.MANAGER || 
+    userRole === USER_ROLES.ADMIN
   );
 
   // Filter providers based on availability when checkbox is toggled
   useEffect(() => {
     const filterProviders = async () => {
-      console.log('=== Provider Filtering Debug ===');
-      console.log('All providers:', providers.map(p => ({ id: p.id, name: p.full_name, tags: p.tags })));
+      // console.log('=== Provider Filtering Debug ===');
+      // console.log('All providers:', providers.map(p => ({ id: p.id, name: p.full_name, tags: p.tags })));
       
       if (showAvailableProvidersOnly && editItem?.start_date) {
         setLoadingAvailability(true);
@@ -219,18 +219,18 @@ export default function EditBookingPopup({
             return true;
           });
           
-          console.log('Existing bookings:', existingBookings);
-          console.log('Filtered bookings (excluding current):', filteredBookings);
+          // console.log('Existing bookings:', existingBookings);
+          // console.log('Filtered bookings (excluding current):', filteredBookings);
 
           // 获取服务提供者在该日期的可用时间 - now with location filter
           const availability = await staffAvailabilityService.getStaffAvailability(editItem.provider_id, locationId);
           const dayAvailability = availability.filter(slot => slot.date === editItem.start_date && slot.is_available);
 
-          console.log('Day availability:', {
-            availability,
-            dayAvailability,
-            locationId
-          });
+          // console.log('Day availability:', {
+          //   availability,
+          //   dayAvailability,
+          //   locationId
+          // });
 
           // 生成所有可能的时间槽
           const allSlots = [];
@@ -254,10 +254,10 @@ export default function EditBookingPopup({
                 slotTime.setHours(parseInt(hour), parseInt(minute), 0, 0);
                 
                 // Calculate the end time for this slot based on service duration
-                console.log('EditItem:', editItem);
-                console.log('EditItem duration:', editItem?.duration);
+                // console.log('EditItem:', editItem);
+                // console.log('EditItem duration:', editItem?.duration);
                 const serviceDuration = parseInt(editItem?.duration) || 30; // Ensure correct duration
-                console.log('Using service duration (minutes):', serviceDuration);
+                // console.log('Using service duration (minutes):', serviceDuration);
                 const slotEndTime = new Date(slotTime.getTime() + serviceDuration * 60000);
 
               
@@ -320,7 +320,7 @@ export default function EditBookingPopup({
                   console.log(`timeslots: ${slotConflictCount} booking(s) at ${hour}:${minute} (under same provider)`);
                 }
                 
-                console.log(`Slot ${hour}:${minute} - Conflicts: ${slotConflictCount}, Max allowed: ${maxNumber}, Fully booked: ${isSlotFullyBooked}`);
+                // console.log(`Slot ${hour}:${minute} - Conflicts: ${slotConflictCount}, Max allowed: ${maxNumber}, Fully booked: ${isSlotFullyBooked}`);
 
                 if (isInAvailableHours) {
                   const timeSlot = `${hour}:${minute}`;
@@ -349,10 +349,10 @@ export default function EditBookingPopup({
             //   availableSlots.length -= 1;
             // }
             
-            console.log('All Slots:', allSlots);
-            console.log('Available Slots:', availableSlots);
-            console.log('Booked Slots:', bookedSlots);
-            console.log('Total Conflicted Bookings Counter:', conflictedBookingCounter);
+            // console.log('All Slots:', allSlots);
+            // console.log('Available Slots:', availableSlots);
+            // console.log('Booked Slots:', bookedSlots);
+            // console.log('Total Conflicted Bookings Counter:', conflictedBookingCounter);
             
             setAllTimeSlots(allSlots);
             setAvailableTimeSlots(availableSlots);
@@ -415,7 +415,7 @@ export default function EditBookingPopup({
         currentLocationId
       );
 
-      console.log('Availability Dates:', availabilityData);
+      // console.log('Availability Dates:', availabilityData);
       
       const availabilityPromises = [];
       
@@ -500,7 +500,7 @@ export default function EditBookingPopup({
           defaultMinute = minute.padStart(2, '0');
         }
         
-        console.log('Setting default time:', { defaultHour, defaultMinute }); // Debug log
+        // console.log('Setting default time:', { defaultHour, defaultMinute }); // Debug log
         
         // Get current location from LocationService
         const locationService = LocationService.getInstance();
@@ -544,20 +544,30 @@ export default function EditBookingPopup({
         };
         
         // Debug logging - add this before creating formattedBooking
-        console.log('Original booking object:', booking);
-        console.log('Booking location field:', booking.location);
+        // console.log('Original booking object:', booking);
+        // console.log('Booking location field:', booking.location);
         
-        console.log('Formatted booking object:', formattedBooking);
-        console.log('Formatted booking location:', formattedBooking.location);
+        // // Add console logging for comments field debugging
+        // console.log('=== COMMENTS FIELD DEBUG ===');
+        // console.log('booking.comments:', booking.comments);
+        // console.log('booking.notes:', booking.notes);
+        // console.log('typeof booking.comments:', typeof booking.comments);
+        // console.log('typeof booking.notes:', typeof booking.notes);
+        // console.log('formattedBooking.comments:', formattedBooking.comments);
+        // console.log('formattedBooking.notes:', formattedBooking.notes);
+        // console.log('=== END COMMENTS DEBUG ===');
         
-        // Debug logging
-        console.log('Setting editItem for editing:', {
-          original: booking,
-          formatted: formattedBooking,
-          provider_id: formattedBooking.provider_id,
-          start_date: formattedBooking.start_date,
-          location: formattedBooking.location  // Add this line
-        });
+        // console.log('Formatted booking object:', formattedBooking);
+        // console.log('Formatted booking location:', formattedBooking.location);
+        
+        // // Debug logging
+        // console.log('Setting editItem for editing:', {
+        //   original: booking,
+        //   formatted: formattedBooking,
+        //   provider_id: formattedBooking.provider_id,
+        //   start_date: formattedBooking.start_date,
+        //   location: formattedBooking.location  // Add this line
+        // });
         
         setEditItem(formattedBooking);
         
@@ -686,11 +696,11 @@ export default function EditBookingPopup({
   };
 
   const handleSave = async (itemData) => {
-    console.log('=== EditBookingPopup handleSave START ===');
-    console.log('itemData received:', itemData);
-    console.log('isCreating:', isCreating);
-    console.log('editItem:', editItem);
-    console.log('onSave function:', onSave);
+    // console.log('=== EditBookingPopup handleSave START ===');
+    // console.log('itemData received:', itemData);
+    // console.log('isCreating:', isCreating);
+    // console.log('editItem:', editItem);
+    // console.log('onSave function:', onSave);
     
     setLoading(true);
     try {
@@ -793,17 +803,17 @@ export default function EditBookingPopup({
       const existingBookings = await dbService.fetchData(TABLES.BOOKINGS, 'start_time', false, bookingFilters);
       
       // Add debug logging
-      console.log('Debug - selectedService:', selectedService);
-      console.log('Debug - staff_id value:', selectedService?.staff_id);
-      console.log('Debug - staff_id type:', typeof selectedService?.staff_id);
-      console.log('Debug - staff_id trimmed:', selectedService?.staff_id?.trim?.());
+      // console.log('Debug - selectedService:', selectedService);
+      // console.log('Debug - staff_id value:', selectedService?.staff_id);
+      // console.log('Debug - staff_id type:', typeof selectedService?.staff_id);
+      // console.log('Debug - staff_id trimmed:', selectedService?.staff_id?.trim?.());
       
       // Only check for overlaps if the service has assigned staff
       if (selectedService && selectedService.staff_id && selectedService.staff_id.trim() !== '') {
-        console.log('Debug - Entering conflict validation (service has staff)');
-        console.log('Debug - isCreating:', isCreating);
-        console.log('Debug - editItem.id:', editItem?.id);
-        console.log('Debug - existingBookings before filter:', existingBookings.map(b => ({ id: b.id, start_time: b.start_time, end_time: b.end_time })));
+        // console.log('Debug - Entering conflict validation (service has staff)');
+        // console.log('Debug - isCreating:', isCreating);
+        // console.log('Debug - editItem.id:', editItem?.id);
+        // console.log('Debug - existingBookings before filter:', existingBookings.map(b => ({ id: b.id, start_time: b.start_time, end_time: b.end_time })));
         
         // Filter out the current booking being edited
         const filteredBookings = existingBookings.filter(booking => {
@@ -896,10 +906,10 @@ export default function EditBookingPopup({
       const dataToSave = { ...restDataToSave };
       
       // DEBUG: Log the data before any processing
-      console.log('=== DEBUG: Data before processing ===');
-      console.log('restDataToSave:', restDataToSave);
-      console.log('editItem:', editItem);
-      console.log('bookingDataWithLocation:', bookingDataWithLocation);
+      // console.log('=== DEBUG: Data before processing ===');
+      // console.log('restDataToSave:', restDataToSave);
+      // console.log('editItem:', editItem);
+      // console.log('bookingDataWithLocation:', bookingDataWithLocation);
       
       // Ensure numeric fields are properly converted from strings
       dataToSave.recurring_count = parseInt(dataToSave.recurring_count) || 0;
@@ -1014,9 +1024,9 @@ export default function EditBookingPopup({
   };
   // Add this useEffect to debug the options loading
   useEffect(() => {
-    console.log('Hour options:', hourOptions);
-    console.log('Minute options:', minuteOptions);
-    console.log('Edit item:', editItem);
+    // console.log('Hour options:', hourOptions);
+    // console.log('Minute options:', minuteOptions);
+    // console.log('Edit item:', editItem);
   }, [hourOptions, minuteOptions, editItem]);
 
   // Add this useEffect near the other useEffect hooks
@@ -1504,15 +1514,7 @@ export default function EditBookingPopup({
               rows: 3
             },
             ...(canEditStaffComments ? [{
-              key: "staff_comments",
-              label: t('bookings.staffComments'),
-              type: "textarea",
-              placeholder: t('bookings.staffCommentsPlaceholder'),
-              rows: 3,
-              helpText: t('bookings.staffCommentsHelp')
-            }] : []),
-            ...(canEditStaffComments ? [{
-              key: "staff_comments",
+              key: "comments",
               label: t('bookings.staffComments'),
               type: "textarea",
               placeholder: t('bookings.staffCommentsPlaceholder'),

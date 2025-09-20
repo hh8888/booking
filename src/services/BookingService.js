@@ -196,7 +196,21 @@ class BookingService {
   // Add new method to get booking by ID
   async getBookingById(bookingId) {
     try {
+      console.log('=== FETCHING BOOKING BY ID ===');
+      console.log('Booking ID:', bookingId);
+      
       const bookings = await this.dbService.fetchData(TABLES.BOOKINGS, 'created_at', false, { id: bookingId });
+      
+      console.log('Raw booking data from database:', bookings);
+      console.log('Number of bookings found:', bookings.length);
+      
+      if (bookings.length > 0) {
+        console.log('First booking notes field:', bookings[0].notes);
+        console.log('First booking all fields:', Object.keys(bookings[0]));
+      }
+      
+      console.log('=== END BOOKING FETCH DEBUG ===');
+      
       return bookings.length > 0 ? bookings[0] : null;
     } catch (error) {
       console.error('Error fetching booking by ID:', error);

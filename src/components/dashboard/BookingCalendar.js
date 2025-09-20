@@ -301,18 +301,18 @@ const BookingCalendar = ({
           });
           
           // Debug logging
-          console.log(`🔍 Checking booking: ${event.title} on ${bookingDateStr}`);
-          console.log(`📋 Staff ID: ${staffId}, Staff found: ${staff?.name || 'Unknown'}`);
-          console.log(`⏰ Has availability on date: ${hasAvailabilityOnDate}`);
+          // console.log(`🔍 Checking booking: ${event.title} on ${bookingDateStr}`);
+          // console.log(`📋 Staff ID: ${staffId}, Staff found: ${staff?.name || 'Unknown'}`);
+          // console.log(`⏰ Has availability on date: ${hasAvailabilityOnDate}`);
           
           if (hasAvailabilityOnDate) {
             // Provider is available - assign to their column
             resourceId = staffId.toString();
-            console.log(`✅ Assigned to staff column: ${staffId}`);
+            //console.log(`✅ Assigned to staff column: ${staffId}`);
           } else {
             // Provider is not available on this date - put in unassigned column
             resourceId = 'generic';
-            console.log(`❌ Moved to unassigned column (no availability found)`);
+            //console.log(`❌ Moved to unassigned column (no availability found)`);
           }
         }
       } else {

@@ -15,6 +15,7 @@ import { BOOKING_STATUS, USER_ROLES, TABLES, QUERY_FILTERS, SUCCESS_MESSAGES, ER
 import { filterUsersByRole, isUpcomingBooking, isPendingBooking } from '../../utils';
 
 function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
+  console.log('📍 BookingsTab component loaded with debug logging');
   const { t } = useLanguage();
   const errorHandler = ErrorHandlingService.getInstance();
   const [bookings, setBookings] = useState([]);
@@ -855,15 +856,29 @@ function BookingsTab({ users, userId, staffMode = false, currentUserId }) {
         selectedRows={selectedRows}
         setSelectedRows={setSelectedRows}
         onEdit={(booking) => {
-          setIsCreating(false);
-          // Format start_time for date and time inputs
+          console.log('Edit button clicked for booking:', booking?.id); // Add this line
+          
           const bookingDate = new Date(booking.start_time);
+          
+          // Add debug logging for notes field
+          console.log('=== EDIT BOOKING DEBUG ===');
+          console.log('Original booking from list:', booking);
+          console.log('booking.notes:', booking.notes);
+          console.log('booking.comments:', booking.comments);
+          console.log('typeof booking.notes:', typeof booking.notes);
+          console.log('All booking fields:', Object.keys(booking));
+          
           const formattedBooking = {
             ...booking,
             start_date: bookingDate.toISOString().split('T')[0],
             start_time_hour: bookingDate.getHours(),
             start_time_minute: bookingDate.getMinutes()
           };
+          
+          console.log('Formatted booking for edit:', formattedBooking);
+          console.log('formattedBooking.notes:', formattedBooking.notes);
+          console.log('=== END EDIT BOOKING DEBUG ===');
+          
           setEditItem(formattedBooking);
         }}
         onResetPassword={null}

@@ -266,6 +266,17 @@ export default function ReportsTab() {
         customerServiceCounts[customerName][serviceName]++;
       });
 
+      // Add debugging to see what customers we have
+      console.log('🔍 Customer Service Counts Debug:', {
+        totalCustomersWithBookings: Object.keys(customerServiceCounts).length,
+        customerNames: Object.keys(customerServiceCounts),
+        totalFilteredBookings: filteredBookings.length,
+        totalCustomersInDB: customers.length,
+        dateRange: { startDate, endDate },
+        selectedStaffId,
+        selectedLocationId
+      });
+
       // Sort customers by total booking count (descending)
       const sortedCustomers = Object.keys(customerServiceCounts)
         .map(customerName => ({
@@ -273,8 +284,13 @@ export default function ReportsTab() {
           totalBookings: Object.values(customerServiceCounts[customerName]).reduce((sum, count) => sum + count, 0)
         }))
         .sort((a, b) => b.totalBookings - a.totalBookings)
-        //.slice(0, 25) // Limit to top 25 customers for better visibility
+        // Remove the slice limitation to show all customers
         .map(customer => customer.name);
+
+      console.log('🔍 Sorted Customers Debug:', {
+        sortedCustomersCount: sortedCustomers.length,
+        sortedCustomerNames: sortedCustomers
+      });
 
       const serviceTypesList = Array.from(serviceTypes).sort();
       
@@ -502,10 +518,12 @@ export default function ReportsTab() {
                       ...chartOptions.scales.x,
                       ticks: {
                         font: {
-                          size: window.innerWidth < 768 ? 10 : 12
+                          size: window.innerWidth < 768 ? 8 : 10  // Reduce font size to fit more labels
                         },
-                        maxRotation: window.innerWidth < 768 ? 45 : 0,
-                        minRotation: window.innerWidth < 768 ? 45 : 0
+                        maxRotation: 45,  // Always rotate labels to save space
+                        minRotation: 45,
+                        autoSkip: false,  // Prevent automatic label skipping
+                        maxTicksLimit: undefined  // Remove any tick limit
                       }
                     },
                     y: {
@@ -595,12 +613,18 @@ export default function ReportsTab() {
           {customerBookings.labels && customerBookings.labels.length > 0 ? (
             <div>
               <div className="mb-2 text-xs sm:text-sm text-gray-600">
-                <span className="font-medium">Note:</span> Chart shows top 25 customers by booking count. Total count above includes all customers.
+                <span className="font-medium">Note:</span> Chart shows all customers by booking count.
               </div>
-              <div style={{ height: window.innerWidth < 768 ? '300px' : '400px', width: '100%' }}>
+              <div style={{ 
+                height: Math.max(
+                  customerBookings.labels ? customerBookings.labels.length * 20 + 100 : 400,
+                  window.innerWidth < 768 ? 400 : 500
+                ) + 'px' 
+              }}>
               <Bar
                 data={customerBookings}
                 options={{
+                  indexAxis: 'y',  // This makes it horizontal
                   responsive: true,
                   maintainAspectRatio: false,
                   plugins: {
@@ -637,7 +661,7 @@ export default function ReportsTab() {
                         footer: function(tooltipItems) {
                           let total = 0;
                           tooltipItems.forEach(function(tooltipItem) {
-                            total += tooltipItem.parsed.y;
+                            total += tooltipItem.parsed.x;  // Changed from .y to .x
                           });
                           return 'Total: ' + total;
                         }
@@ -645,17 +669,7 @@ export default function ReportsTab() {
                     }
                   },
                   scales: {
-                    x: {
-                      stacked: true,
-                      ticks: {
-                        font: {
-                          size: window.innerWidth < 768 ? 9 : 11
-                        },
-                        maxRotation: window.innerWidth < 768 ? 45 : 0,
-                        minRotation: window.innerWidth < 768 ? 45 : 0
-                      }
-                    },
-                    y: {
+                    x: {  // Now this is the value axis (horizontal)
                       stacked: true,
                       beginAtZero: true,
                       ticks: {
@@ -663,6 +677,16 @@ export default function ReportsTab() {
                         font: {
                           size: window.innerWidth < 768 ? 9 : 11
                         }
+                      }
+                    },
+                    y: {  // Now this is the category axis (vertical)
+                      stacked: true,
+                      ticks: {
+                        font: {
+                          size: window.innerWidth < 768 ? 9 : 11
+                        },
+                        autoSkip: false,  // Show all customer names
+                        maxTicksLimit: 100
                       }
                     }
                   },

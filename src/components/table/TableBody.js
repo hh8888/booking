@@ -16,7 +16,7 @@ const TableBody = ({ data, columns, selectedRows, onSelectRow, onEdit, onSetAvai
 
   return (
     <tbody>
-      {data.map((row) => (
+      {data.map((row, index) => (
         <TableRow
           key={row.id}
           row={row}
@@ -27,6 +27,7 @@ const TableBody = ({ data, columns, selectedRows, onSelectRow, onEdit, onSetAvai
           onSetAvailability={onSetAvailability}
           onResetPassword={onResetPassword}
           onViewHistory={onViewHistory}
+          isEvenRow={index % 2 === 0}
         />
       ))}
     </tbody>

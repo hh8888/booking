@@ -4,7 +4,7 @@ import StaffAvailabilityService from '../../services/StaffAvailabilityService';
 import { PencilIcon, ClockIcon, KeyIcon, DocumentDuplicateIcon } from '@heroicons/react/24/outline';
 import { USER_ROLES } from '../../constants';
 
-const TableRow = ({ row, columns, selectedRows, onSelectRow, onEdit, onSetAvailability, onResetPassword, onViewHistory }) => {
+const TableRow = ({ row, columns, selectedRows, onSelectRow, onEdit, onSetAvailability, onResetPassword, onViewHistory, isEvenRow }) => {
   // Check if value is a date type
   const isDateValue = (value) => {
     if (!value) return false;
@@ -47,9 +47,9 @@ const TableRow = ({ row, columns, selectedRows, onSelectRow, onEdit, onSetAvaila
     <tr className={`${
       isSelected 
         ? 'bg-blue-100 border-blue-200' 
-        : row.id % 2 === 0 
-          ? 'bg-gray-50' 
-          : 'bg-white'
+        : isEvenRow 
+          ? 'bg-white' 
+          : 'bg-gray-100'
     } hover:bg-blue-50 transition-colors duration-150`}>
       <td className="px-2 md:px-4 py-2 border-b border-gray-200">
         <input
@@ -62,13 +62,7 @@ const TableRow = ({ row, columns, selectedRows, onSelectRow, onEdit, onSetAvaila
       {columns.map((column, colIndex) => (
         <td
           key={`${row.id}-${column.key || colIndex}`}
-          className={`px-2 md:px-4 py-2 border-b border-gray-200 text-sm md:text-base ${
-            isSelected 
-              ? 'bg-blue-100' 
-              : colIndex % 2 === 0 
-                ? 'bg-gray-100' 
-                : 'bg-white'
-          }`}
+          className="px-2 md:px-4 py-2 border-b border-gray-200 text-sm md:text-base"
         >
           {column.render ? column.render(row[column.key], row) : column.formatter ? column.formatter(row[column.key]) : formatCellContent(column, row[column.key])}
         </td>

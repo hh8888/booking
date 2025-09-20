@@ -87,6 +87,13 @@ export default function DashboardTab() {
       setShowEditPopup(true);
     } else {
       // For booking events, show event details
+      console.log('🔍 CALENDAR BOOKING CLICKED');
+      console.log('Calendar event object:', info.event);
+      console.log('Event extendedProps:', info.event.extendedProps);
+      console.log('Event notes field:', info.event.extendedProps?.notes);
+      console.log('Event comments field:', info.event.extendedProps?.comments);
+      console.log('All extendedProps keys:', Object.keys(info.event.extendedProps || {}));
+      
       setSelectedEvent(info.event);
       setShowEventModal(true);
     }
@@ -487,7 +494,17 @@ export default function DashboardTab() {
             customer_id: selectedEvent.extendedProps?.customerId,
             service_id: selectedEvent.extendedProps?.serviceId,
             status: selectedEvent.extendedProps?.status || BOOKING_STATUS.PENDING,
-            location: selectedEvent.extendedProps?.locationId  // Add this line
+            location: selectedEvent.extendedProps?.locationId,
+            notes: selectedEvent.extendedProps?.notes,
+            comments: selectedEvent.extendedProps?.comments, // Add this line
+            // Add debug logging
+            ...(() => {
+              console.log('📝 PASSING TO EDIT POPUP:');
+              console.log('selectedEvent:', selectedEvent);
+              console.log('notes from selectedEvent:', selectedEvent.extendedProps?.notes);
+              console.log('comments from selectedEvent:', selectedEvent.extendedProps?.comments);
+              return {};
+            })()
           } : null}
           onSave={handleEditSave}
           onCancel={() => {

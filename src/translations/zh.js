@@ -320,7 +320,10 @@ export default {
     search: '搜索',
     searchPlaceholder: '按客户、服务或备注搜索...',
     locationFilter: '位置',
-    allLocations: '所有位置'
+    allLocations: '所有位置',
+    phone: '电话',
+    staffCommentsPlaceholder: '为员工添加任何评论',
+    staffCommentsHelp: '仅员工可见的内部评论',
   },
 
   // Users

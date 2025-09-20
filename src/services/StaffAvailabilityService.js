@@ -30,7 +30,7 @@ class StaffAvailabilityService {
         filters
       );
 
-      console.log('Availability data:', availability);
+      // console.log('Availability data:', availability);
 
       return availability;
     } catch (error) {

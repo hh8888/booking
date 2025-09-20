@@ -325,7 +325,9 @@ blockTimeSlot: {
     searchPlaceholder: 'Search by customer, service, or notes...',
     locationFilter: 'Location',
     allLocations: 'All Locations',
-    phone: 'phone'
+    phone: 'phone',
+    staffCommentsPlaceholder: 'Add any comments for the staff',
+    staffCommentsHelp: 'Internal comments visible only to staff members',
   },
 
   // Users
@@ -572,7 +574,7 @@ blockTimeSlot: {
     fri: 'Fri',
     sat: 'Sat',
     sun: 'Sun',
-    showAvailableProvidersOnly: 'Show available providers only'
+    showAvailableProvidersOnly: 'Show available providers only',
   },
 
   timeSlots: {

@@ -4,9 +4,9 @@ import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function TimeSlots({ selectedHour, selectedMinute, onTimeSelect, bookedSlots = [], duration = 30, availableSlots = [], allSlots = [], slotConflictCounts = {} }) {
   const { t } = useLanguage();
-  console.log('Available Slots:', availableSlots);
-  console.log('Booked Slots:', bookedSlots);
-  console.log('All Slots:', allSlots);
+  // console.log('Available Slots:', availableSlots);
+  // console.log('Booked Slots:', bookedSlots);
+  // console.log('All Slots:', allSlots);
 
   const isTimeInSelectedRange = (hour, minute) => {
     if (!selectedHour || !selectedMinute) return false;

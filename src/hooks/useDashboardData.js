@@ -244,10 +244,10 @@ export const useDashboardData = () => {
       if (!includePastBookings) {
         // Exclude bookings before yesterday (keep today's and future bookings)
         const filterDate = DateTimeFormatter.getYesterdayStart();
-        console.log('🔍 Past booking filter - Yesterday start:', filterDate);
-        console.log('🔍 Current date for reference:', new Date().toISOString());
+        // console.log('🔍 Past booking filter - Yesterday start:', filterDate);
+        // console.log('🔍 Current date for reference:', new Date().toISOString());
         bookingFilter.start_time = { gte: filterDate };
-        console.log('🔍 Applied booking filter:', JSON.stringify(bookingFilter, null, 2));
+        // console.log('🔍 Applied booking filter:', JSON.stringify(bookingFilter, null, 2));
       }
 
       const [bookingsData, staffDataResult, servicesData, showStaffNameSetting, fetchedCustomersData] = await Promise.all([
@@ -260,7 +260,7 @@ export const useDashboardData = () => {
         customersData || dbService.fetchData(TABLES.USERS, 'created_at', false, { role: 'customer' }, ['id', 'full_name'])
       ]);
   
-      console.log('Bookings filtered by location:', currentLocationId, bookingsData.length);
+      // console.log('Bookings filtered by location:', currentLocationId, bookingsData.length);
   
       // Use the provided customersData or the fetched one
       const actualCustomersData = customersData || fetchedCustomersData;
@@ -372,6 +372,7 @@ export const useDashboardData = () => {
             serviceId: service?.id,
             status: booking.status || 'pending',
             notes: booking.notes || '-',
+            comments: booking.comments, // Add this line
             locationId: booking.location,
             locationName: booking.location ? LocationService.getInstance().getLocationNameById(booking.location) : 'N/A'
           }
@@ -414,9 +415,9 @@ export const useDashboardData = () => {
         ? allStaffData.filter(staff => userHasLocation(staff, currentLocationId))
         : allStaffData;
 
-      console.log('Staff data:', staffData);
-      console.log('Availability data:', availabilityData);
-      console.log('Filtered by location:', currentLocationId);
+      // console.log('Staff data:', staffData);
+      // console.log('Availability data:', availabilityData);
+      // console.log('Filtered by location:', currentLocationId);
   
       // Group availability by date to handle overlapping
       const availabilityByDate = {};
@@ -501,7 +502,7 @@ export const useDashboardData = () => {
         }).filter(Boolean);
       }).filter(Boolean);
 
-      console.log('Final Availability:', availabilityEvents.filter(Boolean));
+      // console.log('Final Availability:', availabilityEvents.filter(Boolean));
 
       // Add availability events to calendar
       const validAvailabilityEvents = availabilityEvents.flat().filter(Boolean);
@@ -541,7 +542,7 @@ export const useDashboardData = () => {
         );
         // Combine original time-based events with all-day duplicates
         const newBookings = [...bookingEvents, ...validAvailabilityEvents, ...allDayAvailabilityEvents];
-        console.log('Final bookings state with availability (including all-day):', newBookings);
+        // console.log('Final bookings state with availability (including all-day):', newBookings);
         return newBookings;
       });
     } catch (error) {
@@ -605,10 +606,10 @@ export const useDashboardData = () => {
         // Add location change listener
         // Add location change listener
         const handleLocationChange = async (newLocation) => {
-          console.log('🌍 Dashboard location change detected:', {
-            newLocationId: newLocation?.id,
-            newLocationName: newLocation?.name
-          });
+          // console.log('🌍 Dashboard location change detected:', {
+          //   newLocationId: newLocation?.id,
+          //   newLocationName: newLocation?.name
+          // });
           
           setCurrentLocation(newLocation || null); // Store the full location object, not just the ID
           
@@ -618,7 +619,7 @@ export const useDashboardData = () => {
             await fetchBookingsWithStaff(customersData);
             await fetchTableStats(); // ← ADD THIS LINE!
             await fetchStaffAvailability();
-            console.log('✅ Dashboard data refreshed for new location');
+            // console.log('✅ Dashboard data refreshed for new location');
           } catch (error) {
             console.error('❌ Error refreshing dashboard data for location change:', error);
             showErrorToast('general');

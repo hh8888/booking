@@ -105,16 +105,16 @@ export default function Dashboard() {
   // Add debugging logs for admin and manager
   useEffect(() => {
     if (isAdmin || isManager) {
-      console.log('=== Dashboard Debug Info ===');
-      console.log('userLoading:', userLoading);
-      console.log('usersLoading:', usersLoading);
-      console.log('userError:', userError);
-      console.log('usersError:', usersError);
-      console.log('networkError:', networkError);
-      console.log('currentUserId:', currentUserId);
-      console.log('userRole:', userRole);
-      console.log('users count:', users?.length);
-      console.log('=== End Debug Info ===');
+      // console.log('=== Dashboard Debug Info ===');
+      // console.log('userLoading:', userLoading);
+      // console.log('usersLoading:', usersLoading);
+      // console.log('userError:', userError);
+      // console.log('usersError:', usersError);
+      // console.log('networkError:', networkError);
+      // console.log('currentUserId:', currentUserId);
+      // console.log('userRole:', userRole);
+      // console.log('users count:', users?.length);
+      // console.log('=== End Debug Info ===');
     }
   }, [userLoading, usersLoading, userError, usersError, networkError, currentUserId, userRole, users, isAdmin, isManager]);
 
