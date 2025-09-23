@@ -463,7 +463,7 @@ export const useDashboardData = (stackAvailability = false) => {
               positionIndex = (positionIndex % 3) + 2;
             }
             
-            console.log(`Debug: Staff ${staff.full_name}, Total Staff: ${totalStaffForDate}, Position Index: ${positionIndex}`);
+            // console.log(`Debug: Staff ${staff.full_name}, Total Staff: ${totalStaffForDate}, Position Index: ${positionIndex}`);
             
             availabilityByDate[schedule.date].push({
               start: eventStart,
@@ -481,7 +481,7 @@ export const useDashboardData = (stackAvailability = false) => {
               classNames.push(`availability-position-${positionIndex}`);
             }
             
-            console.log(`Debug: Final classNames for ${staff.full_name}:`, classNames);
+            // console.log(`Debug: Final classNames for ${staff.full_name}:`, classNames);
             return {
               title: `${staff.full_name} - Available${schedule.location ? ` (${LocationService.getInstance().getLocationNameById(schedule.location)})` : ''}`,
               start: eventStart.toISOString(),

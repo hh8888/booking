@@ -27,7 +27,7 @@ export default function DashboardTab() {
   const [showNonWorkingHours, setShowNonWorkingHours] = useState(false);
   const [showPast, setShowPast] = useState(true);
   const [showNonAvailableStaff, setShowNonAvailableStaff] = useState(false);
-  const [showUnassigned, setShowUnassigned] = useState(false);
+  const [showUnassigned, setShowUnassigned] = useState(true);
   const [stackAvailability, setStackAvailability] = useState(false); // Add this new state
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
