@@ -511,13 +511,45 @@ export const useDashboardData = (stackAvailability = false) => {
       }).filter(Boolean);
 
       // console.log('Final Availability:', availabilityEvents.filter(Boolean));
-      
+            // Add availability events to calendar
+      const validAvailabilityEvents = availabilityEvents.flat().filter(Boolean);
+
+      // Create duplicate all-day availability events
+      const allDayAvailabilityEvents = validAvailabilityEvents.map(event => {
+        // Extract date from the original event (convert GMT to local timezone)
+        const eventDate = DateTimeFormatter.getLocalDateFromGMT(event.start);
+        
+        return {
+          ...event,
+          id: `${event.extendedProps.staffId}-allday-${eventDate}`, // Unique ID for all-day version
+          title: `${event.extendedProps.staffName} - Available (All Day)${event.extendedProps.locationName ? ` (${event.extendedProps.locationName})` : ''}`,
+          start: eventDate, // All-day event uses just the date
+          end: eventDate,
+          allDay: true, // Mark as all-day event
+          display: 'block', // Use block display instead of background
+          backgroundColor: '#e8f5e8', // Slightly different color for all-day events
+          borderColor: '#28a745',
+          color: '#155724',
+          classNames: ['availability-allday'], // Add specific class for all-day
+          extendedProps: {
+            ...event.extendedProps,
+            isAllDayAvailability: true, // Flag to identify all-day availability events
+            originalEventId: event.id // Reference to original time-based event
+          }
+        };
+      });
+  
       // Merge availability events with existing bookings
-      const flattenedAvailabilityEvents = availabilityEvents.flat();
-      setBookings(prevBookings => {
-        // Filter out previous availability events and add new ones
-        const bookingEvents = prevBookings.filter(event => !event.extendedProps?.isAvailability);
-        const newBookings = [...bookingEvents, ...flattenedAvailabilityEvents];
+       setBookings(prevBookings => {
+        // Filter out any existing availability events for the same staff
+        const bookingEvents = prevBookings.filter(event => 
+          !event.classNames?.includes('availability-event') || 
+          !validAvailabilityEvents.some(newEvent => 
+            newEvent.extendedProps.staffId === event.extendedProps.staffId
+          )
+        );
+        // Combine original time-based events with all-day duplicates
+        const newBookings = [...bookingEvents, ...validAvailabilityEvents, ...allDayAvailabilityEvents];
         
         // console.log('Final bookings state with availability (including all-day):', newBookings);
         return newBookings;
