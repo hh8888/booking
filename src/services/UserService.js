@@ -90,19 +90,21 @@ class UserService {
             data: {
               full_name: userData.full_name,
               role: userData.role
-            }
+            },
+            // Skip email confirmation for fake emails
+            emailRedirectTo: undefined
           }
         });
         
         if (authError) {
-           // Check for duplicate email in auth
-           if (authError.message && authError.message.includes('already registered')) {
-             throw new Error(ERROR_MESSAGES.DUPLICATE_EMAIL);
-           }
-           throw new Error(`Auth Error: ${authError.message}`);
-         }
-         
-         authData = realAuthData;
+          // Check for duplicate email in auth
+          if (authError.message && authError.message.includes('already registered')) {
+            throw new Error(ERROR_MESSAGES.DUPLICATE_EMAIL);
+          }
+          throw new Error(`Auth Error: ${authError.message}`);
+        }
+        
+        authData = realAuthData;
       }
       
       // Remove password field from userData

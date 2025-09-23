@@ -75,22 +75,52 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
     try {
       const isFakeEmailAddress = isFakeEmail(authState.email);
       
-      const { data, error: signUpError } = await supabase.auth.signUp({ 
-        email: authState.email, 
-        password: authState.password,
-        options: {
-          emailRedirectTo: isFakeEmailAddress ? undefined : `${window.location.origin}/auth`,
-          // Skip email confirmation for fake emails
-          data: {
-            skip_confirmation: isFakeEmailAddress
+      if (isFakeEmailAddress) {
+        // For fake emails, use admin API to create user without triggering emails
+        const { data, error } = await supabase.auth.admin.createUser({
+          email: authState.email,
+          password: authState.password,
+          email_confirm: true, // Skip email confirmation
+          user_metadata: {
+            full_name: authState.name,
+            skip_confirmation: true
           }
-        }
-      });
-      
-      if (signUpError) throw signUpError;
-  
-      // Only insert user data for normal signup (admin API already creates the user)
-      if (!isFakeEmailAddress) {
+        });
+        
+        if (error) throw error;
+        
+        // Insert user data directly
+        const { error: userError } = await supabase
+          .from(TABLES.USERS)
+          .insert([{
+            id: data.user.id,
+            email: authState.email,
+            full_name: authState.name,
+            post_code: authState.postCode,
+            birthday: authState.birthday || null,
+            gender: authState.gender || null,
+            phone_number: authState.mobile || null,
+            role: USER_ROLES.CUSTOMER,
+            email_verified: true, // Mark as verified for fake emails
+          }]);
+          
+        if (userError) throw userError;
+      } else {
+        // For real emails, use normal signup
+        const { data, error: signUpError } = await supabase.auth.signUp({ 
+          email: authState.email, 
+          password: authState.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth`,
+            data: {
+              full_name: authState.name
+            }
+          }
+        });
+        
+        if (signUpError) throw signUpError;
+        
+        // Insert user data
         const { error: userError } = await supabase
           .from(TABLES.USERS)
           .insert([{
@@ -104,24 +134,7 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
             role: USER_ROLES.CUSTOMER,
             email_verified: false,
           }]);
-    
-        if (userError) throw userError;
-      } else {
-        // For fake emails using admin API, insert user data separately
-        const { error: userError } = await supabase
-          .from(TABLES.USERS)
-          .insert([{
-            id: data.user.id,
-            email: authState.email,
-            full_name: authState.name,
-            post_code: authState.postCode,
-            birthday: authState.birthday || null,
-            gender: authState.gender || null,
-            phone_number: authState.mobile || null,
-            role: USER_ROLES.CUSTOMER,
-            email_verified: true, // Mark fake emails as verified
-          }]);
-    
+          
         if (userError) throw userError;
       }
       
