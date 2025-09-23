@@ -28,6 +28,7 @@ export default function DashboardTab() {
   const [showPast, setShowPast] = useState(true);
   const [showNonAvailableStaff, setShowNonAvailableStaff] = useState(false);
   const [showUnassigned, setShowUnassigned] = useState(false);
+  const [stackAvailability, setStackAvailability] = useState(false); // Add this new state
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEditPopup, setShowEditPopup] = useState(false);
@@ -48,7 +49,7 @@ export default function DashboardTab() {
     fetchBookingsWithStaff,
     fetchStaffAvailability,
     staffData // Add this to get staff data from the hook
-  } = useDashboardData();
+  } = useDashboardData(stackAvailability);
 
   // Fetch the showStaffName setting
   useEffect(() => {
@@ -446,6 +447,8 @@ export default function DashboardTab() {
             setShowNonAvailableStaff={setShowNonAvailableStaff}
             showUnassigned={showUnassigned}
             setShowUnassigned={setShowUnassigned}
+            stackAvailability={stackAvailability}
+            setStackAvailability={setStackAvailability}
           />
         </div>
         
@@ -460,6 +463,7 @@ export default function DashboardTab() {
           showNonWorkingHours={showNonWorkingHours}
           showNonAvailableStaff={showNonAvailableStaff}
           showUnassigned={showUnassigned}
+          stackAvailability={stackAvailability}
           businessHours={businessHours}
           onDateClick={handleDateClick}
           onEventClick={handleEventClick}

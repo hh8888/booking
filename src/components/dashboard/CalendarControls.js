@@ -13,7 +13,9 @@ const CalendarControls = ({
   showNonAvailableStaff,
   setShowNonAvailableStaff,
   showUnassigned,
-  setShowUnassigned
+  setShowUnassigned,
+  stackAvailability,
+  setStackAvailability
 }) => {
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
@@ -80,7 +82,7 @@ const CalendarControls = ({
           >
             {showNonWorkingHours ? t('calendar.hideNonWorkingHours') : t('calendar.showNonWorkingHours')}
           </button>
-          <button
+          {/* <button
             onClick={() => setShowNonAvailableStaff(!showNonAvailableStaff)}
             className={`px-4 py-2 text-sm rounded transition-colors ${
               showNonAvailableStaff 
@@ -89,7 +91,7 @@ const CalendarControls = ({
             }`}
           >
             {showNonAvailableStaff ? t('calendar.hideNonAvailableStaff') : t('calendar.showNonAvailableStaff')}
-          </button>
+          </button> */}
           <button
             onClick={() => setShowUnassigned(!showUnassigned)}
             className={`px-4 py-2 text-sm rounded transition-colors ${
@@ -100,6 +102,16 @@ const CalendarControls = ({
           >
             {showUnassigned ? t('calendar.hideUnassigned') : t('calendar.showUnassigned')}
           </button>
+          {/* <button
+            onClick={() => setStackAvailability(!stackAvailability)}
+            className={`px-4 py-2 text-sm rounded transition-colors ${
+              stackAvailability 
+                ? 'bg-blue-200 text-blue-800 hover:bg-blue-300' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {stackAvailability ? 'Overlap View' : 'Stack View'}
+          </button> */}
         </div>
       </div>
     </div>

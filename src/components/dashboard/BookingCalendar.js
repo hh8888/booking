@@ -17,6 +17,7 @@ const BookingCalendar = ({
   showNonWorkingHours,
   showNonAvailableStaff,
   showUnassigned,
+  stackAvailability,
   businessHours,
   onDateClick,
   onEventClick,
@@ -204,8 +205,8 @@ const BookingCalendar = ({
   const getResources = () => {
     const resources = [];
     
-    // Add generic resource for unassigned bookings (if showUnassigned is true OR there are unassigned bookings)
-    if (showUnassigned || hasUnassignedBookings()) {
+    // Add generic resource for unassigned bookings only if showUnassigned is true
+    if (showUnassigned) {
       resources.push({
         id: 'generic',
         title: 'Unassigned',
@@ -300,19 +301,12 @@ const BookingCalendar = ({
             return availStaffId?.toString() === staffId.toString() && availDateStr === bookingDateStr;
           });
           
-          // Debug logging
-          // console.log(`🔍 Checking booking: ${event.title} on ${bookingDateStr}`);
-          // console.log(`📋 Staff ID: ${staffId}, Staff found: ${staff?.name || 'Unknown'}`);
-          // console.log(`⏰ Has availability on date: ${hasAvailabilityOnDate}`);
-          
           if (hasAvailabilityOnDate) {
             // Provider is available - assign to their column
             resourceId = staffId.toString();
-            //console.log(`✅ Assigned to staff column: ${staffId}`);
           } else {
             // Provider is not available on this date - put in unassigned column
             resourceId = 'generic';
-            //console.log(`❌ Moved to unassigned column (no availability found)`);
           }
         }
       } else {
@@ -325,6 +319,66 @@ const BookingCalendar = ({
         resourceId
       };
     });
+  };
+
+  // Filter events for non-resource views to show unassigned bookings
+  const getFilteredEventsForNonResourceView = () => {
+    let filteredEvents = getFilteredEvents();
+    
+    // In non-resource views, we need to filter based on showUnassigned toggle
+    if (!showUnassigned) {
+      // Filter out unassigned bookings when showUnassigned is false
+      filteredEvents = filteredEvents.filter(event => {
+        // Always show availability events
+        if (event.classNames?.includes('availability-event') || event.classNames?.includes('availability-allday')) {
+          return true;
+        }
+        
+        // For booking events, check if they would be assigned to 'generic'
+        const staffId = event.extendedProps?.staffId || event.extendedProps?.providerId;
+        const serviceId = event.extendedProps?.serviceId;
+        const service = services?.find(s => s.id === serviceId);
+        
+        // If service has no assigned staff, it's unassigned
+        if (!service?.staff_ids || !Array.isArray(service.staff_ids) || service.staff_ids.length === 0) {
+          return false; // Filter out unassigned
+        }
+        
+        // If no staff assigned to booking, it's unassigned
+        if (!staffId) {
+          return false; // Filter out unassigned
+        }
+        
+        // Check if staff exists
+        const staff = staffData?.find(s => s.id.toString() === staffId.toString());
+        if (!staff) {
+          return false; // Filter out unassigned
+        }
+        
+        // Check staff availability
+        const bookingDate = new Date(event.start);
+        const bookingDateStr = bookingDate.toLocaleDateString('en-CA');
+        const hasAvailabilityOnDate = filteredEvents.some(availEvent => {
+          if (!availEvent.classNames?.includes('availability-event') && !availEvent.classNames?.includes('availability-allday')) {
+            return false;
+          }
+          const availStaffId = availEvent.extendedProps?.staffId || availEvent.extendedProps?.providerId;
+          const availDate = new Date(availEvent.start);
+          const availDateStr = availDate.toLocaleDateString('en-CA');
+          
+          return availStaffId?.toString() === staffId.toString() && availDateStr === bookingDateStr;
+        });
+        
+        // If staff is not available, it's unassigned
+        if (!hasAvailabilityOnDate) {
+          return false; // Filter out unassigned
+        }
+        
+        return true; // Show assigned bookings
+      });
+    }
+    
+    return filteredEvents;
   };
 
   // Responsive header toolbar configuration
@@ -350,6 +404,16 @@ const BookingCalendar = ({
       return 'resourceTimeGridDay';
     }
     return isMobile ? 'timeGridDay' : 'timeGridWeek';
+  };
+
+  // Check if current view is a resource view
+  const getCurrentView = () => {
+    if (!calendarRef) return getInitialView();
+    return calendarRef.getApi().view.type;
+  };
+
+  const isResourceView = (viewType = getCurrentView()) => {
+    return viewType && viewType.includes('resource');
   };
 
   // Mobile-optimized resource area width
@@ -416,8 +480,8 @@ const BookingCalendar = ({
             weekday: 'long'
           }}
           nowIndicator={true}
-          resources={getResources()}
-          events={getFilteredEventsWithResources()}
+          resources={isResourceView() ? getResources() : undefined}
+          events={isResourceView() ? getFilteredEventsWithResources() : getFilteredEventsForNonResourceView()}
           eventContent={renderEventContent}
           eventDidMount={handleEventDidMount}
           dateClick={onDateClick}

@@ -30,7 +30,7 @@ const formatTime = (timeString) => {
   return `${timeString}:00`;
 };
 
-export const useDashboardData = () => {
+export const useDashboardData = (stackAvailability = false) => {
   const [loading, setLoading] = useState(true);
   const [tableStats, setTableStats] = useState({
     users: 0,
@@ -442,38 +442,46 @@ export const useDashboardData = () => {
             const eventStart = new Date(startDateString);
             const eventEnd = new Date(endDateString);
             
-            // Check if dates are valid
-            if (isNaN(eventStart.getTime()) || isNaN(eventEnd.getTime())) {
-              console.warn('Invalid date created:', {
-                schedule,
-                startDateString,
-                endDateString,
-                eventStart,
-                eventEnd
-              });
-              return null;
+            // Calculate position index for overlapping events
+            const existingEvents = availabilityByDate[schedule.date];
+            let positionIndex = existingEvents.length;
+            
+            // Adjust position index based on total number of staff to match CSS rules
+            const totalStaffForDate = staffData.length;
+            if (totalStaffForDate === 2) {
+              // For 2 staff, use positions 0, 1 (50% width each)
+              // Keep original logic
+            } else if (totalStaffForDate === 3) {
+              // For 3 staff, use positions 2, 3, 4 (33.33% width each)
+              positionIndex = positionIndex + 2;
+            } else if (totalStaffForDate === 4) {
+              // For 4 staff, use positions 5, 6, 7, 8 (25% width each)
+              positionIndex = positionIndex + 5;
+            } else {
+              // For 5+ staff, distribute evenly using modulo to cycle through available positions
+              // Use positions 2, 3, 4 for better visibility (33.33% width each)
+              positionIndex = (positionIndex % 3) + 2;
             }
             
-            // Calculate position index for this date
-            const positionIndex = availabilityByDate[schedule.date].length;
-            availabilityByDate[schedule.date].push(staff.id);
+            console.log(`Debug: Staff ${staff.full_name}, Total Staff: ${totalStaffForDate}, Position Index: ${positionIndex}`);
             
-            // console.log('Availability event:', {
-            //   staff: staff.full_name,
-            //   date: schedule.date,
-            //   start: schedule.start_time,
-            //   end: schedule.end_time,
-            //   positionIndex,
-            //   eventStart: eventStart.toISOString(),
-            //   eventEnd: eventEnd.toISOString()
-            // });
+            availabilityByDate[schedule.date].push({
+              start: eventStart,
+              end: eventEnd,
+              staffId: staff.id
+            });
             
             // Create class names - exclude positioning for resource views
             const classNames = ['availability-event'];
             // Only add positioning class for non-resource views (week view)
             // Resource views (day view) will handle positioning through columns
-            classNames.push(`availability-position-${positionIndex}`);
+            if (stackAvailability) {
+              classNames.push(`availability-stack-${positionIndex}`);
+            } else {
+              classNames.push(`availability-position-${positionIndex}`);
+            }
             
+            console.log(`Debug: Final classNames for ${staff.full_name}:`, classNames);
             return {
               title: `${staff.full_name} - Available${schedule.location ? ` (${LocationService.getInstance().getLocationNameById(schedule.location)})` : ''}`,
               start: eventStart.toISOString(),
@@ -503,45 +511,14 @@ export const useDashboardData = () => {
       }).filter(Boolean);
 
       // console.log('Final Availability:', availabilityEvents.filter(Boolean));
-
-      // Add availability events to calendar
-      const validAvailabilityEvents = availabilityEvents.flat().filter(Boolean);
       
-      // Create duplicate all-day availability events
-      const allDayAvailabilityEvents = validAvailabilityEvents.map(event => {
-        // Extract date from the original event (convert GMT to local timezone)
-        const eventDate = DateTimeFormatter.getLocalDateFromGMT(event.start);
-        
-        return {
-          ...event,
-          id: `${event.extendedProps.staffId}-allday-${eventDate}`, // Unique ID for all-day version
-          title: `${event.extendedProps.staffName} - Available (All Day)${event.extendedProps.locationName ? ` (${event.extendedProps.locationName})` : ''}`,
-          start: eventDate, // All-day event uses just the date
-          end: eventDate,
-          allDay: true, // Mark as all-day event
-          display: 'block', // Use block display instead of background
-          backgroundColor: '#e8f5e8', // Slightly different color for all-day events
-          borderColor: '#28a745',
-          color: '#155724',
-          classNames: ['availability-allday'], // Add specific class for all-day
-          extendedProps: {
-            ...event.extendedProps,
-            isAllDayAvailability: true, // Flag to identify all-day availability events
-            originalEventId: event.id // Reference to original time-based event
-          }
-        };
-      });
-  
+      // Merge availability events with existing bookings
+      const flattenedAvailabilityEvents = availabilityEvents.flat();
       setBookings(prevBookings => {
-        // Filter out any existing availability events for the same staff
-        const bookingEvents = prevBookings.filter(event => 
-          !event.classNames?.includes('availability-event') || 
-          !validAvailabilityEvents.some(newEvent => 
-            newEvent.extendedProps.staffId === event.extendedProps.staffId
-          )
-        );
-        // Combine original time-based events with all-day duplicates
-        const newBookings = [...bookingEvents, ...validAvailabilityEvents, ...allDayAvailabilityEvents];
+        // Filter out previous availability events and add new ones
+        const bookingEvents = prevBookings.filter(event => !event.extendedProps?.isAvailability);
+        const newBookings = [...bookingEvents, ...flattenedAvailabilityEvents];
+        
         // console.log('Final bookings state with availability (including all-day):', newBookings);
         return newBookings;
       });
@@ -549,7 +526,7 @@ export const useDashboardData = () => {
       console.error('Error fetching staff availability:', error);
       toast.error('Failed to fetch staff availability');
     }
-  }, []);
+  }, [stackAvailability]); // Add stackAvailability to dependency array
 
   useEffect(() => {
     const initData = async () => {
@@ -641,6 +618,13 @@ export const useDashboardData = () => {
     };
     initData();
   }, []); // ← Empty dependency array since all functions are stable
+
+  // Add useEffect to re-fetch availability when stackAvailability changes
+  useEffect(() => {
+    if (!loading) {
+      fetchStaffAvailability();
+    }
+  }, [stackAvailability, fetchStaffAvailability, loading]);
 
   // Return staffData in the hook
   return {
