@@ -10,6 +10,8 @@ interface BookingEmailRequest {
   bookingId: string
   oldStatus: string
   newStatus: string
+  emailRecipients?: string
+  customEmailAddresses?: string
 }
 
 interface BookingDetails {
@@ -36,14 +38,14 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { bookingId, oldStatus, newStatus }: BookingEmailRequest = await req.json()
+    const { bookingId, oldStatus, newStatus, emailRecipients = 'both', customEmailAddresses }: BookingEmailRequest = await req.json()
 
     // Fetch booking details with related data
     const { data: booking, error: bookingError } = await supabaseClient
       .from('bookings')
       .select(`
         *,
-        customer:users!bookings_customer_id_fkey(id, full_name, email),
+        customer:users!bookings_customer_id_fkey(id, full_name, email, phone_number),
         provider:users!bookings_provider_id_fkey(id, full_name, email),
         service:services(id, name, duration)
       `)
@@ -87,26 +89,55 @@ serve(async (req) => {
     // Send emails to customer and staff
     const emailPromises = []
     
-    // Send to customer
-    if (booking.customer?.email) {
-      emailPromises.push(
-        sendEmail({
-          to: booking.customer.email,
-          subject: emailContent.customer.subject,
-          html: emailContent.customer.html
-        })
-      )
-    }
-    
-    // Send to staff member
-    if (booking.provider?.email) {
-      emailPromises.push(
-        sendEmail({
-          to: booking.provider.email,
-          subject: emailContent.staff.subject,
-          html: emailContent.staff.html
-        })
-      )
+    // Check if custom email addresses are provided for override
+    if (customEmailAddresses && customEmailAddresses.trim()) {
+      // Parse custom email addresses (comma-separated)
+      const emailList = customEmailAddresses.split(',').map(email => email.trim()).filter(email => email)
+      
+      // Send to all valid custom email addresses
+      for (const email of emailList) {
+        if (emailRecipients === 'customer' || emailRecipients === 'both') {
+          emailPromises.push(
+            sendEmail({
+              to: email,
+              subject: emailContent.customer.subject,
+              html: emailContent.customer.html
+            })
+          )
+        }
+        if (emailRecipients === 'provider' || (emailRecipients === 'both' && emailList.length === 1)) {
+          emailPromises.push(
+            sendEmail({
+              to: email,
+              subject: emailContent.staff.subject,
+              html: emailContent.staff.html
+            })
+          )
+        }
+      }
+    } else {
+      // Use original booking email addresses
+      // Send to customer
+      if ((emailRecipients === 'both' || emailRecipients === 'customer') && booking.customer?.email) {
+        emailPromises.push(
+          sendEmail({
+            to: booking.customer.email,
+            subject: emailContent.customer.subject,
+            html: emailContent.customer.html
+          })
+        )
+      }
+      
+      // Send to staff
+      if ((emailRecipients === 'both' || emailRecipients === 'provider') && booking.provider?.email) {
+        emailPromises.push(
+          sendEmail({
+            to: booking.provider.email,
+            subject: emailContent.staff.subject,
+            html: emailContent.staff.html
+          })
+        )
+      }
     }
 
     await Promise.all(emailPromises)
@@ -188,6 +219,7 @@ function generateEmailContent(booking: any, oldStatus: string, newStatus: string
       <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
         <h3 style="margin-top: 0; color: #495057;">Booking Details</h3>
         <p><strong>Customer:</strong> ${booking.customer?.full_name}</p>
+        <p><strong>Customer Phone:</strong> ${booking.customer?.phone_number ? `<a href="tel:${booking.customer.phone_number}">${booking.customer.phone_number}</a>` : 'Not provided'}</p>
         <p><strong>Service:</strong> ${booking.service?.name}</p>
         <p><strong>Date & Time:</strong> ${formatDate(booking.start_time)}</p>
         ${booking.locationDetails ? `<p><strong>Location:</strong> ${booking.locationDetails.name}</p>` : ''}
