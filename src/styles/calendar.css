@@ -74,6 +74,12 @@
 }
 
 /* Regular time grid view (week view) - positioned availability events to prevent overlap */
+/* Single staff - full width */
+.fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-single {
+  left: 0% !important;
+  width: 100% !important;
+}
+
 .fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-0 {
   left: 0% !important;
   width: 50% !important;

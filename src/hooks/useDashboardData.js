@@ -422,16 +422,29 @@ export const useDashboardData = (stackAvailability = false) => {
       // Group availability by date to handle overlapping
       const availabilityByDate = {};
       
+      // First pass: collect all availability data and count staff per date
+      const staffCountByDate = {};
+      
+      staffData.forEach(staff => {
+        const staffSchedules = availabilityData.filter(schedule => schedule.staff_id === staff.id);
+        staffSchedules.forEach(schedule => {
+          if (schedule.date && schedule.start_time && schedule.end_time) {
+            if (!availabilityByDate[schedule.date]) {
+              availabilityByDate[schedule.date] = [];
+            }
+            if (!staffCountByDate[schedule.date]) {
+              staffCountByDate[schedule.date] = new Set();
+            }
+            staffCountByDate[schedule.date].add(staff.id);
+          }
+        });
+      });
+      
       const availabilityEvents = staffData.map(staff => {
         const staffSchedules = availabilityData.filter(schedule => schedule.staff_id === staff.id);
         
         return staffSchedules.map(schedule => {
           if (schedule.date && schedule.start_time && schedule.end_time) {
-            // Group by date for positioning
-            if (!availabilityByDate[schedule.date]) {
-              availabilityByDate[schedule.date] = [];
-            }
-            
             const formattedStartTime = formatTime(schedule.start_time);
             const formattedEndTime = formatTime(schedule.end_time);
             
@@ -446,9 +459,12 @@ export const useDashboardData = (stackAvailability = false) => {
             const existingEvents = availabilityByDate[schedule.date];
             let positionIndex = existingEvents.length;
             
-            // Adjust position index based on total number of staff to match CSS rules
-            const totalStaffForDate = staffData.length;
-            if (totalStaffForDate === 2) {
+            // Adjust position index based on actual number of staff with availability on this date
+            const totalStaffForDate = staffCountByDate[schedule.date].size;
+            if (totalStaffForDate === 1) {
+              // For 1 staff, use full width
+              positionIndex = 'single';
+            } else if (totalStaffForDate === 2) {
               // For 2 staff, use positions 0, 1 (50% width each)
               // Keep original logic
             } else if (totalStaffForDate === 3) {
@@ -463,7 +479,7 @@ export const useDashboardData = (stackAvailability = false) => {
               positionIndex = (positionIndex % 3) + 2;
             }
             
-            // console.log(`Debug: Staff ${staff.full_name}, Total Staff: ${totalStaffForDate}, Position Index: ${positionIndex}`);
+            // console.log(`Debug: Staff ${staff.full_name}, Total Staff for ${schedule.date}: ${totalStaffForDate}, Position Index: ${positionIndex}`);
             
             availabilityByDate[schedule.date].push({
               start: eventStart,
