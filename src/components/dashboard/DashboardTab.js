@@ -28,14 +28,15 @@ export default function DashboardTab() {
   const [showPast, setShowPast] = useState(true);
   const [showNonAvailableStaff, setShowNonAvailableStaff] = useState(false);
   const [showUnassigned, setShowUnassigned] = useState(true);
-  const [stackAvailability, setStackAvailability] = useState(false); // Add this new state
+  const [stackAvailability, setStackAvailability] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEditPopup, setShowEditPopup] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [defaultTime, setDefaultTime] = useState(null);
   const [showStaffNameSetting, setShowStaffNameSetting] = useState('true');
-  
+  const [calendarRef, setCalendarRef] = useState(null);
+
   // Data from custom hook
   const {
     loading,
@@ -48,8 +49,18 @@ export default function DashboardTab() {
     businessHours,
     fetchBookingsWithStaff,
     fetchStaffAvailability,
-    staffData // Add this to get staff data from the hook
+    staffData
   } = useDashboardData(stackAvailability);
+
+  // Add the clearEventHighlights function here (BEFORE the return statement)
+  const clearEventHighlights = () => {
+    // Remove highlight class from all events
+    const highlightedEvents = document.querySelectorAll('.availability-highlighted');
+    highlightedEvents.forEach(eventEl => {
+      eventEl.classList.remove('availability-highlighted');
+      delete eventEl.dataset.highlighted;
+    });
+  };
 
   // Fetch the showStaffName setting
   useEffect(() => {
@@ -69,7 +80,51 @@ export default function DashboardTab() {
 
   // Event handlers
   const handleEventClick = (info) => {
-    // Prevent all-day events from being clickable
+    // Handle all-day availability events
+    if (info.event.allDay && info.event.extendedProps.isAllDayAvailability) {
+      // Get the original event ID from the all-day event
+      const originalEventId = info.event.extendedProps.originalEventId;
+      const staffId = info.event.extendedProps.staffId;
+      const eventDate = info.event.start;
+      
+      // Clear any existing highlights
+      clearEventHighlights();
+      
+      // Find and highlight related time grid events for the same staff and date
+      if (calendarRef) {
+        const calendarApi = calendarRef.getApi();
+        const allEvents = calendarApi.getEvents();
+        
+        allEvents.forEach(event => {
+          // Check if this is a time grid availability event for the same staff and date
+          if (!event.allDay && 
+              event.extendedProps?.isAvailability && 
+              event.extendedProps?.staffId === staffId) {
+            
+            const eventStart = new Date(event.start);
+            const clickedDate = new Date(eventDate);
+            
+            // Check if events are on the same date
+            if (eventStart.toDateString() === clickedDate.toDateString()) {
+              // Add highlight class to bring event to front
+              const eventEl = event.el;
+              if (eventEl) {
+                eventEl.classList.add('availability-highlighted');
+                // Store reference for cleanup
+                eventEl.dataset.highlighted = 'true';
+              }
+            }
+          }
+        });
+      }
+      
+      return; // Don't proceed with normal click handling
+    }
+    
+    // Clear highlights when clicking other events
+    clearEventHighlights();
+    
+    // Prevent all-day events from being clickable (original logic)
     if (info.event.allDay) {
       return;
     }
@@ -472,6 +527,7 @@ export default function DashboardTab() {
           staffData={staffData}
           staffColors={staffColors}
           services={services}
+          onCalendarRef={setCalendarRef}
         />
       </div>
       

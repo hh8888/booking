@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 // Only import what you actually use
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -25,7 +25,8 @@ const BookingCalendar = ({
   handleEventDidMount,
   staffData,
   staffColors,
-  services
+  services,
+  onCalendarRef // Add this prop
 }) => {
   const { t } = useLanguage();
   const [calendarRef, setCalendarRef] = useState(null);
@@ -34,6 +35,14 @@ const BookingCalendar = ({
     window.innerWidth <= 768 && window.innerWidth > window.innerHeight
   );
   const [currentViewDates, setCurrentViewDates] = useState(null);
+
+  // Add this function to handle calendar ref
+  const handleCalendarRef = useCallback((ref) => {
+    setCalendarRef(ref);
+    if (onCalendarRef) {
+      onCalendarRef(ref);
+    }
+  }, [onCalendarRef]);
 
   // Handle window resize for responsive behavior
   useEffect(() => {
@@ -467,7 +476,7 @@ const BookingCalendar = ({
       
       <div className={`calendar-wrapper ${isMobile ? 'mobile-calendar' : 'desktop-calendar'}`}>
         <FullCalendar
-          ref={setCalendarRef}
+          ref={handleCalendarRef}
           schedulerLicenseKey='CC-Attribution-NonCommercial-NoDerivatives'
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, resourceTimeGridPlugin]}
           initialView={getInitialView()}

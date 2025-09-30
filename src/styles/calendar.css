@@ -107,7 +107,8 @@
 
 .fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-5,
 .fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-6,
-.fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-7 {
+.fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-7,
+.fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-8 {
   width: 25% !important;
 }
 
@@ -121,6 +122,10 @@
 
 .fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-7 {
   left: 50% !important;
+}
+
+.fc-timegrid:not(.fc-resource-timegrid) .fc-bg-event.availability-position-8 {
+  left: 75% !important;
 }
 
 /* Ensure background events are positioned correctly for non-resource views */
@@ -412,5 +417,33 @@
   height: 20% !important;
   width: 100% !important;
   left: 0% !important;
+}
+
+/* Highlighted availability events - bring to front */
+.availability-highlighted {
+  z-index: 1000 !important;
+  opacity: 1 !important;
+  border: 2px solid #28a745 !important;
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3) !important;
+  transform: scale(1.02) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+/* Ensure highlighted events are above other elements */
+.fc-timegrid-bg-harness .availability-highlighted,
+.fc-timegrid-slot-lane .availability-highlighted {
+  z-index: 1000 !important;
+  position: relative !important;
+}
+
+/* Animation for smooth highlighting */
+.availability-event {
+  transition: all 0.2s ease-in-out;
+}
+
+
+/* Resource view single staff (already full width but ensure consistency) */
+.fc-resource-timegrid .fc-bg-event.availability-single-staff {
+  left: 0%
 }
 
