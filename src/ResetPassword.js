@@ -36,6 +36,9 @@ function ResetPassword() {
                     setError('Failed to verify recovery token: Session is null after PASSWORD_RECOVERY event.');
                     setIsRecoveryReady(false);
                 }
+            } else if (event === 'SIGNED_IN' && session) {
+                // This condition might be relevant for other auth flows, but for password reset,
+                // the USER_UPDATED event is the one we listen for after a successful update.
             } else if (event === 'USER_UPDATED') {
                 setLoading(false);
                 setMessage('Password updated successfully! Redirecting to login...');
