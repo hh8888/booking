@@ -28,29 +28,17 @@ export default function Auth() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { isCompactMode, toggleCompactMode } = useCompactMode();
-  const [showForgotPasswordInitially, setShowForgotPasswordInitially] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   // Use custom hooks for state management
   const authState = useAuthState();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const error = params.get('error');
-    const errorCode = params.get('error_code');
-    const errorDescription = params.get('error_description');
-
     if (params.get('forgotPassword') === 'true') {
-      setShowForgotPasswordInitially(true);
+      setShowForgotPassword(true);
     }
-
-    if (error || errorCode || errorDescription) {
-      // Prioritize error_description if available, otherwise use error or errorCode
-      const errorMessage = errorDescription || error || errorCode;
-      authState.setError(errorMessage);
-      // Optionally, clear these from the URL to prevent re-processing on refresh
-      // navigate(location.pathname, { replace: true });
-    }
-  }, [authState, navigate]);
+  }, []);
   
   // Override compact mode for login page
   useEffect(() => {
@@ -238,7 +226,7 @@ export default function Auth() {
           isMobileAuthEnabled={authState.isMobileAuthEnabled}
           confirmationMessage={authState.confirmationMessage}
           setConfirmationMessage={authState.setConfirmationMessage}
-          showForgotPasswordInitially={showForgotPasswordInitially}
+          showForgotPassword={showForgotPassword}
         />
       )}
     </div>

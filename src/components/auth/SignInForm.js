@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function SignInForm({ 
@@ -14,11 +14,15 @@ export default function SignInForm({
   isMobileAuthEnabled,
   confirmationMessage,
   setConfirmationMessage,
-  showForgotPasswordInitially
+  showForgotPassword
 }) {
   const [showPassword, setShowPassword] = useState(false);
-  const [showForgotPasswordForm, setShowForgotPasswordForm] = useState(showForgotPasswordInitially);
+  const [showForgotPasswordForm, setShowForgotPasswordForm] = useState(showForgotPassword);
   const { t } = useLanguage();
+
+  useEffect(() => {
+    setShowForgotPasswordForm(showForgotPassword);
+  }, [showForgotPassword]);
 
   return (
     <>
