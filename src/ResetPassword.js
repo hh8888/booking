@@ -100,29 +100,40 @@ const ResetPassword = () => {
             recoveryAttemptedRef.current = true;
 
             const processRecovery = async () => {
-                const { error: sessionError } = await supabase.auth.setSession({
+                const { data, error: sessionError } = await supabase.auth.setSession({
                     access_token: accessToken,
                     refresh_token: refreshToken,
                 });
 
+                // We've received a response, so clear the timeout.
+                if (verificationTimeoutRef.current) {
+                    clearTimeout(verificationTimeoutRef.current);
+                }
+
                 if (sessionError) {
-                    // If setSession fails, clear the timeout and show an error.
-                    if (verificationTimeoutRef.current) {
-                        clearTimeout(verificationTimeoutRef.current);
-                    }
                     setError(`Failed to process recovery link: ${sessionError.message}. Please try again.`);
                     setIsRecoveryReady(false);
+                } else if (data.session) {
+                    // If setSession is successful, we are ready to reset the password.
+                    // This avoids relying on the PASSWORD_RECOVERY event which can be unreliable.
+                    console.log('setSession successful. Ready for password update.');
+                    setIsRecoveryReady(true);
+                    setError('');
+                    setMessage('You can now set your new password.');
+                } else {
+                    // This case might happen if setSession succeeds but returns no session.
+                    setError('Failed to verify recovery token. The session could not be established.');
+                    setIsRecoveryReady(false);
                 }
-                // If successful, the 'PASSWORD_RECOVERY' event will set the ready state.
             };
 
-            processRecovery();
-
-            // Set a timeout to handle cases where the recovery event never arrives.
+            // Set a timeout as a safety net in case setSession hangs.
             verificationTimeoutRef.current = setTimeout(() => {
                 setError('Verification timed out. Please try the link again or request a new one.');
                 setIsRecoveryReady(false);
-            }, 7000);
+            }, 7000); // 7 seconds timeout
+
+            processRecovery();
 
             return () => {
                 if (verificationTimeoutRef.current) {
