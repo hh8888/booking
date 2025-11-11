@@ -23,16 +23,44 @@ function ResetPassword() {
     const recoveryAttemptedRef = useRef(false);
     const location = useLocation(); // Import useLocation hook
 
+    // This effect handles the auth state listener, which should be set up once.
     useEffect(() => {
-        
+        const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'PASSWORD_RECOVERY') {
+                recoveryAttemptedRef.current = true;
+                if (session) {
+                    setIsRecoveryReady(true);
+                    setError('');
+                    setMessage('You can now set your new password.');
+                } else {
+                    setError('Failed to verify recovery token: Session is null after PASSWORD_RECOVERY event.');
+                    setIsRecoveryReady(false);
+                }
+            } else if (event === 'USER_UPDATED') {
+                setLoading(false);
+                setMessage('Password updated successfully! Redirecting to login...');
+                setTimeout(() => navigate('/auth'), 3000);
+            }
+        });
+
+        authListenerRef.current = listener;
+
+        return () => {
+            if (authListenerRef.current && typeof authListenerRef.current.unsubscribe === 'function') {
+                console.log('Unsubscribing from auth state changes.');
+                authListenerRef.current.unsubscribe();
+            }
+        };
+    }, [navigate]);
+
+    // This effect handles the one-time logic of processing the recovery URL.
+    useEffect(() => {
         const params = new URLSearchParams(location.search);
         const accessToken = params.get('access_token');
         const refreshToken = params.get('refresh_token');
         const type = params.get('type');
         const errorDescription = params.get('error_description');
         const urlError = params.get('error');
-
-        
 
         if (urlError === 'access_denied' || errorDescription) {
             let errorMessage = `Error: ${errorDescription || 'Invalid or expired recovery link.'}`;
@@ -44,89 +72,44 @@ function ResetPassword() {
             return;
         }
 
-        if (!accessToken || type !== 'recovery') {
-            
-            setError('Invalid recovery link. Please request a new password reset link.');
-            setIsRecoveryReady(false);
-            return;
-        }
-
-        if (!recoveryAttemptedRef.current) {
+        // Only proceed if we have a recovery token and haven't tried yet.
+        if (type === 'recovery' && accessToken && !recoveryAttemptedRef.current) {
             setError('Verifying recovery link, please wait...');
-        }
+            recoveryAttemptedRef.current = true;
 
-        const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-            
+            const processRecovery = async () => {
+                const { error: sessionError } = await supabase.auth.setSession({
+                    access_token: accessToken,
+                    refresh_token: refreshToken,
+                });
 
-            if (event === 'PASSWORD_RECOVERY') {
-                
-                recoveryAttemptedRef.current = true;
-                if (session) {
-                    setIsRecoveryReady(true);
-                    setError('');
-                    setMessage('You can now set your new password.');
-                } else {
-                    setError('Failed to verify recovery token: Session is null after PASSWORD_RECOVERY event.');
+                // If setSession fails, the auth listener won't fire. We must handle the error here.
+                if (sessionError) {
+                    setError(`Failed to process recovery link: ${sessionError.message}. Please try again.`);
                     setIsRecoveryReady(false);
                 }
-            } else if (event === 'INITIAL_SESSION' && accessToken && refreshToken && type === 'recovery' && !isRecoveryReady && !recoveryAttemptedRef.current) {
-                
-                recoveryAttemptedRef.current = true; 
-                
-                try {
-                    const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-                        access_token: accessToken,
-                        refresh_token: refreshToken,
-                    });
+                // If successful, the 'PASSWORD_RECOVERY' event in the other listener will take over.
+            };
 
-                    if (sessionError) {
-                        
-                        setError(`Failed to process recovery link: ${sessionError.message}. Please try again.`);
-                        setIsRecoveryReady(false);
-                    } else if (sessionData && sessionData.session) {
-                        
-                        setIsRecoveryReady(true);
-                        setError('');
-                        setMessage('Recovery link verified. You can now set your new password.');
-                    } else {
-                        
-                        setError('Failed to process recovery link. Please try again.');
-                        setIsRecoveryReady(false);
-                    }
-                } catch (e) {
-                    
-                    setError('Failed to process recovery link. Please try again.');
-                    setIsRecoveryReady(false);
-                }
-            } else if (event === 'USER_UPDATED') {
-                
-                setLoading(false);
-                setMessage('Password updated successfully! Redirecting to login...');
-                setTimeout(() => navigate('/auth'), 3000);
-            }
-        });
+            processRecovery();
 
-        authListenerRef.current = listener;
-
-        const timer = setTimeout(() => {
-            if (!isRecoveryReady && !recoveryAttemptedRef.current && accessToken && type === 'recovery') {
-                
+            const timer = setTimeout(() => {
+                // If after 7s, we still haven't succeeded, show a timeout error.
                 if (!isRecoveryReady) {
                     setError('Verification timed out. Please try the link again or request a new one.');
                     setIsRecoveryReady(false);
-                    recoveryAttemptedRef.current = true; 
                 }
-            }
-        }, 7000);
+            }, 7000);
 
-        return () => {
-            clearTimeout(timer);
-            if (authListenerRef.current && typeof authListenerRef.current.unsubscribe === 'function') {
-                console.log('Unsubscribing from auth state changes.');
-                authListenerRef.current.unsubscribe();
+            return () => clearTimeout(timer);
+        } else if (!accessToken || type !== 'recovery') {
+            // Show an error for invalid links, but only if we're not already in a success/error state.
+            if (!isRecoveryReady && !message && !error) {
+                setError('Invalid recovery link. Please request a new password reset link.');
+                setIsRecoveryReady(false);
             }
-        };
-    }, [navigate]);
+        }
+    }, [location.search, isRecoveryReady, message, error]);
 
     const handleResetPassword = async (e) => {
         e.preventDefault();
