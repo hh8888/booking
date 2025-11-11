@@ -28,6 +28,14 @@ export default function Auth() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { isCompactMode, toggleCompactMode } = useCompactMode();
+  const [showForgotPasswordInitially, setShowForgotPasswordInitially] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('forgotPassword') === 'true') {
+      setShowForgotPasswordInitially(true);
+    }
+  }, []);
   
   // Override compact mode for login page
   useEffect(() => {
@@ -218,6 +226,7 @@ export default function Auth() {
           isMobileAuthEnabled={authState.isMobileAuthEnabled}
           confirmationMessage={authState.confirmationMessage}
           setConfirmationMessage={authState.setConfirmationMessage}
+          showForgotPasswordInitially={showForgotPasswordInitially}
         />
       )}
     </div>

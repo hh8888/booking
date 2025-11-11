@@ -13,9 +13,11 @@ export default function SignInForm({
   isLoading,
   isMobileAuthEnabled,
   confirmationMessage,
-  setConfirmationMessage
+  setConfirmationMessage,
+  showForgotPasswordInitially
 }) {
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPasswordForm, setShowForgotPasswordForm] = useState(showForgotPasswordInitially);
   const { t } = useLanguage();
 
   return (
@@ -54,8 +56,8 @@ export default function SignInForm({
         </div>
       ) : null}
 
-      {/* Password Input - Only for email auth */}
-      {authMethod === 'email' && (
+      {/* Password Input - Only for email auth and not showing forgot password form */}
+      {authMethod === 'email' && !showForgotPasswordForm && (
         <>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -92,7 +94,7 @@ export default function SignInForm({
           <div className="mb-6 text-right">
             <button
               type="button"
-              onClick={onResetPassword}
+              onClick={() => setShowForgotPasswordForm(true)}
               disabled={isLoading}
               className={`text-sm text-blue-500 hover:text-blue-700 hover:underline ${
                 isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
@@ -102,6 +104,38 @@ export default function SignInForm({
             </button>
           </div>
         </>
+      )}
+
+      {/* Forgot Password Form */}
+      {authMethod === 'email' && showForgotPasswordForm && (
+        <div className="mb-6">
+          <p className="text-sm text-gray-600 mb-4">
+            {t('auth.signIn.forgotPasswordInstructions')}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              onResetPassword();
+              setShowForgotPasswordForm(false);
+            }}
+            disabled={isLoading}
+            className={`text-sm text-blue-500 hover:text-blue-700 hover:underline ${
+              isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+            }`}
+          >
+            {t('auth.signIn.sendResetLink')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowForgotPasswordForm(false)}
+            disabled={isLoading}
+            className={`text-sm text-blue-500 hover:text-blue-700 hover:underline ml-4 ${
+              isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+            }`}
+          >
+            {t('auth.signIn.backToSignIn')}
+          </button>
+        </div>
       )}
     </>
   );

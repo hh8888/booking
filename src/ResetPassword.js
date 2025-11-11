@@ -36,8 +36,11 @@ function ResetPassword() {
         
 
         if (urlError === 'access_denied' || errorDescription) {
-            
-            setError(`Error: ${errorDescription || 'Invalid or expired recovery link.'}`);
+            let errorMessage = `Error: ${errorDescription || 'Invalid or expired recovery link.'}`;
+            if (params.get('error_code') === 'otp_expired') {
+                errorMessage = 'The password reset link has expired or is invalid. Please request a new one.';
+            }
+            setError(errorMessage);
             setIsRecoveryReady(false);
             return;
         }
@@ -184,12 +187,14 @@ function ResetPassword() {
         );
     }
 
-    if (error && error !== 'Verifying recovery link, please wait...' && !isRecoveryReady) {
+    if (error && error !== 'Verifying recovery link, please wait...') {
         return (
             <PageContainer>
                 <p className="text-center text-red-600 text-sm">{error}</p>
                 <div className="mt-6 flex justify-center space-x-4">
                     <a href="/auth" className={commonLinkClasses}>Go to Login</a>
+                    <span className="text-gray-400">|</span>
+                    <a href="/auth?forgotPassword=true" className={commonLinkClasses}>Request New Reset Link</a>
                     <span className="text-gray-400">|</span>
                     <a href="/" className={commonLinkClasses}>Go to Home</a>
                 </div>

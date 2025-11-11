@@ -39,6 +39,7 @@ export default function AuthForm({
   isMobileAuthEnabled,
   confirmationMessage,
   setConfirmationMessage,
+  showForgotPasswordInitially,
 }) {
   // Format timer display
   const formatTimer = (seconds) => {
@@ -201,6 +202,7 @@ export default function AuthForm({
               isMobileAuthEnabled={isMobileAuthEnabled}
               confirmationMessage={confirmationMessage}
               setConfirmationMessage={setConfirmationMessage}
+              showForgotPasswordInitially={showForgotPasswordInitially}
             />
           )}
 
