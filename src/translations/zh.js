@@ -241,7 +241,8 @@ export default {
     hidePast: '隐藏过去',
     hideNonWorkingHours: '隐藏非工作时间',
     showUnassigned: '显示未分配',
-    hideUnassigned: '隐藏未分配'
+    hideUnassigned: '隐藏未分配',
+    closedDay: '休息日',
   },
 
   // Bookings
@@ -539,6 +540,16 @@ export default {
     notificationEmail: '通知邮箱',
     locations: '营业地点',
     enableMobileAuth: '启用移动端登录/注册',
+    // Booking Alarm Settings
+    bookingAlarmSettingsTitle: '新预约警报设置',
+    enableBannerNotification: '启用横幅通知',
+    enableBannerNotificationDesc: '新预约时在页面顶部显示横幅通知',
+    enablePageFlashing: '启用页面闪烁',
+    enablePageFlashingDesc: '新预约时整个页面闪烁以引起注意',
+    enableBeepSound: '启用蜂鸣声',
+    enableBeepSoundDesc: '新预约时播放蜂鸣声提醒',
+    alarmInterval: '警报间隔（秒）',
+    alarmIntervalDesc: '警报通知之间的时间间隔（秒），适用于所有警报类型',
   },
 
   // EditBookingPopup specific translations

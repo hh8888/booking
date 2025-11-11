@@ -29,7 +29,10 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
 
   // Session and settings check effect
   useEffect(() => {
-    const params = new URLSearchParams(location.hash.substring(1)); // Use location.hash
+    const hash = location.hash;
+    const searchIndex = hash.indexOf('?');
+    const searchParamsString = searchIndex > -1 ? hash.substring(searchIndex + 1) : '';
+    const params = new URLSearchParams(searchParamsString);
     const error = params.get('error');
     const errorCode = params.get('error_code');
 
@@ -61,7 +64,6 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
       }
 
       // Check for expired email verification link
-      const hash = window.location.hash;
       const isExpiredEmailLink = hash.includes('error=access_denied') && 
                                  hash.includes('error_code=otp_expired') && 
                                  hash.includes('error_description=Email+link+is+invalid+or+has+expired');
@@ -98,7 +100,7 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
     };
     
     checkSessionAndSettings();
-  }, []);
+  }, [location]); // Add location to dependency array
 
   // Auth state change listener
   useEffect(() => {
@@ -160,5 +162,5 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
         clearTimeout(authState.verificationTimeout);
       }
     };
-  }, [authState.isVerifying, authState.verificationTimeout]);
+  }, [authState.isVerifying, authState.verificationTimeout, checkUserRoleAndRedirect]);
 };

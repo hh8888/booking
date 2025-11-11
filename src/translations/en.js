@@ -245,7 +245,8 @@ blockTimeSlot: {
     hidePast: 'Hide Past',
     hideNonWorkingHours: 'Hide Non-Working Hours',
     showUnassigned: 'Show Unassigned',
-    hideUnassigned: 'Hide Unassigned'
+    hideUnassigned: 'Hide Unassigned',
+    closedDay: 'Closed',
   },
 
   // Bookings
@@ -533,7 +534,18 @@ blockTimeSlot: {
     bookingSettingsTitle: 'Booking Settings',
     workingHoursTitle: 'Working Hours',
     systemSettingsTitle: 'System Settings',
-    customerDashboardSettingsTitle: 'Customer Dashboard Settings'
+    customerDashboardSettingsTitle: 'Customer Dashboard Settings',
+    bookingAlarmSettingsTitle: 'New Booking Alarm Settings',
+    enableBanner: 'Enable Banner Notification',
+    enableBannerDesc: 'Show a banner notification when a new booking is made',
+    enableFlashing: 'Enable Page Flashing',
+    enableFlashingDesc: 'Flash the entire page when a new booking is made',
+    enableBeepSound: 'Enable Beep Sound',
+    enableBeepSoundDesc: 'Play a beep sound when a new booking is made',
+    alarmInterval: 'Alarm Interval (seconds)',
+    alarmIntervalDesc: 'Time interval in seconds between alarm notifications (applies to all alarm types)',
+    enable: 'Enable',
+    disable: 'Disable'
   },
 
   // EditBookingPopup specific translations
