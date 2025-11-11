@@ -94,12 +94,6 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
         authState.setVerificationTimeout(timeoutId);
       }
       
-      // If we are in the reset password flow, do not process SIGNED_IN event here.
-      // ResetPassword.js component will handle the session.
-      if (window.location.hash.startsWith('#/reset-password')) {
-        return;
-      }
-
       if (event === 'SIGNED_IN' && session?.user) {
         if (authState.verificationTimeout) {
           clearTimeout(authState.verificationTimeout);

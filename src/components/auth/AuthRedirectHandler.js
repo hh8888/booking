@@ -14,6 +14,12 @@ const AuthRedirectHandler = () => {
     const refreshToken = params.get('refresh_token');
     const expiresIn = params.get('expires_in');
     const tokenType = params.get('token_type');
+    const type = params.get('type'); // Get the 'type' parameter
+
+    // If it's a password recovery link, let the ResetPassword component handle it directly
+    if (type === 'recovery') {
+      return;
+    }
 
     if (error || errorCode || errorDescription || accessToken) {
       // Construct the new URL with hash routing and query parameters
