@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabaseClient';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import LoadingSpinner from './components/common/LoadingSpinner';
 
 // A simple SVG spinner component
@@ -21,12 +21,11 @@ function ResetPassword() {
     const navigate = useNavigate();
     const authListenerRef = useRef(null);
     const recoveryAttemptedRef = useRef(false);
+    const location = useLocation(); // Import useLocation hook
 
     useEffect(() => {
         
-        const hash = window.location.hash;
-        const paramsStr = hash.includes('#', 1) ? hash.substring(hash.indexOf('#', 1) + 1) : hash.substring(1);
-        const params = new URLSearchParams(paramsStr);
+        const params = new URLSearchParams(location.search);
         const accessToken = params.get('access_token');
         const refreshToken = params.get('refresh_token');
         const type = params.get('type');

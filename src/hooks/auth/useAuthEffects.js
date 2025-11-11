@@ -27,9 +27,11 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
   // Session and settings check effect
   useEffect(() => {
     const checkSessionAndSettings = async () => {
+      console.log('useAuthEffects: checkSessionAndSettings started.');
       authState.setIsLoading(true);
+      console.log('useAuthEffects: isLoading set to true.');
       authState.setError('');
-      
+
       // Fetch mobile auth setting
       try {
         const dbService = DatabaseService.getInstance();
@@ -52,6 +54,7 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
         window.location.hash = '';
         authState.setShowExpiredLinkError(true);
         authState.setIsLoading(false);
+        console.log('useAuthEffects: Expired email link detected, isLoading set to false.');
         return;
       }
 
@@ -62,14 +65,20 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
 
       if (isResetPasswordFlow) {
         authState.setIsLoading(false);
+        console.log('useAuthEffects: Reset password flow detected, isLoading set to false.');
         return; 
       }
 
+      console.log('useAuthEffects: Getting Supabase session...');
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('useAuthEffects: Supabase session obtained:', session);
       if (session) {
+        console.log('useAuthEffects: Session exists, checking user role and redirecting...');
         await checkUserRoleAndRedirect(session.user);
+        console.log('useAuthEffects: User role checked and redirected.');
       }
       authState.setIsLoading(false);
+      console.log('useAuthEffects: isLoading set to false (end of checkSessionAndSettings).');
     };
     
     checkSessionAndSettings();

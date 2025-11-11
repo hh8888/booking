@@ -31,7 +31,7 @@ function App() {
       <CompactModeProvider>
         <SettingsProvider>
           <Router>
-            <AuthRedirectHandler /> {/* Render AuthRedirectHandler here */}
+            <AuthRedirectHandler />
             <Suspense fallback={<LoadingSpinner />}>
               <Routes>
                 <Route path="/" element={<Auth />} />
