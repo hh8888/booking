@@ -10,51 +10,7 @@ const ResetPassword = () => {
     const [isRecoveryReady, setIsRecoveryReady] = useState(false);
     const navigate = useNavigate();
 
-    const authListenerRef = useRef(null);
     const recoveryAttemptedRef = useRef(false);
-    const verificationTimeoutRef = useRef(null); // Ref to hold the verification timeout
-
-    // This effect handles the auth state listener, which should be set up once.
-    useEffect(() => {
-        const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log(`onAuthStateChange event received: ${event}`, { session });
-            if (event === 'PASSWORD_RECOVERY') {
-                // If we get the recovery event, the link is valid. Clear any timeout.
-                if (verificationTimeoutRef.current) {
-                    clearTimeout(verificationTimeoutRef.current);
-                }
-                recoveryAttemptedRef.current = true;
-                if (session) {
-                    console.log('PASSWORD_RECOVERY: Session available. Ready for password update.');
-                    setIsRecoveryReady(true);
-                    setError('');
-                    setMessage('You can now set your new password.');
-                } else {
-                    console.error('PASSWORD_RECOVERY: Session is null. Cannot proceed.');
-                    setError('Failed to verify recovery token: Session is null after PASSWORD_RECOVERY event.');
-                    setIsRecoveryReady(false);
-                }
-            } else if (event === 'SIGNED_IN' && session) {
-                console.log('SIGNED_IN event detected.');
-                // This condition might be relevant for other auth flows, but for password reset,
-                // the USER_UPDATED event is the one we listen for after a successful update.
-            } else if (event === 'USER_UPDATED') {
-                console.log('USER_UPDATED event detected. Password update successful.');
-                setLoading(false);
-                setMessage('Password updated successfully! Redirecting to login...');
-                setTimeout(() => navigate('/auth'), 3000);
-            }
-        });
-
-        authListenerRef.current = listener;
-
-        return () => {
-            if (authListenerRef.current && typeof authListenerRef.current.unsubscribe === 'function') {
-                console.log('Unsubscribing from auth state changes.');
-                authListenerRef.current.unsubscribe();
-            }
-        };
-    }, [navigate]);
 
     // This effect handles the one-time logic of processing the recovery URL on component mount.
     useEffect(() => {
@@ -62,7 +18,7 @@ const ResetPassword = () => {
         const queryString = hash.includes('?') ? hash.substring(hash.indexOf('?')) : '';
         const params = new URLSearchParams(queryString);
 
-        console.log(`ResetPassword URL Processing. Hash: ${hash}, Debug Param: ${params.get('debug_reset')}`);
+        console.log(`ResetPassword URL Processing. Hash: ${hash}`);
 
         // 1. Check for debug mode
         if (params.get('debug_reset') === 'true') {
@@ -89,63 +45,47 @@ const ResetPassword = () => {
             return;
         }
 
-        // 3. Check for a valid recovery token
-        if (type === 'recovery' && accessToken) {
+        const processRecoveryToken = async (token, refresh) => {
             if (recoveryAttemptedRef.current) {
                 console.log('Recovery already attempted, skipping.');
                 return;
             }
-            
-            setError('Verifying recovery link, please wait...');
             recoveryAttemptedRef.current = true;
+            
+            setLoading(true);
+            setError('');
 
-            const processRecovery = async () => {
-                const { data, error: sessionError } = await supabase.auth.setSession({
-                    access_token: accessToken,
-                    refresh_token: refreshToken,
-                });
+            const { data, error: sessionError } = await supabase.auth.setSession({
+                access_token: token,
+                refresh_token: refresh,
+            });
 
-                // We've received a response, so clear the timeout.
-                if (verificationTimeoutRef.current) {
-                    clearTimeout(verificationTimeoutRef.current);
-                }
+            setLoading(false);
 
-                if (sessionError) {
-                    setError(`Failed to process recovery link: ${sessionError.message}. Please try again.`);
-                    setIsRecoveryReady(false);
-                } else if (data.session) {
-                    // If setSession is successful, we are ready to reset the password.
-                    // This avoids relying on the PASSWORD_RECOVERY event which can be unreliable.
-                    console.log('setSession successful. Ready for password update.');
-                    setIsRecoveryReady(true);
-                    setError('');
-                    setMessage('You can now set your new password.');
-                } else {
-                    // This case might happen if setSession succeeds but returns no session.
-                    setError('Failed to verify recovery token. The session could not be established.');
-                    setIsRecoveryReady(false);
-                }
-            };
-
-            // Set a timeout as a safety net in case setSession hangs.
-            verificationTimeoutRef.current = setTimeout(() => {
-                setError('Verification timed out. Please try the link again or request a new one.');
+            if (sessionError) {
+                setError(`Failed to process recovery link: ${sessionError.message}. Please try again.`);
                 setIsRecoveryReady(false);
-            }, 7000); // 7 seconds timeout
+            } else if (data.session) {
+                console.log('setSession successful. Ready for password update.');
+                setIsRecoveryReady(true);
+                setMessage('You can now set your new password.');
+            } else {
+                setError('Failed to verify recovery token. The session could not be established.');
+                setIsRecoveryReady(false);
+            }
+        };
 
-            processRecovery();
-
-            return () => {
-                if (verificationTimeoutRef.current) {
-                    clearTimeout(verificationTimeoutRef.current);
-                }
-            };
+        // 3. Check for a valid recovery token
+        if (type === 'recovery' && accessToken) {
+            processRecoveryToken(accessToken, refreshToken);
+        } else {
+            // 4. If not a debug link and not a recovery link, it's invalid.
+            // We should only show this if there wasn't already a URL error.
+            if (!urlError && !errorDescription) {
+                setError('Invalid recovery link. Please request a new password reset link.');
+                setIsRecoveryReady(false);
+            }
         }
-
-        // 4. If none of the above, the link is invalid
-        setError('Invalid recovery link. Please request a new password reset link.');
-        setIsRecoveryReady(false);
-
     }, []); // <-- Run only ONCE on component mount
 
     const handlePasswordReset = async (e) => {
@@ -174,8 +114,10 @@ const ResetPassword = () => {
         if (updateError) {
             console.error('Error updating password:', updateError);
             setError(`Failed to update password: ${updateError.message}`);
+        } else {
+            setMessage('Password updated successfully! Redirecting to login...');
+            setTimeout(() => navigate('/auth'), 3000);
         }
-        // Success is handled by the 'USER_UPDATED' event in the auth state listener.
     };
 
     return (
@@ -210,13 +152,15 @@ const ResetPassword = () => {
                         </button>
                     </form>
                 ) : (
-                    !error && <p className="mt-2">Verifying link...</p>
+                    // Show a loading indicator while verifying
+                    loading && <p className="mt-2">Verifying link, please wait...</p>
                 )}
 
-                {!isRecoveryReady && (
+                {/* Show these options if recovery is not ready and we are not in a loading state */}
+                {!isRecoveryReady && !loading && (
                      <div className="mt-2 flex w-full justify-around">
                         <button onClick={() => navigate('/auth')} className="text-indigo-600 hover:text-indigo-500">Go to Login</button>
-                        <button onClick={() => navigate('/forgot-password')} className="text-indigo-600 hover:text-indigo-500">Request New Reset Link</button>
+                        <button onClick={() => navigate('/auth?forgotPassword=true')} className="text-indigo-600 hover:text-indigo-500">Request New Reset Link</button>
                         <button onClick={() => navigate('/')} className="text-indigo-600 hover:text-indigo-500">Go to Home</button>
                     </div>
                 )}
