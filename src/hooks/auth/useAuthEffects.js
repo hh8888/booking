@@ -26,6 +26,17 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
 
   // Session and settings check effect
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get('error');
+    const errorCode = urlParams.get('error_code');
+
+    if (error && (errorCode === 'otp_expired' || error === 'access_denied')) {
+      console.log('useAuthEffects: Expired or invalid link detected.');
+      authState.setShowExpiredLinkError(true);
+      authState.setIsLoading(false);
+      return; // Stop further execution
+    }
+
     const checkSessionAndSettings = async () => {
       console.log('useAuthEffects: checkSessionAndSettings started.');
       authState.setIsLoading(true);
