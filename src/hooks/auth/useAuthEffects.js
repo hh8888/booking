@@ -35,7 +35,9 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
       // Fetch mobile auth setting
       try {
         const dbService = DatabaseService.getInstance();
+        console.log('useAuthEffects: Fetching mobile auth setting...');
         const mobileAuthSetting = await dbService.getSettingsByKey('system', 'enableMobileAuth');
+        console.log('useAuthEffects: Mobile auth setting fetched:', mobileAuthSetting);
         authState.setIsMobileAuthEnabled(
           mobileAuthSetting === 'true' || mobileAuthSetting === true
         );

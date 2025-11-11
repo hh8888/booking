@@ -1,32 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from './supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import LoadingSpinner from './components/common/LoadingSpinner';
+import { supabase } from './supabaseClient';
 
-// A simple SVG spinner component
-const Spinner = () => (
-    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-    </svg>
-);
-
-function ResetPassword() {
-    
+const ResetPassword = () => {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [isRecoveryReady, setIsRecoveryReady] = useState(false);
     const navigate = useNavigate();
+
     const authListenerRef = useRef(null);
     const recoveryAttemptedRef = useRef(false);
+    const verificationTimeoutRef = useRef(null); // Ref to hold the verification timeout
 
     // This effect handles the auth state listener, which should be set up once.
     useEffect(() => {
         const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
             console.log(`onAuthStateChange event received: ${event}`, { session });
             if (event === 'PASSWORD_RECOVERY') {
+                // If we get the recovery event, the link is valid. Clear any timeout.
+                if (verificationTimeoutRef.current) {
+                    clearTimeout(verificationTimeoutRef.current);
+                }
                 recoveryAttemptedRef.current = true;
                 if (session) {
                     console.log('PASSWORD_RECOVERY: Session available. Ready for password update.');
@@ -110,6 +106,10 @@ function ResetPassword() {
                 });
 
                 if (sessionError) {
+                    // If setSession fails, clear the timeout and show an error.
+                    if (verificationTimeoutRef.current) {
+                        clearTimeout(verificationTimeoutRef.current);
+                    }
                     setError(`Failed to process recovery link: ${sessionError.message}. Please try again.`);
                     setIsRecoveryReady(false);
                 }
@@ -118,14 +118,17 @@ function ResetPassword() {
 
             processRecovery();
 
-            const timer = setTimeout(() => {
-                if (!isRecoveryReady) {
-                    setError('Verification timed out. Please try the link again or request a new one.');
-                    setIsRecoveryReady(false);
-                }
+            // Set a timeout to handle cases where the recovery event never arrives.
+            verificationTimeoutRef.current = setTimeout(() => {
+                setError('Verification timed out. Please try the link again or request a new one.');
+                setIsRecoveryReady(false);
             }, 7000);
 
-            return () => clearTimeout(timer);
+            return () => {
+                if (verificationTimeoutRef.current) {
+                    clearTimeout(verificationTimeoutRef.current);
+                }
+            };
         }
 
         // 4. If none of the above, the link is invalid
@@ -136,111 +139,79 @@ function ResetPassword() {
 
     const handlePasswordReset = async (e) => {
         e.preventDefault();
-        if (!password) {
-            setError('Please enter a new password.');
-            return;
-        }
         setLoading(true);
         setError('');
         setMessage('');
 
-        // In debug mode, we just simulate the success message without calling Supabase
+        // Debug mode simulation
         if (new URLSearchParams(window.location.hash.substring(window.location.hash.indexOf('?'))).get('debug_reset') === 'true') {
-            console.log('Debug mode: Simulating password update.');
+            console.log('Simulating password update in debug mode.');
             setTimeout(() => {
                 setLoading(false);
-                setMessage('Debug: Password would have been updated successfully! Redirecting...');
-                setTimeout(() => {
-                    // In a real scenario, you might want to navigate to a mock login page
-                    // or just clear the state. For now, we'll just show the message.
-                    navigate('/auth'); 
-                }, 3000);
-            }, 1500);
+                setMessage('Debug: Password would have been updated successfully!');
+                console.log('Redirecting to /auth');
+                navigate('/auth');
+            }, 1000);
             return;
         }
 
-        // This part runs only if not in debug mode
-        const { error: updateError } = await supabase.auth.updateUser({ password: password });
+        // Real password update
+        const { error: updateError } = await supabase.auth.updateUser({ password });
+
+        setLoading(false);
 
         if (updateError) {
-            setLoading(false);
-            setError(`Error updating password: ${updateError.message}`);
+            console.error('Error updating password:', updateError);
+            setError(`Failed to update password: ${updateError.message}`);
         }
-        // If successful, the 'USER_UPDATED' event in the listener will handle the success message and redirection.
-    };
-
-    const renderContent = () => {
-        console.log(`Rendering ResetPassword. Error: ${error} Loading: ${loading} RecoveryReady: ${isRecoveryReady} Message: ${message}`);
-        if (!isRecoveryReady && !error) {
-            return <LoadingSpinner message="Verifying link..." />;
-        }
-
-        if (error) {
-            return (
-                <div className="text-center text-red-500">
-                    <p>{error}</p>
-                    <div className="mt-4 flex justify-center space-x-4">
-                        <button onClick={() => navigate('/auth')} className="text-blue-600 hover:underline">Go to Login</button>
-                        <span className="text-gray-400">|</span>
-                        <button onClick={() => navigate('/request-reset')} className="text-blue-600 hover:underline">Request New Reset Link</button>
-                        <span className="text-gray-400">|</span>
-                        <button onClick={() => navigate('/')} className="text-blue-600 hover:underline">Go to Home</button>
-                    </div>
-                </div>
-            );
-        }
-
-        if (message && !isRecoveryReady) {
-            return <p className="text-center text-green-500">{message}</p>;
-        }
-
-        return (
-            <form onSubmit={handlePasswordReset} className="space-y-6">
-                <div>
-                    <label htmlFor="password-input" className="block text-sm font-medium text-gray-700">
-                        New Password
-                    </label>
-                    <div className="mt-1">
-                        <input
-                            id="password-input"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                            placeholder="Enter your new password"
-                            required
-                        />
-                    </div>
-                </div>
-                {message && <p className="text-sm text-green-600">{message}</p>}
-                <div>
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-                    >
-                        {loading && <Spinner />}
-                        {loading ? 'Updating...' : 'Update Password'}
-                    </button>
-                </div>
-            </form>
-        );
+        // Success is handled by the 'USER_UPDATED' event in the auth state listener.
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-            <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        <div className="container mx-auto max-w-xs">
+            <div className="mt-8 flex flex-col items-center">
+                <h1 className="text-2xl font-bold">
                     Reset Password
-                </h2>
-            </div>
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-                    {renderContent()}
-                </div>
+                </h1>
+                {error && <div className="mt-2 w-full rounded-md bg-red-100 p-4 text-red-700">{error}</div>}
+                {message && <div className="mt-2 w-full rounded-md bg-green-100 p-4 text-green-700">{message}</div>}
+
+                {isRecoveryReady ? (
+                    <form onSubmit={handlePasswordReset} noValidate className="mt-1 w-full">
+                        <input
+                            required
+                            name="password"
+                            placeholder="New Password"
+                            type="password"
+                            id="password"
+                            autoComplete="new-password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            disabled={loading}
+                            className="mt-4 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                        />
+                        <button
+                            type="submit"
+                            disabled={loading || !password}
+                            className="mt-3 mb-2 w-full justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+                        >
+                            {loading ? 'Updating...' : 'Set New Password'}
+                        </button>
+                    </form>
+                ) : (
+                    !error && <p className="mt-2">Verifying link...</p>
+                )}
+
+                {!isRecoveryReady && (
+                     <div className="mt-2 flex w-full justify-around">
+                        <button onClick={() => navigate('/auth')} className="text-indigo-600 hover:text-indigo-500">Go to Login</button>
+                        <button onClick={() => navigate('/forgot-password')} className="text-indigo-600 hover:text-indigo-500">Request New Reset Link</button>
+                        <button onClick={() => navigate('/')} className="text-indigo-600 hover:text-indigo-500">Go to Home</button>
+                    </div>
+                )}
             </div>
         </div>
     );
-}
+};
 
 export default ResetPassword;
