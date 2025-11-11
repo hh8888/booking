@@ -30,6 +30,9 @@ export default function Auth() {
   const { isCompactMode, toggleCompactMode } = useCompactMode();
   const [showForgotPasswordInitially, setShowForgotPasswordInitially] = useState(false);
 
+  // Use custom hooks for state management
+  const authState = useAuthState();
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const error = params.get('error');
@@ -67,9 +70,6 @@ export default function Auth() {
       }
     };
   }, []); // Empty dependency array to run only on mount/unmount
-  
-  // Use custom hooks for state management
-  const authState = useAuthState();
   const { validateForm, validateSignInForm, validateEmail, validatePhoneNumber } = useAuthValidation();
   const { startResendTimer, resetTimer, formatTimer } = useAuthTimer(
     authState.resendTimer,
