@@ -1,10 +1,13 @@
 import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { toast } from 'react-toastify';
 import { TABLES } from '../../constants';
 import DatabaseService from '../../services/DatabaseService';
 
 export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
+  const location = useLocation();
+
   // Timer effect for resend functionality
   useEffect(() => {
     let interval = null;
@@ -26,9 +29,9 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
 
   // Session and settings check effect
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const error = urlParams.get('error');
-    const errorCode = urlParams.get('error_code');
+    const params = new URLSearchParams(location.hash.substring(1)); // Use location.hash
+    const error = params.get('error');
+    const errorCode = params.get('error_code');
 
     if (error && (errorCode === 'otp_expired' || error === 'access_denied')) {
       console.log('useAuthEffects: Expired or invalid link detected.');
