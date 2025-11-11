@@ -16,6 +16,7 @@ import LoadingSpinner from './components/common/LoadingSpinner';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { CompactModeProvider } from './contexts/CompactModeContext';
 import { SettingsProvider } from './contexts/SettingsContext';
+import AuthRedirectHandler from './components/auth/AuthRedirectHandler'; // Import AuthRedirectHandler
 
 // Use the new combined Dashboard component
 const Dashboard = lazy(() => import('./Dashboard'));
@@ -30,6 +31,7 @@ function App() {
       <CompactModeProvider>
         <SettingsProvider>
           <Router>
+            <AuthRedirectHandler /> {/* Render AuthRedirectHandler here */}
             <Suspense fallback={<LoadingSpinner />}>
               <Routes>
                 <Route path="/" element={<Auth />} />
