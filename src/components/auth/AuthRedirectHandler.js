@@ -13,6 +13,13 @@ const AuthRedirectHandler = () => {
     // Check hash first
     const hash = window.location.hash;
     console.log('AuthRedirectHandler: Current hash:', hash);
+
+    // If in debug mode for reset password, do nothing and let the ResetPassword component handle it.
+    if (hash.includes('debug_reset=true')) {
+      console.log('AuthRedirectHandler: Debug mode for reset password detected. Skipping parameter processing.');
+      return;
+    }
+
     if (hash && hash.length > 1 && !hash.startsWith('#/auth') && !hash.startsWith('#/reset-password')) {
       paramsSource = 'hash';
       paramsString = hash.substring(1);
