@@ -34,22 +34,28 @@ const AuthRedirectHandler = () => {
     if (paramsString) {
       console.log('AuthRedirectHandler: Processing parameters from', paramsSource);
       const authParams = new URLSearchParams(paramsString);
-      const type = authParams.get('type');
-      console.log('AuthRedirectHandler: Extracted type:', type);
+      const error = authParams.get('error');
+      const errorCode = authParams.get('error_code');
+      const errorDescription = authParams.get('error_description');
 
-      let targetPath = '/auth';
-      if (type === 'recovery') {
-        targetPath = '/reset-password';
+      if (error) {
+        navigate('/auth', { replace: true, state: { error, errorCode, errorDescription } });
+      } else {
+        const type = authParams.get('type');
+        let targetPath = '/auth';
+        if (type === 'recovery') {
+          targetPath = '/reset-password';
+        }
+        console.log('AuthRedirectHandler: Target path:', targetPath);
+
+        // Construct query string from auth parameters
+        const queryString = authParams.toString();
+        console.log('AuthRedirectHandler: Query string:', queryString);
+
+        // Navigate to target path with query parameters
+        console.log('AuthRedirectHandler: Navigating to:', `${targetPath}?${queryString}`);
+        navigate(`${targetPath}?${queryString}`, { replace: true });
       }
-      console.log('AuthRedirectHandler: Target path:', targetPath);
-
-      // Construct query string from auth parameters
-      const queryString = authParams.toString();
-      console.log('AuthRedirectHandler: Query string:', queryString);
-
-      // Navigate to target path with query parameters
-      console.log('AuthRedirectHandler: Navigating to:', `${targetPath}?${queryString}`);
-      navigate(`${targetPath}?${queryString}`, { replace: true });
     } else {
       console.log('AuthRedirectHandler: No relevant auth parameters to process or already processed.');
     }

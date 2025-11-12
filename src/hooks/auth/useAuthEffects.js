@@ -7,6 +7,7 @@ import DatabaseService from '../../services/DatabaseService';
 
 export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
   const location = useLocation();
+  const { error, errorCode, errorDescription } = location.state || {};
 
   // Timer effect for resend functionality
   useEffect(() => {
@@ -29,12 +30,16 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
 
   // Session and settings check effect
   useEffect(() => {
-    const hash = location.hash;
-    const searchIndex = hash.indexOf('?');
-    const searchParamsString = searchIndex > -1 ? hash.substring(searchIndex + 1) : '';
-    const params = new URLSearchParams(searchParamsString);
-    const error = params.get('error');
-    const errorCode = params.get('error_code');
+    const params = new URLSearchParams(location.search);
+    const errorParam = params.get('error');
+    const errorCodeParam = params.get('error_code');
+
+    const { state } = location;
+    const errorState = state?.error;
+    const errorCodeState = state?.errorCode;
+
+    const error = errorParam || errorState;
+    const errorCode = errorCodeParam || errorCodeState;
 
     if (error && (errorCode === 'otp_expired' || error === 'access_denied')) {
       console.log('useAuthEffects: Expired or invalid link detected.');
@@ -63,28 +68,16 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
         authState.setIsMobileAuthEnabled(false);
       }
 
-      // Check for expired email verification link
-      const isExpiredEmailLink = hash.includes('error=access_denied') && 
-                                 hash.includes('error_code=otp_expired') && 
-                                 hash.includes('error_description=Email+link+is+invalid+or+has+expired');
-      
-      if (isExpiredEmailLink) {
-        window.location.hash = '';
-        authState.setShowExpiredLinkError(true);
-        authState.setIsLoading(false);
-        console.log('useAuthEffects: Expired email link detected, isLoading set to false.');
-        return;
-      }
-
       // Check for reset password flow
-      const isResetPasswordFlow = 
-        window.location.hash.startsWith('#/reset-password') || 
-        (window.location.hash.includes('error_description=') && !isExpiredEmailLink);
+      const hash = window.location.hash;
+      const isResetPasswordFlow =
+        hash.startsWith('#/reset-password') ||
+        hash.includes('error_description=');
 
       if (isResetPasswordFlow) {
         authState.setIsLoading(false);
         console.log('useAuthEffects: Reset password flow detected, isLoading set to false.');
-        return; 
+        return;
       }
 
       console.log('useAuthEffects: Getting Supabase session...');
@@ -98,7 +91,7 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
       authState.setIsLoading(false);
       console.log('useAuthEffects: isLoading set to false (end of checkSessionAndSettings).');
     };
-    
+
     checkSessionAndSettings();
   }, [location]); // Add location to dependency array
 
@@ -107,20 +100,20 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const hash = window.location.hash;
       const isVerificationLink = hash.includes('access_token') && hash.includes('type=signup');
-      
+
       if (isVerificationLink && !authState.isVerifying) {
         authState.setIsVerifying(true);
         authState.setIsLoading(true);
-        
+
         const timeoutId = setTimeout(() => {
           authState.setIsLoading(false);
           authState.setIsVerifying(false);
           authState.setShowTimeoutPrompt(true);
         }, 60000);
-        
+
         authState.setVerificationTimeout(timeoutId);
       }
-      
+
       if (event === 'SIGNED_IN' && session?.user) {
         if (authState.verificationTimeout) {
           clearTimeout(authState.verificationTimeout);
@@ -128,7 +121,7 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
         }
         authState.setIsVerifying(false);
         authState.setShowTimeoutPrompt(false);
-        
+
         if (session.user.confirmed_at) {
           try {
             const { data: currentUser, error: fetchError } = await supabase
@@ -136,13 +129,13 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
               .select('email_verified')
               .eq('id', session.user.id)
               .single();
-            
+
             if (!fetchError && !currentUser.email_verified) {
               const { error: updateError } = await supabase
                 .from(TABLES.USERS)
                 .update({ email_verified: true })
                 .eq('id', session.user.id);
-              
+
               if (!updateError) {
                 toast.success('Email verified successfully! Welcome to the platform.');
               }
@@ -151,7 +144,7 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
             console.error('Error updating email verification status:', err);
           }
         }
-        
+
         await checkUserRoleAndRedirect(session.user);
       }
     });
