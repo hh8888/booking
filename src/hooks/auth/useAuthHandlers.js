@@ -16,23 +16,19 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
       // Check if this is a repeated click on verification link for already verified user
       const hash = window.location.hash;
       const isVerificationLink = hash.includes('access_token') && hash.includes('type=signup');
-      
+
       if (isVerificationLink && user.confirmed_at) {
-        console.log('User already verified, clearing hash and redirecting to sign-in');
-        window.location.hash = '';
-        authState.setIsSignedIn(false);
-        authState.setUserRole(null);
-        authState.setIsSignUp(false);
-        toast.info('Your email is already verified. Please sign in to continue.');
-        return;
+        console.log('User already verified, clearing hash and continuing to sign in.');
+        window.location.hash = ''; // Clear the hash to prevent re-triggering
+        // No return here, proceed to sign in the user
       }
-      
+
       const { data: userData, error } = await supabase
         .from(TABLES.USERS)
         .select('role')
         .eq('id', user.id)
         .single();
-  
+
       if (error) {
         console.error('Database error:', error);
         if (error.code === 'PGRST116') {
@@ -44,10 +40,10 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
         }
         return;
       }
-  
+
       authState.setUserRole(userData.role);
       authState.setIsSignedIn(true);
-  
+
       // Redirect based on role
       const roleRoutes = {
         [USER_ROLES.CUSTOMER]: '/booking',
@@ -55,7 +51,7 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
         [USER_ROLES.MANAGER]: '/admin',
         [USER_ROLES.ADMIN]: '/admin'
       };
-      
+
       const route = roleRoutes[userData.role];
       if (route) {
         navigate(route);
@@ -71,10 +67,10 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
   const handleSignUp = async () => {
     if (!validateForm(authState)) return;
     authState.setIsLoading(true);
-    
+
     try {
       const isFakeEmailAddress = isFakeEmail(authState.email);
-      
+
       if (isFakeEmailAddress) {
         // For fake emails, use admin API to create user without triggering emails
         const { data, error } = await supabase.auth.admin.createUser({
@@ -86,9 +82,9 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
             skip_confirmation: true
           }
         });
-        
+
         if (error) throw error;
-        
+
         // Insert user data directly
         const { error: userError } = await supabase
           .from(TABLES.USERS)
@@ -103,12 +99,12 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
             role: USER_ROLES.CUSTOMER,
             email_verified: true, // Mark as verified for fake emails
           }]);
-          
+
         if (userError) throw userError;
       } else {
         // For real emails, use normal signup
-        const { data, error: signUpError } = await supabase.auth.signUp({ 
-          email: authState.email, 
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email: authState.email,
           password: authState.password,
           options: {
             emailRedirectTo: `${window.location.origin}/auth`,
@@ -117,9 +113,9 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
             }
           }
         });
-        
+
         if (signUpError) throw signUpError;
-        
+
         // Insert user data
         const { error: userError } = await supabase
           .from(TABLES.USERS)
@@ -134,10 +130,10 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
             role: USER_ROLES.CUSTOMER,
             email_verified: false,
           }]);
-          
+
         if (userError) throw userError;
       }
-      
+
       // Show different messages based on email type
       if (isFakeEmailAddress) {
         authState.setConfirmationMessage('Account created successfully! You can now sign in.');
@@ -146,10 +142,10 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
         authState.setConfirmationMessage('Please check your email for the confirmation link.');
         toast.success('Registration successful!');
       }
-      
+
       authState.setIsSignUp(false);
       authState.clearForm();
-      
+
     } catch (err) {
       // Handle duplicate email errors with user-friendly message
       if (err.message && (
@@ -169,25 +165,25 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
 
   const handleSignIn = async () => {
     if (!validateSignInForm(authState)) return;
-    
+
     authState.setIsLoading(true);
     try {
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: authState.email,
         password: authState.password,
       });
-  
+
       if (signInError) throw signInError;
-  
+
       // Check if this is a fake email user
       const isFakeEmailUser = isFakeEmail(authState.email);
-      
+
       // For real email users, check confirmation status
       if (!isFakeEmailUser && !data.user.confirmed_at) {
         authState.setError('Please check your email to validate your account before signing in.');
         return;
       }
-      
+
       // For fake email users, we skip the confirmed_at check since they can't receive emails
       // but we should verify they exist in our users table with email_verified = true
       // above is not true, fake email user is not verified
@@ -197,24 +193,24 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
         //   .select('email_verified')
         //   .eq('id', data.user.id)
         //   .single();
-          
+
         // if (userError || !userData?.email_verified) {
         //   authState.setError('Account verification required. Please contact support.');
         //   return;
         // }
       } else {
-  
+
         // Update last_sign_in timestamp
         const { error: updateError } = await supabase
           .from(TABLES.USERS)
           .update({ last_sign_in: new Date().toISOString() })
           .eq('id', data.user.id);
-    
+
         if (updateError) {
           console.warn('Could not update last_sign_in:', updateError.message);
         }
       }
-  
+
       // Fetch user's last_location and set it in LocationService
       try {
         const { data: userData, error: userError } = await supabase
@@ -222,20 +218,20 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
           .select('last_location')
           .eq('id', data.user.id)
           .single();
-  
+
         if (!userError && userData?.last_location !== null && userData?.last_location !== undefined) {
           // Get LocationService instance
           const locationService = LocationService.getInstance();
-          
+
           // Get available locations
           const locations = locationService.getLocations();
-          
+
           // If locations are not loaded yet, initialize them first
           if (!locations || locations.length === 0) {
             const dbService = DatabaseService.getInstance();
             await locationService.initializeLocations(dbService);
           }
-          
+
           // Set the user's last location
           const updatedLocations = locationService.getLocations();
           // Fix: Find location by ID instead of using array index
@@ -253,7 +249,7 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
         console.warn('Could not set user location:', locationError.message);
         // Don't fail the login process if location setting fails
       }
-  
+
       await checkUserRoleAndRedirect(data.user);
     } catch (err) {
       authState.setError(err.message);
@@ -268,17 +264,17 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
       authState.setError(validation.error);
       return;
     }
-  
+
     authState.setIsLoading(true);
     authState.setError('');
-    
+
     try {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(authState.email, {
         redirectTo: `${window.location.origin}/#/reset-password`,
       });
-  
+
       if (resetError) throw resetError;
-  
+
       authState.setResetPasswordSent(true);
       authState.setError('Password reset email sent! Please check your inbox.');
     } catch (err) {
@@ -300,9 +296,9 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
       const { error } = await supabase.auth.resetPasswordForEmail(authState.email, {
         redirectTo: `${window.location.origin}/#/reset-password`,
       });
-      
+
       if (error) throw error;
-      
+
       authState.setConfirmationMessage('Password reset email sent. Please check your inbox.');
       toast.success('Password reset email sent!');
     } catch (err) {
@@ -317,15 +313,15 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
       authState.setError('Mobile sign up is currently disabled.');
       return;
     }
-    
+
     const nameValidation = authState.name ? { isValid: true } : { isValid: false, error: 'Please enter your name' };
     const phoneValidation = validatePhoneNumber(authState.mobile);
-    
+
     if (!nameValidation.isValid) {
       authState.setError(nameValidation.error);
       return;
     }
-    
+
     if (!phoneValidation.isValid) {
       authState.setError(phoneValidation.error);
       return;
@@ -363,7 +359,7 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
       authState.setError('Mobile sign in is currently disabled.');
       return;
     }
-    
+
     const phoneValidation = validatePhoneNumber(authState.mobile);
     if (!phoneValidation.isValid) {
       authState.setError(phoneValidation.error);
