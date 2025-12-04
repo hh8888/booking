@@ -145,7 +145,11 @@ export default {
     errorBlocking: '屏蔽时间段时出错',
     errorDeleting: '删除屏蔽时间段时出错',
     errorFetchingSlots: '加载屏蔽时间段时出错',
-    confirmDelete: '确定要删除此屏蔽时间段吗？'
+    confirmDelete: '确定要删除此屏蔽时间段吗？',
+    selectStaff: '选择员工',
+    selectStaffPlaceholder: '选择要屏蔽时间的员工',
+    loadingStaff: '加载员工中...',
+    selectStaffError: '请选择要屏蔽时间的员工'
   },
 
   // Language switcher
@@ -283,6 +287,7 @@ export default {
     confirmed: '已确认',
     cancelled: '已取消',
     completed: '已完成',
+    blocked: '已屏蔽'
     allTime: '所有时间',
     todayAndFuture: '今天及未来',
     thisWeek: '本周',
@@ -360,7 +365,9 @@ export default {
     resetPassword: '重置密码',
     setAvailability: '设置可用性',
     search: '搜索',
-    searchPlaceholder: '按姓名或邮箱搜索...'
+    searchPlaceholder: '按姓名或邮箱搜索...',
+    userCreatedSuccessfully: '用户创建成功',
+    failedToCreateUser: '创建用户失败'
   },
 
   // Services
@@ -550,6 +557,8 @@ export default {
     enableBeepSoundDesc: '新预约时播放蜂鸣声提醒',
     alarmInterval: '警报间隔（秒）',
     alarmIntervalDesc: '警报通知之间的时间间隔（秒），适用于所有警报类型',
+    enable: '启用',
+    disable: '禁用'
   },
 
   // EditBookingPopup specific translations
@@ -852,7 +861,10 @@ export default {
       enterPassword: '请输入您的密码',
       forgotPassword: '忘记密码？',
       title: '登录',
-      signingIn: '登录中...'
+      signingIn: '登录中...',
+      forgotPasswordInstructions: '请输入您的邮箱以接收密码重置链接。',
+      sendResetLink: '发送重置链接',
+      backToSignIn: '返回登录'
     },
     expiredLink: {
       title: '邮箱链接已过期',

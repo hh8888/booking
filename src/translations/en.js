@@ -839,7 +839,10 @@ blockTimeSlot: {
       enterPassword: 'Enter your password',
       forgotPassword: 'Forgot Password?',
       title: 'Sign In',
-      signingIn: 'Signing In...'
+      signingIn: 'Signing In...',
+      forgotPasswordInstructions: 'Enter your email to receive a password reset link.',
+      sendResetLink: 'Send Reset Link',
+      backToSignIn: 'Back to Sign In'
     },
     expiredLink: {
       title: 'Email Link Expired',
