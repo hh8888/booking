@@ -12,11 +12,45 @@ const ResetPassword = () => {
 
     const recoveryAttemptedRef = useRef(false);
 
+    // Listen for Supabase recovery event
+    useEffect(() => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+            if (event === 'PASSWORD_RECOVERY') {
+                setIsRecoveryReady(true);
+                setMessage('You can now set your new password.');
+            }
+        });
+        return () => subscription?.unsubscribe();
+    }, []);
+
     // This effect handles the one-time logic of processing the recovery URL on component mount.
     useEffect(() => {
-        const hash = window.location.hash;
-        const queryString = hash.includes('?') ? hash.substring(hash.indexOf('?')) : '';
-        const params = new URLSearchParams(queryString);
+        const hash = window.location.hash || '';
+        const search = window.location.search || '';
+        const pathname = window.location.pathname || '';
+
+        const extractParams = () => {
+            // Prefer explicit query after '/reset-password?'
+            if (hash.startsWith('#/reset-password') && hash.includes('?')) {
+                return new URLSearchParams(hash.split('?')[1]);
+            }
+            // Handle tokens placed directly in hash: '#access_token=...&type=recovery'
+            if (hash && (hash.includes('access_token') || hash.includes('error=') || hash.includes('type='))) {
+                return new URLSearchParams(hash.slice(1));
+            }
+            // Handle normal query string
+            if (search && search.length > 1) {
+                return new URLSearchParams(search.slice(1));
+            }
+            // Some providers append params into pathname
+            const idx = pathname.indexOf('access_token');
+            if (idx !== -1) {
+                return new URLSearchParams(pathname.slice(idx));
+            }
+            return new URLSearchParams('');
+        };
+
+        const params = extractParams();
 
         console.log(`ResetPassword URL Processing. Hash: ${hash}`);
 
@@ -55,17 +89,25 @@ const ResetPassword = () => {
             setLoading(true);
             setError('');
 
-            const { data, error: sessionError } = await supabase.auth.setSession({
-                access_token: token,
-                refresh_token: refresh,
-            });
+            let data = undefined;
+            let sessionError = null;
+            try {
+                const res = await supabase.auth.setSession({
+                    access_token: token,
+                    refresh_token: refresh,
+                });
+                data = res?.data;
+                sessionError = res?.error || null;
+            } catch (e) {
+                sessionError = e;
+            }
 
             setLoading(false);
 
             if (sessionError) {
                 setError(`Failed to process recovery link: ${sessionError.message}. Please try again.`);
                 setIsRecoveryReady(false);
-            } else if (data.session) {
+            } else if (data && data.session) {
                 console.log('setSession successful. Ready for password update.');
                 setIsRecoveryReady(true);
                 setMessage('You can now set your new password.');
