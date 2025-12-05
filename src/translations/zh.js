@@ -287,7 +287,7 @@ export default {
     confirmed: '已确认',
     cancelled: '已取消',
     completed: '已完成',
-    blocked: '已屏蔽'
+    blocked: '已屏蔽',
     allTime: '所有时间',
     todayAndFuture: '今天及未来',
     thisWeek: '本周',
