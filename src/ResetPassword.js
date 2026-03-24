@@ -30,24 +30,13 @@ const ResetPassword = () => {
         const pathname = window.location.pathname || '';
 
         const extractParams = () => {
-            // Prefer explicit query after '/reset-password?'
-            if (hash.startsWith('#/reset-password') && hash.includes('?')) {
-                return new URLSearchParams(hash.split('?')[1]);
-            }
-            // Handle tokens placed directly in hash: '#access_token=...&type=recovery'
-            if (hash && (hash.includes('access_token') || hash.includes('error=') || hash.includes('type='))) {
-                return new URLSearchParams(hash.slice(1));
-            }
-            // Handle normal query string
-            if (search && search.length > 1) {
-                return new URLSearchParams(search.slice(1));
-            }
-            // Some providers append params into pathname
-            const idx = pathname.indexOf('access_token');
-            if (idx !== -1) {
-                return new URLSearchParams(pathname.slice(idx));
-            }
-            return new URLSearchParams('');
+            // Supabase and HashRouter can create various URL combinations like:
+            // /#/reset-password#access_token=...
+            // /#/reset-password?access_token=...
+            // /?access_token=...#/reset-password
+            // By converting ? and # to &, we can parse all Auth params reliably.
+            const combined = (hash + '&' + search + '&' + pathname).replace(/[?#]/g, '&');
+            return new URLSearchParams(combined);
         };
 
         const params = extractParams();

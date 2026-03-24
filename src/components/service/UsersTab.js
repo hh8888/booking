@@ -126,19 +126,35 @@ function UsersTab({ users, setUsers, handleError, selectedLocation, staffMode = 
   };
 
   const handleResetPassword = async (user) => {
-    if (!window.confirm(`Send password reset email to ${user.full_name || user.email}?`)) {
+    const customPassword = window.prompt(
+      `Set a new password for ${user.full_name || user.email}.\n\n` +
+      `Enter a new password to set it directly, or leave blank and click OK to send a password reset email instead.\n` +
+      `Click Cancel to abort.`
+    );
+
+    if (customPassword === null) {
+      // User clicked Cancel
       return;
     }
 
     try {
       const userService = UserService.getInstance();
-      await userService.resetUserPassword(user);
       
-      showToast.success('Password reset email sent successfully');
-      alert(`Password reset email has been sent to ${user.email}.\n\nThe user will receive an email with instructions to reset their password.`);
+      if (customPassword.trim() !== '') {
+        // Set password directly
+        await userService.manualPasswordReset(user, customPassword.trim());
+        showToast.success('Password updated successfully');
+        alert(`Password for ${user.email} has been updated to: ${customPassword.trim()}\nThey can now log in with this password.`);
+      } else {
+        // Send email
+        await userService.resetUserPassword(user);
+        
+        showToast.success('Password reset email sent successfully');
+        alert(`Password reset email has been sent to ${user.email}.\n\nThe user will receive an email with instructions to reset their password.`);
+      }
     } catch (error) {
       console.error('Password reset error:', error);
-      showToast.error(`Failed to send reset email: ${error.message}`);
+      showToast.error(`Failed to reset password: ${error.message}`);
     }
   };
 
