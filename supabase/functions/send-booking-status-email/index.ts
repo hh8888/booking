@@ -32,6 +32,14 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  // Only signed-in users may trigger booking emails
+  const caller = await getCaller(req)
+  if (!caller) {
+    return jsonResponse({ error: 'Sign-in required' }, 401)
+  }
+  const callerIsStaff = ['admin', 'manager', 'staff'].includes(caller.role ?? '')
+  const callerIsManager = ['admin', 'manager'].includes(caller.role ?? '')
+
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -39,6 +47,11 @@ serve(async (req) => {
     )
 
     const { bookingId, oldStatus, newStatus, emailRecipients = 'both', customEmailAddresses }: BookingEmailRequest = await req.json()
+
+    // Sending to arbitrary addresses is a test feature for admins and managers
+    if (customEmailAddresses && String(customEmailAddresses).trim() && !callerIsManager) {
+      return jsonResponse({ error: 'Only admins and managers can send to custom addresses' }, 403)
+    }
 
     // Fetch booking details with related data
     const { data: booking, error: bookingError } = await supabaseClient
@@ -54,6 +67,11 @@ serve(async (req) => {
 
     if (bookingError || !booking) {
       throw new Error(`Failed to fetch booking: ${bookingError?.message}`)
+    }
+
+    // Customers may only trigger emails for their own bookings
+    if (!callerIsStaff && booking.customer_id !== caller.id) {
+      return jsonResponse({ error: 'Not allowed for this booking' }, 403)
     }
 
     // Optionally fetch location details if needed
@@ -302,4 +320,36 @@ async function sendEmail({ to, subject, html }: { to: string; subject: string; h
   }
 
   return response.json()
+}
+
+
+function jsonResponse(body: unknown, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    status,
+  })
+}
+
+// Resolve the signed-in user behind the request and their role in the users
+// table. Returns null when the request carries no valid user session (the
+// site's public anon key is not a user token).
+async function getCaller(req: Request): Promise<{ id: string; role: string | null } | null> {
+  const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim()
+  if (!token) return null
+
+  const adminClient = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  )
+
+  const { data, error } = await adminClient.auth.getUser(token)
+  if (error || !data?.user) return null
+
+  const { data: profile } = await adminClient
+    .from('users')
+    .select('role')
+    .eq('id', data.user.id)
+    .maybeSingle()
+
+  return { id: data.user.id, role: profile?.role ?? null }
 }

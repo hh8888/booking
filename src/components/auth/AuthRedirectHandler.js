@@ -20,7 +20,12 @@ const AuthRedirectHandler = () => {
       return;
     }
 
-    if (hash && hash.length > 1 && !hash.startsWith('#/auth') && !hash.startsWith('#/reset-password')) {
+    // Only treat the hash as an auth callback when it really carries Supabase
+    // parameters. An ordinary route such as "#/admin?location=..." must be left
+    // alone, otherwise it gets bounced to /auth and back in a loop.
+    const hasAuthParams = /(^|[&?#])(access_token|refresh_token|type|error|error_code|error_description)=/.test(hash.substring(1));
+
+    if (hash && hash.length > 1 && hasAuthParams && !hash.startsWith('#/auth') && !hash.startsWith('#/reset-password')) {
       paramsSource = 'hash';
       paramsString = hash.substring(1);
     } 

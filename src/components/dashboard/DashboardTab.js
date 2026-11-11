@@ -114,6 +114,11 @@ export default function DashboardTab() {
 
   // Event handlers
   const handleEventClick = (info) => {
+    // Closed-day markers are not bookings; there is nothing to open
+    if (info.event.extendedProps.isClosedDate) {
+      return;
+    }
+
     // Handle all-day availability events
     if (info.event.allDay && info.event.extendedProps.isAllDayAvailability) {
       // Get the original event ID from the all-day event
@@ -334,6 +339,21 @@ export default function DashboardTab() {
   };
 
   const renderEventContent = (eventInfo) => {
+    if (eventInfo.event.extendedProps.isClosedDate) {
+      // Closed days are not bookings: show the "Closed" label and the reason
+      const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (ch) => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+      ));
+      const reason = eventInfo.event.extendedProps.reason;
+      const label = reason
+        ? `${eventInfo.event.title} - ${reason}`
+        : eventInfo.event.title;
+
+      return {
+        html: `<div class="closed-date-event-content" style="font-size: 11px; line-height: 1.2; padding: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(label)}</div>`
+      };
+    }
+
     if (eventInfo.event.extendedProps.isAvailability) {
       // For availability events, show staff name and time with smaller font
       const startTime = eventInfo.event.extendedProps.startTime;
@@ -406,6 +426,12 @@ export default function DashboardTab() {
     eventElementMap.current.set(info.event.id, info.el);
     
     const extendedProps = info.event.extendedProps;
+
+    // Closed-day markers already show their label; no booking tooltip applies
+    if (extendedProps.isClosedDate) {
+      return;
+    }
+
     let tooltip = null;
     let hideTimeout = null;
   

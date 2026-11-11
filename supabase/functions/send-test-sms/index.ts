@@ -11,8 +11,22 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  // Only a signed-in admin or manager may send SMS. The site's public (anon)
+  // key is not a user token, so it is rejected here.
+  const caller = await getCaller(req)
+  if (!caller) {
+    return jsonResponse({ error: 'Sign-in required' }, 401)
+  }
+  if (caller.role !== 'admin' && caller.role !== 'manager') {
+    return jsonResponse({ error: 'Only admins and managers can send test SMS' }, 403)
+  }
+
   try {
     const { bookingId, phoneNumbers, testType, bookingData } = await req.json()
+
+    if (typeof phoneNumbers !== 'string' || !phoneNumbers.trim()) {
+      throw new Error('At least one phone number is required')
+    }
 
     // Get Twilio credentials from environment variables
     const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
@@ -72,6 +86,36 @@ serve(async (req) => {
     )
   }
 })
+
+function jsonResponse(body: unknown, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    status,
+  })
+}
+
+// Resolve the signed-in user behind the request and their role in the users
+// table. Returns null when the request carries no valid user session.
+async function getCaller(req: Request): Promise<{ id: string; role: string | null } | null> {
+  const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim()
+  if (!token) return null
+
+  const adminClient = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  )
+
+  const { data, error } = await adminClient.auth.getUser(token)
+  if (error || !data?.user) return null
+
+  const { data: profile } = await adminClient
+    .from('users')
+    .select('role')
+    .eq('id', data.user.id)
+    .maybeSingle()
+
+  return { id: data.user.id, role: profile?.role ?? null }
+}
 
 function generateSmsContent(testType: string, bookingData: any): string {
   const customerName = bookingData?.customer?.full_name || 'Customer'
