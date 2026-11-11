@@ -21,6 +21,7 @@ export const SUCCESS_MESSAGES = {
   SETTINGS_SAVED: 'Settings saved successfully',
   CUSTOMER_DASHBOARD_SETTINGS_SAVED: 'Customer dashboard settings saved successfully',
   WORKING_HOURS_SETTINGS_SAVED: 'Working hours settings saved successfully',
+  BOOKING_ALARM_SETTINGS_SAVED: 'Booking alarm settings saved successfully',
   SETTING_UPDATED: 'Setting updated successfully!',
   
   // Staff Availability Messages
@@ -49,7 +50,8 @@ export const ERROR_MESSAGES = {
   MOBILE_SIGNIN_DISABLED: 'Mobile sign in is currently disabled.',
   INVALID_RECOVERY_LINK: 'Invalid or expired recovery link.',
   UNKNOWN_USER_ROLE: 'Unknown user role. Please contact support.',
-  DUPLICATE_EMAIL: 'This email address is already registered. Please use a different email or try signing in.',
+  UNKNOWN_ROLE: 'Your account has an unknown role. Please contact support.',
+  DUPLICATE_EMAIL:'This email address is already registered. Please use a different email or try signing in.',
   SIGN_OUT_ERROR: 'Error signing out',
   UNEXPECTED_SIGN_OUT_ERROR: 'Unexpected error during sign out',
   OPERATION_ERROR: 'Error',

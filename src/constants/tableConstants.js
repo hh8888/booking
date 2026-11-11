@@ -9,7 +9,8 @@ export const TABLES = {
   SETTINGS: 'settings',
   STAFF_AVAILABILITY: 'staff_availability',
   SERVICE_STAFF: 'service_staff',
-  PAYMENTS: 'payments'
+  PAYMENTS: 'payments',
+  CLOSED_DATES: 'closed_dates' // Add this line
 };
 
 // Common Database Columns

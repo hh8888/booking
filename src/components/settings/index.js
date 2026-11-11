@@ -7,7 +7,9 @@ import CustomerDashboardSettings from './CustomerDashboardSettings';
 import WorkingHoursSettings from './WorkingHoursSettings';
 import EmailTestSettings from './EmailTestSettings';
 import SmsTestSettings from './SmsTestSettings';
+import BookingAlarmSettings from './BookingAlarmSettings';
 import { SettingGroup } from './SettingGroup';
+import { default as ClosedDatesSettings } from './ClosedDatesSettings';
 
 export {
   DateTimeSettings,
@@ -19,5 +21,7 @@ export {
   WorkingHoursSettings,
   EmailTestSettings,
   SmsTestSettings,
+  BookingAlarmSettings,
+  ClosedDatesSettings,
   SettingGroup
 };

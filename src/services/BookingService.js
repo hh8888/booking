@@ -4,6 +4,8 @@ import { TABLES } from '../constants';
 import DateTimeFormatter from '../utils/DateTimeFormatter';
 import { toast } from 'react-toastify';
 import { isFakeEmail } from '../utils/validationUtils';
+import ClosedDatesService from './ClosedDatesService';
+import toLocalDateString from '../utils/localDate';
 
 class BookingService {
   static instance = null;
@@ -146,30 +148,39 @@ class BookingService {
     });
   }
 
-  async validateBookingTime(startTime) {
+  async validateBookingTime(startTime, locationId = null) {
+    // Extract date from startTime
+    const bookingDate = new Date(startTime);
+    const dateString = toLocalDateString(bookingDate); // YYYY-MM-DD in local time
+    
+    // Check if the date is closed
+    const closedDatesService = ClosedDatesService.getInstance();
+    const isDateClosed = await closedDatesService.isDateClosed(dateString, locationId);
+    
+    if (isDateClosed) {
+      throw new Error('Bookings are not available on this date. The facility is closed for the day.');
+    }
 
-      const advanceBookingDays = await this.dbService.getSettingsByKey('booking', 'advanceBookingDays');
-      const maxAdvanceDays = advanceBookingDays ? parseInt(advanceBookingDays) : 30;
-      
-      const now = new Date();
-      const bookingDate = new Date(startTime);
-      const daysDifference = Math.floor((bookingDate - now) / (1000 * 60 * 60 * 24));
-      
-      if (daysDifference < 0) {
-        throw new Error('Cannot book appointments in the past');
-      }
-      
-      if (daysDifference > maxAdvanceDays) {
-        throw new Error(`Cannot book appointments more than ${maxAdvanceDays} days in advance`);
-      }
-      
-      return true;
-
+    const advanceBookingDays = await this.dbService.getSettingsByKey('booking', 'advanceBookingDays');
+    const maxAdvanceDays = advanceBookingDays ? parseInt(advanceBookingDays) : 30;
+    
+    const now = new Date();
+    const daysDifference = Math.floor((bookingDate - now) / (1000 * 60 * 60 * 24));
+    
+    if (daysDifference < 0) {
+      throw new Error('Cannot book appointments in the past');
+    }
+    
+    if (daysDifference > maxAdvanceDays) {
+      throw new Error(`Cannot book appointments more than ${maxAdvanceDays} days in advance`);
+    }
+    
+    return true;
   }
 
   async createBooking(bookingData) {
-    console.log('Creating:',bookingData.start_time);
-    await this.validateBookingTime(bookingData.start_time);
+    console.log('Creating:', bookingData.start_time);
+    await this.validateBookingTime(bookingData.start_time, bookingData.location);
     const newBooking = await this.dbService.createItem(TABLES.BOOKINGS, bookingData, '');
     
     // Send email notifications for the new booking
@@ -184,7 +195,7 @@ class BookingService {
     // Get the old booking data before updating
     const oldBooking = await this.getBookingById(bookingData.id);
     
-    await this.validateBookingTime(bookingData.start_time);
+    await this.validateBookingTime(bookingData.start_time, bookingData.location);
     await this.dbService.updateItem(TABLES.BOOKINGS, bookingData, 'Booking');
     
     // Check if status changed and trigger email notification

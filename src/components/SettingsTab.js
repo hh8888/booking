@@ -6,6 +6,7 @@ import DatabaseService from '../services/DatabaseService';
 import { USER_ROLES, BOOKING_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES, TABLES, DEFAULT_BOOKING_STEPS } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSettings } from '../contexts/SettingsContext';
+import { reloadAlarmSettings } from '../utils/bookingAlarmUtils';
 import {
   DateTimeSettings,
   UserSettings,
@@ -16,6 +17,8 @@ import {
   WorkingHoursSettings,
   EmailTestSettings,
   SmsTestSettings,
+  BookingAlarmSettings,
+  ClosedDatesSettings,
   SettingGroup
 } from './settings';
 
@@ -328,6 +331,17 @@ export default function SettingsTab() {
             });
           }
 
+          // Process booking alarm settings
+          const bookingAlarmSettingsData = data.filter(item => item.category === 'booking_alarm');
+          if (bookingAlarmSettingsData.length > 0) {
+            setBookingAlarmSettings(prevSettings => {
+              return prevSettings.map(setting => {
+                const foundSetting = bookingAlarmSettingsData.find(item => item.key === setting.key);
+                return foundSetting ? { ...setting, value: foundSetting.value } : setting;
+              });
+            });
+          }
+
           // Process working hours settings
           const workingHoursData = data.filter(item => item.category === 'working_hours');
           if (workingHoursData.length > 0) {
@@ -357,6 +371,9 @@ export default function SettingsTab() {
             });
           }
         }
+        
+        // Reload alarm settings to ensure alarm system has the latest settings
+        await reloadAlarmSettings();
       } catch (error) {
         console.error('Error loading settings:', error);
         toast.error(ERROR_MESSAGES.SETTINGS_LOAD_FAILED);
@@ -546,6 +563,52 @@ export default function SettingsTab() {
   // Customer Dashboard settings
   // Customer Dashboard settings
   const [customerDashboardSettings, setCustomerDashboardSettings] = useState([]);
+
+  // Booking Alarm settings
+  const [bookingAlarmSettings, setBookingAlarmSettings] = useState([
+    {
+      key: 'enableBanner',
+      label: t('settings.enableBanner'),
+      value: 'true',
+      type: 'select',
+      options: [
+        { value: 'true', label: t('settings.enable') },
+        { value: 'false', label: t('settings.disable') }
+      ],
+      description: t('settings.enableBannerDesc')
+    },
+    {
+      key: 'enableFlashing',
+      label: t('settings.enableFlashing'),
+      value: 'false',
+      type: 'select',
+      options: [
+        { value: 'true', label: t('settings.enable') },
+        { value: 'false', label: t('settings.disable') }
+      ],
+      description: t('settings.enableFlashingDesc')
+    },
+    {
+      key: 'enableBeepSound',
+      label: t('settings.enableBeepSound'),
+      value: 'true',
+      type: 'select',
+      options: [
+        { value: 'true', label: t('settings.enable') },
+        { value: 'false', label: t('settings.disable') }
+      ],
+      description: t('settings.enableBeepSoundDesc')
+    },
+    {
+      key: 'alarmInterval',
+      label: t('settings.alarmInterval'),
+      value: '60',
+      type: 'number',
+      min: 1,
+      max: 300,
+      description: t('settings.alarmIntervalDesc')
+    }
+  ]);
   
   // Initialize default booking steps for both languages
   const initializeDefaultBookingSteps = async () => {
@@ -580,6 +643,37 @@ export default function SettingsTab() {
     }
   };
 
+  // Initialize default booking alarm settings
+  const initializeDefaultBookingAlarmSettings = async () => {
+    try {
+      const dbService = DatabaseService.getInstance();
+      
+      // Default alarm settings
+      const defaultAlarmSettings = [
+        { key: 'enableBanner', value: 'true' },
+        { key: 'enableFlashing', value: 'false' },
+        { key: 'enableBeepSound', value: 'true' },
+        { key: 'alarmInterval', value: '60' }
+      ];
+      
+      // Check and create default alarm settings if they don't exist
+      for (const setting of defaultAlarmSettings) {
+        const existing = await dbService.getSettingsByKey('booking_alarm', setting.key);
+        if (existing === null) {
+          await dbService.createItem(TABLES.SETTINGS, {
+            category: 'booking_alarm',
+            key: setting.key,
+            value: setting.value
+          }, 'Setting');
+        }
+      }
+      
+      console.log('Default booking alarm settings initialized');
+    } catch (error) {
+      console.error('Error initializing default booking alarm settings:', error);
+    }
+  };
+
   // Initialize customer dashboard settings with translations
   useEffect(() => {
     setCustomerDashboardSettings([
@@ -608,6 +702,9 @@ export default function SettingsTab() {
      
      // Initialize default booking steps in database
      initializeDefaultBookingSteps();
+     
+     // Initialize default booking alarm settings in database
+     initializeDefaultBookingAlarmSettings();
   }, [t]);
 
   // Load customer dashboard settings
@@ -727,6 +824,56 @@ export default function SettingsTab() {
     }
   };
 
+  // Save booking alarm settings
+  const saveBookingAlarmSettings = async (formData) => {
+    try {
+      const dbService = DatabaseService.getInstance();
+      
+      // Prepare data to save
+      const settingsToSave = Object.keys(formData).map(key => ({
+        category: 'booking_alarm',
+        key,
+        value: formData[key]
+      }));
+
+      // Check if settings exist, update if they do, otherwise create
+      for (const setting of settingsToSave) {
+        const { data } = await supabase
+          .from(TABLES.SETTINGS)
+          .select('*')
+          .eq('category', setting.category)
+          .eq('key', setting.key);
+
+        if (data && data.length > 0) {
+          // Update existing setting
+          await dbService.updateItem(TABLES.SETTINGS, {
+            id: data[0].id,
+            ...setting
+          }, 'Setting');
+        } else {
+          // Create new setting
+          await dbService.createItem(TABLES.SETTINGS, setting, 'Setting');
+        }
+      }
+
+      // Update local state
+      setBookingAlarmSettings(prevSettings => {
+        return prevSettings.map(setting => ({
+          ...setting,
+          value: formData[setting.key] || setting.value
+        }));
+      });
+
+      toast.success(SUCCESS_MESSAGES.BOOKING_ALARM_SETTINGS_SAVED);
+      
+      // Reload alarm settings to apply changes immediately
+      await reloadAlarmSettings();
+    } catch (error) {
+      console.error('Error saving booking alarm settings:', error);
+      toast.error(`${ERROR_MESSAGES.SAVE_FAILED}: ${error.message}`);
+    }
+  };
+
   // Save working hours settings
   const saveWorkingHoursSettings = async (formData) => {
     try {
@@ -802,6 +949,9 @@ export default function SettingsTab() {
         onSave={saveWorkingHoursSettings} 
       />
       
+      {/* Closed Dates Settings Group */}
+      <ClosedDatesSettings />
+      
       {/* User Settings Group */}
       <UserSettings 
         settings={userSettings} 
@@ -818,6 +968,12 @@ export default function SettingsTab() {
       <BookingSettings 
         settings={bookingSettings} 
         onSave={saveBookingSettings} 
+      />
+      
+      {/* Booking Alarm Settings Group */}
+      <BookingAlarmSettings 
+        settings={bookingAlarmSettings} 
+        onSave={saveBookingAlarmSettings} 
       />
       
       {/* Customer Dashboard Settings Group */}

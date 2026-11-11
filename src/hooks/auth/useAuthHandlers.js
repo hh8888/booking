@@ -65,7 +65,12 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
   };
 
   const handleSignUp = async () => {
-    if (!validateForm(authState)) return;
+    const validation = validateForm(authState.email, authState.password, authState.name, authState.mobile);
+    if (!validation.isValid) {
+      authState.setError(validation.error);
+      return;
+    }
+    authState.setError('');
     authState.setIsLoading(true);
 
     try {
@@ -164,7 +169,12 @@ export const useAuthHandlers = (authState, validateForm, validateSignInForm, val
   };
 
   const handleSignIn = async () => {
-    if (!validateSignInForm(authState)) return;
+    const validation = validateSignInForm(authState.email, authState.password);
+    if (!validation.isValid) {
+      authState.setError(validation.error);
+      return;
+    }
+    authState.setError('');
 
     authState.setIsLoading(true);
     try {

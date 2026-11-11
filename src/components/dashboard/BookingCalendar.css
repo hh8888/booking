@@ -70,11 +70,21 @@
   overflow: hidden !important;
 }
 
-.mobile-calendar .fc-event:hover {
+.mobile-calendar .fc-event:hover:not(.availability-highlighted):not(.booking-highlighted) {
   transform: scale(1.02);
   transition: transform 0.1s ease;
 }
 
+/* Ensure highlighted events never scale on any calendar type */
+.fc-event.availability-highlighted,
+.fc-event.booking-highlighted {
+  transform: none !important;
+}
+
+.fc-event.availability-highlighted:hover,
+.fc-event.booking-highlighted:hover {
+  transform: none !important;
+}
 .mobile-calendar .fc-resource-area {
   font-size: 0.75rem !important;
   background: #f8fafc !important;

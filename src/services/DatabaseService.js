@@ -238,8 +238,49 @@ class DatabaseService {
    * @param {string} key - Setting key
    * @returns {Promise<Object>} Setting value
    */
-  async getSettingsByKey(category, key) {
+
+  /**
+   * Get all settings for a specific category
+   * @param {string} category - Setting category
+   * @returns {Promise<Object>} A key-value map of settings
+   */
+  async getSettings(category) {
     try {
+      const { data, error } = await supabase
+        .from(TABLES.SETTINGS)
+        .select('key, value')
+        .eq('category', category);
+
+      if (error) throw error;
+
+      // If no records found, return an empty object
+      if (!data) {
+        return {};
+      }
+
+      // Transform the array of objects into a key-value map
+      const settingsMap = data.reduce((acc, setting) => {
+        acc[setting.key] = setting.value;
+        return acc;
+      }, {});
+
+      return settingsMap;
+    } catch (error) {
+      console.error(`Error fetching settings for category ${category}:`, error.message);
+      toast.error(`Unable to get system settings for ${category}`);
+      return {}; // Return empty object on error
+    }
+  }
+
+  /**
+   * Get system settings by category and key
+   * @param {string} category - Setting category
+   * @param {string} key - Setting key
+   * @returns {Promise<Object>} Setting value
+   */
+  async getSettingsByKey(category, key, defaultValue = null) {
+    try {
+      // Fetch only the one row (callers often look up keys in loops)
       const { data, error } = await supabase
         .from(TABLES.SETTINGS)
         .select('value')
@@ -248,20 +289,16 @@ class DatabaseService {
         .maybeSingle();
 
       if (error) throw error;
-      
-      // If no record found, return null
-      if (!data) {
-        // console.log(`No setting found for category: ${category}, key: ${key}`);
-        return null;
-      }
-      
-      return data.value;
+
+      // Return the value, or the default value if no record found
+      return data ? data.value : defaultValue;
     } catch (error) {
-      console.error('Error fetching settings:', error.message);
-      toast.error('Unable to get system settings');
-      return null;
+      console.error(`Error fetching setting for ${category}.${key}:`, error.message);
+      // In case of error, return the default value
+      return defaultValue;
     }
   }
+
 
   /**
    * Update or insert system settings

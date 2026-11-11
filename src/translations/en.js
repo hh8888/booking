@@ -696,6 +696,7 @@ blockTimeSlot: {
     },
     error: {
       general: 'An error occurred. Please try again.',
+      cannotBookOnClosedDate: 'Bookings are not available on this date. We are closed for the day.',
       networkError: 'Network error. Please check your connection.',
       unauthorized: 'You are not authorized to perform this action.',
       notFound: 'The requested resource was not found.',

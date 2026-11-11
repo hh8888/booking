@@ -161,6 +161,7 @@
 .availability-event {
   cursor: pointer;
   pointer-events: auto !important;
+  transition: all 0.2s ease-in-out;
 }
 
 /* Booking event styling improvements */
@@ -295,12 +296,7 @@
 
 .fc-resource-timegrid .fc-bg-event.availability-single-staff {
   width: 100% !important;
-}
-
-/* Resource view single staff (already full width but ensure consistency) */
-.fc-resource-timegrid .fc-bg-event.availability-single-staff {
-  left: 0% !important;
-  width: 100% !important;
+  left: 0%;
 }
 
 /* Cancelled booking styling */
@@ -419,31 +415,92 @@
   left: 0% !important;
 }
 
-/* Highlighted availability events - bring to front */
-.availability-highlighted {
-  z-index: 1000 !important;
+/* Booking event highlighting */
+.booking-highlighted {
+  z-index: 999 !important;
+  box-shadow: 0 0 0 1px #f59e0b !important;
+  transition: all 0.2s ease !important;
   opacity: 1 !important;
-  border: 2px solid #28a745 !important;
-  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3) !important;
-  transform: scale(1.02) !important;
-  transition: all 0.2s ease-in-out !important;
 }
 
-/* Ensure highlighted events are above other elements */
+.availability-highlighted {
+  z-index: 998 !important;
+  box-shadow: 0 0 0 2px #3b82f6 !important;
+  background-color: #bfdbfe !important;
+  transition: all 0.2s ease !important;
+  opacity: 0.9 !important;
+}
+
+/* Enhanced highlighting for background availability events */
+.fc-bg-event.availability-highlighted {
+  background-color: #93c5fd !important;
+  border: 2px solid #3b82f6 !important;
+  opacity: 0.8 !important;
+  z-index: 998 !important;
+}
+
+/* Enhanced highlighting for time grid background events */
 .fc-timegrid-bg-harness .availability-highlighted,
-.fc-timegrid-slot-lane .availability-highlighted {
-  z-index: 1000 !important;
-  position: relative !important;
+.fc-daygrid-bg-harness .availability-highlighted {
+  background-color: #93c5fd !important;
+  border: 2px solid #3b82f6 !important;
+  opacity: 0.8 !important;
 }
 
-/* Animation for smooth highlighting */
-.availability-event {
-  transition: all 0.2s ease-in-out;
+.booking-highlighted.fade-out {
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0) !important;
+  transition: box-shadow 1s ease-in-out !important;
 }
 
+.availability-highlighted.fade-out {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0) !important;
+  background-color: #d4edda !important;
+  transition: all 1s ease-in-out !important;
+}
 
-/* Resource view single staff (already full width but ensure consistency) */
-.fc-resource-timegrid .fc-bg-event.availability-single-staff {
-  left: 0%
+/* Fade out for background events */
+.fc-bg-event.availability-highlighted.fade-out {
+  background-color: #d4edda !important;
+  border: 1px dashed #28a745 !important;
+  opacity: 0.7 !important;
+  transition: all 1s ease-in-out !important;
+}
+
+/* Closed dates styling */
+.fc-day.closed-date {
+  background-color: #fee2e2 !important;
+  position: relative;
+}
+
+.fc-day.closed-date::before {
+  content: '🚫';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 12px;
+  z-index: 1;
+}
+
+.fc-day.closed-date .fc-daygrid-day-frame {
+  background-color: #fecaca;
+  opacity: 0.7;
+}
+
+/* Disable interactions on closed dates */
+.fc-day.closed-date .fc-daygrid-day-events {
+  pointer-events: none;
+}
+
+.closed-date-indicator {
+  background-color: #dc2626;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: bold;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  z-index: 2;
 }
 

@@ -23,6 +23,7 @@ import { useUsersData } from './hooks/useUsersData';
 import { useLanguage } from './contexts/LanguageContext';
 import { USER_ROLES, TABLES } from './constants';
 import { toast } from 'react-toastify';
+import { checkUnconfirmedBookings, reloadAlarmSettings } from './utils/bookingAlarmUtils';
 
 export default function Dashboard() {
   const { t } = useLanguage();
@@ -117,6 +118,32 @@ export default function Dashboard() {
       // console.log('=== End Debug Info ===');
     }
   }, [userLoading, usersLoading, userError, usersError, networkError, currentUserId, userRole, users, isAdmin, isManager]);
+
+  // Initialize alarm settings and check for unconfirmed bookings on dashboard load
+  useEffect(() => {
+    const initializeAlarmSystem = async () => {
+      // Only run for admin, manager, and staff (not customers)
+      if (!userLoading && (isAdmin || isManager || isStaff)) {
+        try {
+          console.log('Initializing alarm system...');
+          
+          // Load alarm settings first
+          await reloadAlarmSettings();
+          
+          // Small delay to ensure settings are loaded
+          setTimeout(async () => {
+            // Check for unconfirmed bookings
+            await checkUnconfirmedBookings();
+          }, 1000);
+          
+        } catch (error) {
+          console.error('Error initializing alarm system:', error);
+        }
+      }
+    };
+
+    initializeAlarmSystem();
+  }, [userLoading, isAdmin, isManager, isStaff]);
 
   // Remove the useLocationManager call (around lines 114-120)
   // useLocationManager({

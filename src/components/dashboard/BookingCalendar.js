@@ -19,6 +19,7 @@ const BookingCalendar = ({
   showUnassigned,
   stackAvailability,
   businessHours,
+  closedDates,
   onDateClick,
   onEventClick,
   renderEventContent,
@@ -26,7 +27,7 @@ const BookingCalendar = ({
   staffData,
   staffColors,
   services,
-  onCalendarRef // Add this prop
+  onCalendarRef
 }) => {
   const { t } = useLanguage();
   const [calendarRef, setCalendarRef] = useState(null);
@@ -35,6 +36,28 @@ const BookingCalendar = ({
     window.innerWidth <= 768 && window.innerWidth > window.innerHeight
   );
   const [currentViewDates, setCurrentViewDates] = useState(null);
+
+  // Add getClosedDateEvents function within component scope
+  const getClosedDateEvents = () => {
+    if (!closedDates || closedDates.length === 0) {
+      return [];
+    }
+    
+    return closedDates.map((closedDate, index) => ({
+      id: `closed-date-${index}`,
+      title: t('calendar.closedDay'),
+      start: closedDate.date,
+      allDay: true,
+      classNames: ['closed-date-event'],
+      extendedProps: {
+        isClosedDate: true,
+        reason: closedDate.reason || ''
+      },
+      backgroundColor: '#ff4444',
+      borderColor: '#cc0000',
+      textColor: '#ffffff'
+    }));
+  };
 
   // Add this function to handle calendar ref
   const handleCalendarRef = useCallback((ref) => {
@@ -48,28 +71,19 @@ const BookingCalendar = ({
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
-      const landscapeMobile = mobile && window.innerWidth > window.innerHeight;
+      const landscapeMobile = window.innerWidth <= 768 && window.innerWidth > window.innerHeight;
       setIsMobile(mobile);
       setIsLandscapeMobile(landscapeMobile);
       
-      // Update calendar view based on screen size and orientation
       if (calendarRef) {
-        const calendarApi = calendarRef.getApi();
-        
-        // Always use resource view for landscape mobile
-        if (landscapeMobile && calendarApi.view.type !== 'resourceTimeGridDay') {
-          calendarApi.changeView('resourceTimeGridDay');
-        } else if (mobile && !landscapeMobile && calendarApi.view.type === 'timeGridWeek') {
-          calendarApi.changeView('timeGridDay');
-        } else if (!mobile && (calendarApi.view.type === 'timeGridDay' || calendarApi.view.type === 'resourceTimeGridDay')) {
-          calendarApi.changeView('timeGridWeek');
-        }
+        calendarRef.getApi().updateSize();
       }
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [calendarRef]);
+
   // Filter events logic
   const getFilteredEvents = () => {
     let filteredEvents = bookings;
@@ -95,19 +109,19 @@ const BookingCalendar = ({
       
       return true;
     });
-    
+
     if (!showAvailability) {
       filteredEvents = filteredEvents.filter(event => 
         !event.classNames?.includes('availability-event')
       );
     }
-    
+
     if (!showBookings) {
       filteredEvents = filteredEvents.filter(event => 
         event.classNames?.includes('availability-event')
       );
     }
-    
+
     if (showPast) {
       const now = new Date();
       now.setHours(0, 0, 0, 0);
@@ -118,7 +132,7 @@ const BookingCalendar = ({
         return eventDate >= now;
       });
     }
-    
+
     return filteredEvents;
   };
 
@@ -266,7 +280,9 @@ const BookingCalendar = ({
   const getFilteredEventsWithResources = () => {
     let filteredEvents = getFilteredEvents();
     
-    // Add resourceId to events based on staffId/providerId
+    // Add closed date events
+    const closedDateEvents = getClosedDateEvents();
+    filteredEvents = [...filteredEvents, ...closedDateEvents];
     return filteredEvents.map(event => {
       const staffId = event.extendedProps?.staffId || event.extendedProps?.providerId;
       
@@ -333,6 +349,10 @@ const BookingCalendar = ({
   // Filter events for non-resource views to show unassigned bookings
   const getFilteredEventsForNonResourceView = () => {
     let filteredEvents = getFilteredEvents();
+    
+    // Add closed date events
+    const closedDateEvents = getClosedDateEvents();
+    filteredEvents = [...filteredEvents, ...closedDateEvents];
     
     // In non-resource views, we need to filter based on showUnassigned toggle
     if (!showUnassigned) {

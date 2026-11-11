@@ -714,6 +714,7 @@ export default {
     },
     error: {
       general: '发生错误，请重试。',
+      cannotBookOnClosedDate: '该日期无法预约，当天休息。',
       networkError: '网络错误，请检查您的连接。',
       unauthorized: '您无权执行此操作。',
       notFound: '未找到请求的资源。',

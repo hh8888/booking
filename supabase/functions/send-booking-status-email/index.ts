@@ -163,16 +163,16 @@ serve(async (req) => {
 
 function generateEmailContent(booking: any, oldStatus: string, newStatus: string) {
   const formatDate = (dateString: string) => {
-    // Convert GMT time to Sydney time with automatic daylight saving consideration
+    // Convert GMT time to Sydney time with Australian format
     return new Date(dateString).toLocaleString('en-AU', {
       timeZone: 'Australia/Sydney',
       weekday: 'long',
-      year: 'numeric',
-      month: 'long',
       day: 'numeric',
-      hour: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: 'numeric',
       minute: '2-digit',
-      timeZoneName: 'short'
+      hour12: true
     })
   }
 

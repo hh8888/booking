@@ -1534,7 +1534,7 @@ export default function EditBookingPopup({
               type: "select",
               options: recurringOptions,
               hidden: !isCreating || !showRecurringOptions || hideRecurringOptions,  // Hide if hideRecurringOptions is true
-              defaultValue: "daily"
+              defaultValue: "none"
             },
             { 
               key: "recurring_count", 

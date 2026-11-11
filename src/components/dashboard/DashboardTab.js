@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'react-toastify';
 import DashboardStats from './DashboardStats';
 import BookingCalendar from './BookingCalendar';
@@ -12,6 +12,9 @@ import EditBookingPopup from '../booking/EditBookingPopup';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import DatabaseService from '../../services/DatabaseService';
 import BookingService from '../../services/BookingService';
+import ClosedDatesService from '../../services/ClosedDatesService';
+import LocationService from '../../services/LocationService';
+import toLocalDateString from '../../utils/localDate';
 import { BOOKING_STATUS, USER_ROLES, TABLES, SUCCESS_MESSAGES, ERROR_MESSAGES } from '../../constants';
 import '../../styles/calendar.css';
 import ToastHistory from './ToastHistory';
@@ -36,7 +39,14 @@ export default function DashboardTab() {
   const [defaultTime, setDefaultTime] = useState(null);
   const [showStaffNameSetting, setShowStaffNameSetting] = useState('true');
   const [calendarRef, setCalendarRef] = useState(null);
+  
+  // Closed dates state
+  const [closedDates, setClosedDates] = useState([]);
+  const [selectedLocation, setSelectedLocation] = useState(null);
 
+  // Replace useState with useRef to prevent infinite re-renders
+  const eventElementMap = useRef(new Map());
+  
   // Data from custom hook
   const {
     loading,
@@ -52,15 +62,16 @@ export default function DashboardTab() {
     staffData
   } = useDashboardData(stackAvailability);
 
-  // Add the clearEventHighlights function here (BEFORE the return statement)
-  const clearEventHighlights = () => {
-    // Remove highlight class from all events
-    const highlightedEvents = document.querySelectorAll('.availability-highlighted');
-    highlightedEvents.forEach(eventEl => {
-      eventEl.classList.remove('availability-highlighted');
-      delete eventEl.dataset.highlighted;
+  const clearEventHighlights = useCallback(() => {
+    // Remove all highlighted elements
+    const highlightedElements = document.querySelectorAll('[data-highlighted="true"]');
+    highlightedElements.forEach(el => {
+      el.classList.remove('availability-highlighted');
+      el.classList.remove('booking-highlighted');
+      el.classList.remove('fade-out');
+      delete el.dataset.highlighted;
     });
-  };
+  }, []);
 
   // Fetch the showStaffName setting
   useEffect(() => {
@@ -78,6 +89,29 @@ export default function DashboardTab() {
     fetchShowStaffNameSetting();
   }, []);
 
+  // Load current location and closed dates
+  useEffect(() => {
+    const loadLocationAndClosedDates = async () => {
+      try {
+        // Get current location using the correct method
+        const locationService = LocationService.getInstance();
+        const currentLoc = locationService.getSelectedLocation();
+        setSelectedLocation(currentLoc);
+        
+        // Load closed dates for current location
+        const closedDatesService = ClosedDatesService.getInstance();
+        const dates = await closedDatesService.getClosedDates(currentLoc?.id || null);
+        console.log('Loaded closed dates:', dates); // Add debugging
+        setClosedDates(dates || []);
+      } catch (error) {
+        console.error('Error loading closed dates:', error);
+        setClosedDates([]);
+      }
+    };
+    
+    loadLocationAndClosedDates();
+  }, []);
+
   // Event handlers
   const handleEventClick = (info) => {
     // Handle all-day availability events
@@ -87,6 +121,10 @@ export default function DashboardTab() {
       const staffId = info.event.extendedProps.staffId;
       const eventDate = info.event.start;
       
+      console.log('=== ALL-DAY AVAILABILITY EVENT CLICKED ===');
+      console.log('Staff ID:', staffId);
+      console.log('Event Date:', eventDate);
+      
       // Clear any existing highlights
       clearEventHighlights();
       
@@ -95,27 +133,97 @@ export default function DashboardTab() {
         const calendarApi = calendarRef.getApi();
         const allEvents = calendarApi.getEvents();
         
+        console.log('Total events found:', allEvents.length);
+        
+        let availabilityHighlighted = 0;
+        let bookingsHighlighted = 0;
+        
         allEvents.forEach(event => {
+          const eventStaffId = event.extendedProps?.staffId || event.extendedProps?.providerId;
+          
           // Check if this is a time grid availability event for the same staff and date
           if (!event.allDay && 
               event.extendedProps?.isAvailability && 
-              event.extendedProps?.staffId === staffId) {
+              eventStaffId === staffId) {
             
             const eventStart = new Date(event.start);
             const clickedDate = new Date(eventDate);
             
             // Check if events are on the same date
             if (eventStart.toDateString() === clickedDate.toDateString()) {
-              // Add highlight class to bring event to front
-              const eventEl = event.el;
+              // Use the event element mapping to get DOM element
+              const eventEl = eventElementMap.current.get(event.id);
               if (eventEl) {
                 eventEl.classList.add('availability-highlighted');
                 // Store reference for cleanup
                 eventEl.dataset.highlighted = 'true';
+                availabilityHighlighted++;
+              }
+            }
+          }
+          
+          // Also highlight booking events for the same provider on the same date
+          if (!event.allDay && 
+              !event.extendedProps?.isAvailability && 
+              eventStaffId === staffId) {
+            
+            const eventStart = new Date(event.start);
+            const clickedDate = new Date(eventDate);
+            
+            console.log('Found booking event:', {
+              title: event.title,
+              staffId: eventStaffId,
+              isAvailability: event.extendedProps?.isAvailability,
+              eventDate: eventStart.toDateString(),
+              clickedDate: clickedDate.toDateString(),
+              sameDate: eventStart.toDateString() === clickedDate.toDateString(),
+              eventId: event.id,
+              hasElementInMap: eventElementMap.current.has(event.id),
+              mapSize: eventElementMap.current.size,
+              allMapKeys: Array.from(eventElementMap.current.keys())
+            });
+            
+            // Check if events are on the same date
+            if (eventStart.toDateString() === clickedDate.toDateString()) {
+              // Use the event element mapping to get DOM element
+              const eventEl = eventElementMap.current.get(event.id);
+              if (eventEl) {
+                console.log('Highlighting booking event:', event.title);
+                eventEl.classList.add('booking-highlighted');
+                // Store reference for cleanup
+                eventEl.dataset.highlighted = 'true';
+                bookingsHighlighted++;
+              } else {
+                console.log('No element found for booking event:', event.title, 'Event ID:', event.id);
+                console.log('Available event IDs in map:', Array.from(eventElementMap.current.keys()));
               }
             }
           }
         });
+        
+        // Also highlight the clicked all-day event itself
+        const clickedEventEl = eventElementMap.current.get(info.event.id);
+        if (clickedEventEl) {
+          clickedEventEl.classList.add('availability-highlighted');
+          clickedEventEl.dataset.highlighted = 'true';
+          availabilityHighlighted++;
+        }
+        
+        console.log('Availability events highlighted:', availabilityHighlighted);
+        console.log('Booking events highlighted:', bookingsHighlighted);
+        
+        // Auto-fade highlights after 2 seconds
+        setTimeout(() => {
+          const highlightedElements = document.querySelectorAll('[data-highlighted="true"]');
+          highlightedElements.forEach(el => {
+            el.classList.add('fade-out');
+          });
+          
+          // Remove highlights completely after fade animation (2s)
+          setTimeout(() => {
+            clearEventHighlights();
+          }, 2000);
+        }, 2000);
       }
       
       return; // Don't proceed with normal click handling
@@ -155,13 +263,23 @@ export default function DashboardTab() {
     }
   };
 
-  const handleDateClick = ({ date }) => {
-    // Open create booking form with prefilled date and time
-    const clickedTime = date.toTimeString().slice(0, 5); // HH:MM format
-    
-    setSelectedDate(date);
-    setDefaultTime(clickedTime);
-    setSelectedEvent(null); // No specific provider selected
+  const handleDateClick = (info) => {
+    // Check if the clicked date is a closed date
+    // (compare local calendar days; info.dateStr includes a time in time-grid views)
+    const clickedDate = toLocalDateString(info.date);
+    const isClosedDate = closedDates.some(closedDate =>
+      String(closedDate.date).slice(0, 10) === clickedDate
+    );
+
+    if (isClosedDate) {
+      showErrorToast('cannotBookOnClosedDate');
+      return;
+    }
+
+    // Open create booking form with prefilled date and (for time-grid clicks) time
+    setSelectedDate(info.date);
+    setDefaultTime(info.allDay ? null : info.date.toTimeString().slice(0, 5)); // HH:MM
+    setSelectedEvent(null);
     setShowEditPopup(true);
   };
 
@@ -284,12 +402,18 @@ export default function DashboardTab() {
   };
 
   const handleEventDidMount = (info) => {
+    // Store the DOM element reference in the map
+    eventElementMap.current.set(info.event.id, info.el);
+    
     const extendedProps = info.event.extendedProps;
     let tooltip = null;
     let hideTimeout = null;
   
     // Define the cleanup function
     const cleanup = () => {
+      // Remove from event element map when cleaning up
+      eventElementMap.current.delete(info.event.id);
+      
       if (tooltip) {
         tooltip.remove();
         tooltip = null;
@@ -520,6 +644,7 @@ export default function DashboardTab() {
           showUnassigned={showUnassigned}
           stackAvailability={stackAvailability}
           businessHours={businessHours}
+          closedDates={closedDates}
           onDateClick={handleDateClick}
           onEventClick={handleEventClick}
           renderEventContent={renderEventContent}

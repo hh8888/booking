@@ -4,10 +4,13 @@ import { supabase } from '../../supabaseClient';
 import { toast } from 'react-toastify';
 import { TABLES } from '../../constants';
 import DatabaseService from '../../services/DatabaseService';
+import withTimeout from '../../utils/withTimeout';
+import { useSystemSettings } from '../useSystemSettings';
 
 export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
   const location = useLocation();
   const { error, errorCode, errorDescription } = location.state || {};
+  const { settings: systemSettings, loading: systemSettingsLoading } = useSystemSettings();
 
   // Timer effect for resend functionality
   useEffect(() => {
@@ -30,70 +33,71 @@ export const useAuthEffects = (authState, checkUserRoleAndRedirect) => {
 
   // Session and settings check effect
   useEffect(() => {
+    // Expired or invalid email link (from the URL query or router state)
     const params = new URLSearchParams(location.search);
-    const errorParam = params.get('error');
-    const errorCodeParam = params.get('error_code');
+    const linkError = params.get('error') || error;
+    const linkErrorCode = params.get('error_code') || errorCode;
 
-    const { state } = location;
-    const errorState = state?.error;
-    const errorCodeState = state?.errorCode;
-
-    const error = errorParam || errorState;
-    const errorCode = errorCodeParam || errorCodeState;
-
-    if (error && (errorCode === 'otp_expired' || error === 'access_denied')) {
+    if (linkError && (linkErrorCode === 'otp_expired' || linkError === 'access_denied')) {
       console.log('useAuthEffects: Expired or invalid link detected.');
       authState.setShowExpiredLinkError(true);
       authState.setIsLoading(false);
       return; // Stop further execution
     }
 
-    const checkSessionAndSettings = async () => {
-      console.log('useAuthEffects: checkSessionAndSettings started.');
+    console.log('useAuthEffects: systemSettingsLoading changed:', systemSettingsLoading);
+    if (systemSettingsLoading) {
+      return; // Wait for settings to be loaded
+    }
+
+    const mobileAuthSetting = systemSettings.enableMobileAuth || 'false';
+    console.log('useAuthEffects: Mobile auth setting from useSystemSettings:', mobileAuthSetting);
+    authState.setIsMobileAuthEnabled(mobileAuthSetting === 'true' || mobileAuthSetting === true);
+
+    const checkSession = async () => {
+      console.log('useAuthEffects: checkSession started.');
       authState.setIsLoading(true);
       console.log('useAuthEffects: isLoading set to true.');
       authState.setError('');
-
-      // Fetch mobile auth setting
       try {
-        const dbService = DatabaseService.getInstance();
-        console.log('useAuthEffects: Fetching mobile auth setting...');
-        const mobileAuthSetting = await dbService.getSettingsByKey('system', 'enableMobileAuth');
-        console.log('useAuthEffects: Mobile auth setting fetched:', mobileAuthSetting);
-        authState.setIsMobileAuthEnabled(
-          mobileAuthSetting === 'true' || mobileAuthSetting === true
-        );
+        const hash = window.location.hash;
+        const isResetPasswordFlow =
+          hash.startsWith('#/reset-password') ||
+          hash.includes('error_description=');
+
+        if (isResetPasswordFlow) {
+          authState.setIsLoading(false);
+          console.log('useAuthEffects: Reset password flow detected, isLoading set to false.');
+          return;
+        }
+
+        console.log('useAuthEffects: Getting Supabase session...');
+        let session = null;
+        try {
+          const res = await withTimeout(supabase.auth.getSession(), 15000);
+          session = res?.data?.session || null;
+        } catch (err) {
+          console.error('useAuthEffects: Failed to get Supabase session:', err);
+          session = null;
+        }
+        console.log('useAuthEffects: Supabase session obtained:', session);
+        if (session) {
+          console.log('useAuthEffects: Session exists, checking user role and redirecting...');
+          await checkUserRoleAndRedirect(session.user);
+          console.log('useAuthEffects: User role checked and redirected.');
+        }
       } catch (err) {
-        console.error('Error fetching mobile auth setting:', err);
-        authState.setIsMobileAuthEnabled(false);
-      }
-
-      // Check for reset password flow
-      const hash = window.location.hash;
-      const isResetPasswordFlow =
-        hash.startsWith('#/reset-password') ||
-        hash.includes('error_description=');
-
-      if (isResetPasswordFlow) {
+        console.error('useAuthEffects: Unhandled error in checkSession:', err);
+      } finally {
         authState.setIsLoading(false);
-        console.log('useAuthEffects: Reset password flow detected, isLoading set to false.');
-        return;
+        console.log('useAuthEffects: isLoading set to false (end of checkSession).');
       }
-
-      console.log('useAuthEffects: Getting Supabase session...');
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('useAuthEffects: Supabase session obtained:', session);
-      if (session) {
-        console.log('useAuthEffects: Session exists, checking user role and redirecting...');
-        await checkUserRoleAndRedirect(session.user);
-        console.log('useAuthEffects: User role checked and redirected.');
-      }
-      authState.setIsLoading(false);
-      console.log('useAuthEffects: isLoading set to false (end of checkSessionAndSettings).');
     };
 
-    checkSessionAndSettings();
-  }, [location]); // Add location to dependency array
+    checkSession();
+    // checkUserRoleAndRedirect is deliberately not a dependency: it is a new
+    // function on every render, which would restart the session check forever.
+  }, [location, systemSettings, systemSettingsLoading]);
 
   // Auth state change listener
   useEffect(() => {

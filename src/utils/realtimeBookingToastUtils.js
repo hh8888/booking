@@ -1,6 +1,7 @@
 import React from 'react';
 import { toast } from 'react-toastify';
 import { getFieldChanges, formatDate } from './realtimeToastUtils';
+import { triggerBookingAlarm } from './bookingAlarmUtils';
 
 /**
  * Booking fields configuration for change detection
@@ -139,6 +140,11 @@ export const showBookingCreatedToast = (bookingData, options = {}) => {
     includeNotes = true,
     useDetailedContent = true
   } = options;
+
+  // Trigger booking alarm for new bookings (only for staff/admin views)
+  if (!isCustomerView && bookingData) {
+    triggerBookingAlarm(bookingData);
+  }
   
   const title = isCustomerView 
     ? 'Your new booking has been created!'
